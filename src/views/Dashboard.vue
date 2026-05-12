@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import { RouterLink, useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
+import TopNav from '../components/TopNav.vue';
 import ItemCard from '../components/ItemCard.vue';
 
 const router = useRouter();
@@ -44,34 +45,7 @@ onMounted(() => { fetchStats(); fetchItems(); });
   <div class="min-h-screen bg-[#f8faf7] flex">
     <SideNav />
 
-    <!-- TopNavBar -->
-    <header class="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] h-16 bg-white/80 backdrop-blur-md border-b border-[#e0e4df] z-40">
-      <div class="flex justify-between items-center px-8 w-full h-full">
-        <div class="flex items-center gap-4 w-full max-w-md">
-          <div class="relative w-full focus-within:ring-2 focus-within:ring-[#387b41]/20 rounded-lg transition-all">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#40493d] text-xl">search</span>
-            <input type="text" placeholder="Search for items..." class="w-full bg-[#f3f5f2] border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-0 outline-none" />
-          </div>
-        </div>
-        <div class="flex items-center gap-6">
-          <div class="flex items-center gap-4">
-            <button class="text-[#40493d] hover:text-[#387b41] transition-colors">
-              <span class="material-symbols-outlined">notifications</span>
-            </button>
-          </div>
-          <div class="h-8 w-[1px] bg-[#e0e4df] mx-2"></div>
-          <div class="flex items-center gap-3">
-            <div class="text-right hidden lg:block">
-              <p class="text-sm font-bold text-[#1c1b1b]">{{ user.nama || 'Student' }}</p>
-              <p class="text-[10px] text-[#40493d] font-medium">{{ user.nis ? `Student (${user.nis})` : user.email || 'Student' }}</p>
-            </div>
-            <div class="w-10 h-10 rounded-full border-2 border-[#387b41]/20 bg-[#f0fdf4] flex items-center justify-center">
-              <span class="text-[#387b41] font-bold text-lg">{{ (user.nama || 'S').charAt(0) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </header>
+    <TopNav />
 
     <!-- Main Content -->
     <main class="md:ml-64 pt-24 px-8 pb-12 min-h-screen w-full max-w-[1200px] mx-auto">
@@ -141,7 +115,7 @@ onMounted(() => { fetchStats(); fetchItems(); });
             <p class="text-sm text-[#40493d] mb-6 leading-relaxed">Found someone's property? Log the details here.</p>
             <div class="flex items-center text-[#387b41] font-bold text-sm gap-2">Log Item <span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
-          <RouterLink to="/" class="bg-white rounded-[2rem] p-8 border border-[#e0e4df] shadow-sm hover:shadow-md transition-all group border-l-[6px] border-l-[#707a6c]">
+          <RouterLink to="/scan" class="bg-white rounded-[2rem] p-8 border border-[#e0e4df] shadow-sm hover:shadow-md transition-all group border-l-[6px] border-l-[#707a6c]">
             <span class="material-symbols-outlined text-4xl text-[#707a6c] mb-6">qr_code_2</span>
             <h4 class="text-xl font-bold mb-2">Scan to Claim</h4>
             <p class="text-sm text-[#40493d] mb-6 leading-relaxed">At the concierge desk? Scan the QR code to verify.</p>
