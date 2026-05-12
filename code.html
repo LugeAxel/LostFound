@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#abf4ac",
+                        "secondary-fixed-dim": "#c2c9bb",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#90d792",
+                        "on-primary-container": "#cbffc2",
+                        "surface-container-lowest": "#ffffff",
+                        "on-surface-variant": "#40493d",
+                        "primary-fixed-dim": "#88d982",
+                        "secondary-fixed": "#dee5d6",
+                        "surface-bright": "#fcf9f8",
+                        "on-surface": "#1c1b1b",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#07521d",
+                        "background": "#fcf9f8",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-primary-fixed-variant": "#005312",
+                        "primary-fixed": "#a3f69c",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f6f3f2",
+                        "tertiary-container": "#387b41",
+                        "on-primary-fixed": "#002204",
+                        "on-tertiary-container": "#c7ffc5",
+                        "surface-container": "#f0edec",
+                        "surface-container-high": "#ebe7e7",
+                        "on-error-container": "#93000a",
+                        "on-secondary-container": "#5f665b",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#1b6d24",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-container": "#dee5d6",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-secondary-fixed": "#171d14",
+                        "on-tertiary-fixed": "#002107",
+                        "on-secondary-fixed-variant": "#42493e",
+                        "surface": "#fcf9f8",
+                        "surface-variant": "#e5e2e1",
+                        "outline": "#707a6c",
+                        "on-background": "#1c1b1b",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "primary": "#0d631b",
+                        "primary-container": "#2e7d32",
+                        "tertiary": "#1d622b",
+                        "inverse-surface": "#313030",
+                        "secondary": "#596055",
+                        "outline-variant": "#bfcaba",
+                        "inverse-primary": "#88d982"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "container-max": "1200px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-xl": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #fcf9f8;
+            color: #1c1b1b;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-background">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface dark:bg-inverse-surface shadow-sm z-50 overflow-y-auto">
+<div class="flex flex-col h-full py-8 px-4">
+<div class="mb-10 px-4">
+<div class="flex items-center gap-3 mb-2">
+<img alt="School Logo" class="w-10 h-10 object-contain" data-alt="A sophisticated minimalist logo for a prestigious educational institution, featuring clean geometric lines and a subtle green accent. The logo is displayed against a bright, professional light-mode background, evoking a sense of trust, organization, and academic excellence within a modern campus environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3j_geGFneUaJWCnvalltAoUe-Cbml0XCKw7__emoefOPkIa0l8ClMBc_9ZtcdaMozTN2VIX1-gxfidI3CyioWftuvPbyYM8qCKmbmL8AHTdMIdunD5ZDb1-2EEf_IM6LPSyLQlkiHPnriJWrGzbrDCejzSu3Gh8LIdXT36ZNRp5BaJwtul3xVIGNpO4G3fMEjWY_P0xTimIlNSacMd6zg46bC9lRRmaVa6rI4OjWYJppwmYO1uFu8jhSxrepH0LY7q4DdSXxC5Nn_"/>
+<div>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary dark:text-inverse-primary">Lost &amp; Found</h1>
+<p class="text-label-sm font-label-sm text-on-surface-variant">Digital Concierge</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-inverse-primary border-r-4 border-primary dark:border-inverse-primary font-bold bg-primary-container/10 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-secondary-fixed-dim hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="report">report</span>
+<span class="font-body-md text-body-md">Lapor</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-secondary-fixed-dim hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-body-md text-body-md">Pencarian</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-secondary-fixed-dim hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-body-md text-body-md">Statistik</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-secondary-fixed-dim hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="qr_code_scanner">qr_code_scanner</span>
+<span class="font-body-md text-body-md">QR Claim</span>
+</a>
+</nav>
+<div class="mt-auto px-4">
+<button class="w-full py-3 px-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                    Report Found Item
+                </button>
+</div>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md shadow-sm z-40">
+<div class="flex justify-between items-center px-8 w-full h-full">
+<div class="flex items-center gap-4 w-96">
+<div class="relative w-full focus-within:ring-2 focus-within:ring-primary rounded-lg transition-all">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-lg pl-10 pr-4 py-2 text-body-sm focus:ring-0" placeholder="Search for items..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden lg:block">
+<p class="text-label-md font-bold text-on-surface">Alex Rivera</p>
+<p class="text-label-sm text-on-surface-variant">Student (220104)</p>
+</div>
+<img alt="User Profile" class="w-10 h-10 rounded-full border-2 border-primary/20" data-alt="A clean and professional profile portrait of a modern university student, set against a bright, airy campus background. The student has a friendly and dependable expression, perfectly matching the modern corporate and minimalist aesthetic of a digital school concierge service. The lighting is soft and high-key, emphasizing clarity and trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQj_BhAhgIfXaVpLJJ-SQYmgNbZ-cFn9kI9WUNPiyyhUFQzepnaghw1o8BupudhIQV66lLhxn0SSfIEM76vHO3_fo4rYji05YILUuEM4Frq1nf5RIegZkn6KZRT4X2g7W1cgLZmHnLsmqbf42zioveGyWBrPWwuN1EwX8-xNwlJSq8__u-8dHjPXnmk_CHhA8uPN_y8C1jH4DxP0ajL7ZBVN8yCGbsG1zNHnmRox6eY_5R-85oESTzn4QVfL1mxgmlLo7Mezc1dqSW"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-64 pt-24 px-8 pb-12 min-h-screen max-w-[1200px] mx-auto">
+<!-- Welcome Banner -->
+<section class="mb-10">
+<div class="relative overflow-hidden rounded-3xl bg-primary-container p-10 text-white flex justify-between items-center shadow-md">
+<div class="relative z-10 max-w-xl">
+<h2 class="font-headline-xl text-headline-xl mb-4 text-on-primary-container">Welcome back, Alex!</h2>
+<p class="font-body-lg text-body-lg text-on-primary-container/90 mb-8">Lost something on campus? Our digital concierge is here to help you find your belongings and reconnect with what matters.</p>
+<div class="flex gap-4">
+<button class="px-6 py-3 bg-white text-primary rounded-xl font-bold hover:bg-surface-container-high transition-all shadow-sm">View My Items</button>
+<button class="px-6 py-3 bg-primary/20 border border-white/30 text-white backdrop-blur-sm rounded-xl font-bold hover:bg-primary/30 transition-all">How it works</button>
+</div>
+</div>
+<!-- Decorative Graphic -->
+<div class="absolute right-0 top-0 h-full w-1/3 opacity-20 flex items-center justify-center">
+<span class="material-symbols-outlined text-[240px]" data-icon="inventory_2" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+</div>
+</div>
+</section>
+<!-- Stats Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+<div class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
+<div class="w-14 h-14 rounded-full bg-error-container/20 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-3xl" data-icon="search">search</span>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant">Currently Lost</p>
+<h3 class="text-headline-md font-bold text-on-surface">128 Items</h3>
+</div>
+</div>
+<div class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
+<div class="w-14 h-14 rounded-full bg-primary-fixed/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl" data-icon="check_circle">check_circle</span>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant">Found Today</p>
+<h3 class="text-headline-md font-bold text-on-surface">14 Items</h3>
+</div>
+</div>
+<div class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
+<div class="w-14 h-14 rounded-full bg-tertiary-container/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-3xl" data-icon="handshake">handshake</span>
+</div>
+<div>
+<p class="text-label-md text-on-surface-variant">Returned All-time</p>
+<h3 class="text-headline-md font-bold text-on-surface">2,410 Items</h3>
+</div>
+</div>
+</section>
+<!-- Action Cards Grid -->
+<section class="mb-12">
+<h3 class="text-headline-sm font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="bolt">bolt</span>
+                Quick Actions
+            </h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+<div class="bg-white rounded-3xl p-8 border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer border-l-8 border-l-primary">
+<span class="material-symbols-outlined text-5xl text-primary mb-6 group-hover:scale-110 transition-transform" data-icon="find_in_page">find_in_page</span>
+<h4 class="text-headline-sm font-bold mb-2">Report Lost</h4>
+<p class="text-body-md text-on-surface-variant mb-6">Misplaced something? Let the community know so we can help find it.</p>
+<div class="flex items-center text-primary font-bold gap-2 group-hover:gap-3 transition-all">
+                        Start Report <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+<div class="bg-white rounded-3xl p-8 border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer border-l-8 border-l-tertiary">
+<span class="material-symbols-outlined text-5xl text-tertiary mb-6 group-hover:scale-110 transition-transform" data-icon="add_a_photo">add_a_photo</span>
+<h4 class="text-headline-sm font-bold mb-2">Report Found</h4>
+<p class="text-body-md text-on-surface-variant mb-6">Found someone's property? Secure it and log the details here.</p>
+<div class="flex items-center text-tertiary font-bold gap-2 group-hover:gap-3 transition-all">
+                        Log Item <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+<div class="bg-white rounded-3xl p-8 border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer border-l-8 border-l-secondary-container">
+<span class="material-symbols-outlined text-5xl text-on-secondary-container mb-6 group-hover:scale-110 transition-transform" data-icon="qr_code_2">qr_code_2</span>
+<h4 class="text-headline-sm font-bold mb-2">Scan to Claim</h4>
+<p class="text-body-md text-on-surface-variant mb-6">At the concierge desk? Scan the QR code on the item to verify ownership.</p>
+<div class="flex items-center text-on-secondary-container font-bold gap-2 group-hover:gap-3 transition-all">
+                        Open Scanner <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Items -->
+<section>
+<div class="flex justify-between items-end mb-8">
+<div>
+<h3 class="text-headline-sm font-bold">Recent Items</h3>
+<p class="text-body-md text-on-surface-variant">Newly reported items in the school ecosystem</p>
+</div>
+<a class="text-primary font-bold flex items-center gap-1 hover:underline" href="#">
+                    View Gallery <span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
+</a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Item Card 1 -->
+<div class="bg-white rounded-2xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-md transition-all group">
+<div class="relative h-48 w-full overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A clean, high-resolution photo of a silver laptop resting on a modern wooden library table in a sunlit university campus setting. The lighting is bright and natural, highlighting the metallic texture of the laptop and the warm tones of the wood. The overall aesthetic is minimalist and organized, fitting a professional educational dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDjMdDv0ZdFPdKNbbzPbOHK9rmTaNE7UQrSiJQivVSTlOW2e_jAs49IUNo04Gje1GMYzTtCfAn3BsTjIe6V-oM1R9zKjlcaN-gSYPS0bvbhE0I6upIJR8stVVZ6eTwk_ztR_Oy1CX0gtREE8FCS9rzyZV8BTjzwaKhdN3rLT-hwZi9_3SM8qqB9YSpyrDKjuFiWD8w8hts_YlElk6tc3tColm0FT0dpm3xAOJvo87ajUdDHCuEpWlVky9Fnha9Wk4AJ1huac1PEHV0"/>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-primary/90 text-white text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded shadow-sm">Just Found</span>
+<span class="bg-white/90 backdrop-blur-sm text-on-surface text-[10px] font-bold px-2 py-1 rounded shadow-sm">Electronics</span>
+</div>
+</div>
+<div class="p-5">
+<h4 class="font-headline-sm text-body-md font-bold mb-1 truncate">Silver MacBook Air M2</h4>
+<p class="text-label-sm text-on-surface-variant flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+                            Main Library, 2nd Floor
+                        </p>
+<div class="flex items-center justify-between">
+<span class="text-label-sm px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-bold">Available</span>
+<span class="text-[10px] text-on-surface-variant">2 hours ago</span>
+</div>
+</div>
+</div>
+<!-- Item Card 2 -->
+<div class="bg-white rounded-2xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-md transition-all group">
+<div class="relative h-48 w-full overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A focused studio-style photograph of a distinctive navy blue reusable water bottle with a silver cap, placed on a white marble surface with soft, diffused lighting. The background is a clean, neutral grey, maintaining the professional and minimalist aesthetic. The image is crisp and clear, designed to help an owner easily identify their lost property." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDriEfb3BoB9a3gKT8k879PF2xMVlQ613d1DEzGZgB6iyetv3YIPtjfOHuLqcOkp39Pau7NhkYnre7YJkkLAa6Y6SDjQjQGACGZR6dgj-8wp_Z5C3bMrEEJUhU9uWKAgOt9tBVw8LFpCpGb3NgCfWHGw9BEcmtUzkc3o2PpqBbuVBBJ08DEi5M_ldGmFtBapFxQimjDxizk9BURpslymdyWYv-_QlRmqPtOtFGCZ6oY1zLH7kKxYoGC3s6FqYk8UBtobtiFiRWRVt2a"/>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-white/90 backdrop-blur-sm text-on-surface text-[10px] font-bold px-2 py-1 rounded shadow-sm">Daily Use</span>
+</div>
+</div>
+<div class="p-5">
+<h4 class="font-headline-sm text-body-md font-bold mb-1 truncate">Navy Blue Hydroflask</h4>
+<p class="text-label-sm text-on-surface-variant flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+                            Sports Complex Hallway
+                        </p>
+<div class="flex items-center justify-between">
+<span class="text-label-sm px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-bold">Available</span>
+<span class="text-[10px] text-on-surface-variant">5 hours ago</span>
+</div>
+</div>
+</div>
+<!-- Item Card 3 -->
+<div class="bg-white rounded-2xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-md transition-all group">
+<div class="relative h-48 w-full overflow-hidden opacity-80">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A close-up photograph of a set of keys with a distinctive leather keychain, lying on a dark textured surface. The lighting is moody but clear, highlighting the metallic shine of the keys and the grain of the leather. The background is softly blurred to keep focus on the item, matching the dependable and organized aesthetic of the lost and found system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6rKm44dbLOtck_l40c0ad6pVAvfEhTM5j06Or39_SNuH2VdASwjRkd5r-cWqS4omlt95jlnI7FnFqpjXDGfG3zR6RS1ZAnPrkiu-ZmI04H4PRJtkg2eiYMJDs2lXx0F36uFd995fdUpsOWOQ9YO6Y1hT9sInFkxPk-QB1grUt-qxxBxtJD04Mo-A5BCFpSEBHGDUgz4wI7jm25Xe2x-0TYPo2ft0kXxdJBRPYUYVarqksi12-C1OEVv9cEX-groqLzMLSbhpJoo_Y"/>
+<div class="absolute inset-0 bg-on-surface/5 flex items-center justify-center">
+<div class="bg-white/90 px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="verified">verified</span>
+<span class="font-bold text-label-md">Pending Verification</span>
+</div>
+</div>
+</div>
+<div class="p-5">
+<h4 class="font-headline-sm text-body-md font-bold mb-1 truncate">Dorm Keys (Room 304)</h4>
+<p class="text-label-sm text-on-surface-variant flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+                            Cafeteria Area B
+                        </p>
+<div class="flex items-center justify-between">
+<span class="text-label-sm px-3 py-1 bg-secondary-fixed text-on-secondary-fixed-variant rounded-full font-bold">In Process</span>
+<span class="text-[10px] text-on-surface-variant">1 day ago</span>
+</div>
+</div>
+</div>
+<!-- Item Card 4 -->
+<div class="bg-white rounded-2xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-md transition-all group">
+<div class="relative h-48 w-full overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A high-quality image of a vibrant red knitted scarf, neatly folded on a clean light grey background. The texture of the wool is clearly visible, and the lighting is soft and even to accurately represent the color. The visual style is modern, professional, and minimalist, designed to facilitate trust and easy recognition in a school dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9p8OITGGZBir-ZH9rygjfHNdKA1yvVasaoFH1XuKx1x-82rAotjCYhWe1s8-GKGz2G8b2jOrfekBSK5-ze1Wl4XfkfQw2J6Dgz7bdJd33adjIO_CO8pCQX6yZVmoG-VqUWJJPylHb-ipZQ3hH8DU0jD0JG-xD7-wQgHqc6KsRsa4UJWunyxbBag7Q_1d04UgAdzDxi7ZXTdCN8QBi6umI3In-w6NqhPC7zZOTlSBtphPGHa6BLdyAz1jq3O6_yD86XvcNcs_H1Nrj"/>
+<div class="absolute top-3 left-3 flex gap-2">
+<span class="bg-white/90 backdrop-blur-sm text-on-surface text-[10px] font-bold px-2 py-1 rounded shadow-sm">Clothing</span>
+</div>
+</div>
+<div class="p-5">
+<h4 class="font-headline-sm text-body-md font-bold mb-1 truncate">Red Knitted Scarf</h4>
+<p class="text-label-sm text-on-surface-variant flex items-center gap-1 mb-4">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+                            Science Lab 3
+                        </p>
+<div class="flex items-center justify-between">
+<span class="text-label-sm px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-bold">Available</span>
+<span class="text-[10px] text-on-surface-variant">2 days ago</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>
