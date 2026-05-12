@@ -17,6 +17,7 @@
     "axios": "^1.16.0",
     "html5-qrcode": "^2.3.8",
     "mongodb": "^7.2.0",
+    "qrcode.vue": "^3.9.0",
     "tailwindcss": "^4.3.0",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4"

@@ -1,5 +1,6 @@
 # AGENTS.md
 
+creating projects using vue,vite,tailwind,mongodb atlas
 ## Project Name
 LostFound
 
