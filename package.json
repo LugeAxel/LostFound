@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "vite",
+    "dev:backend": "cd backend && node server.js",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
@@ -12,6 +14,9 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.0",
+    "axios": "^1.16.0",
+    "html5-qrcode": "^2.3.8",
+    "mongodb": "^7.2.0",
     "tailwindcss": "^4.3.0",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4"
@@ -21,6 +26,7 @@
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/tsconfig": "^0.9.1",
+    "concurrently": "^9.2.1",
     "npm-run-all2": "^8.0.4",
     "typescript": "~6.0.0",
     "vite": "^8.0.8",
