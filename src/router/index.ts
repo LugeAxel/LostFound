@@ -7,6 +7,7 @@ import MyReports from '../views/MyReports.vue'
 import Claim from '../views/Claim.vue'
 import ItemDetail from '../views/ItemDetail.vue'
 import Scanner from '../views/Scanner.vue'
+import Tutorial from '../views/Tutorial.vue'
 
 const router = createRouter({
   history: createWebHistory((import.meta as any).env.BASE_URL),
@@ -51,6 +52,12 @@ const router = createRouter({
       path: '/scan',
       name: 'scanner',
       component: Scanner,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/tutorial',
+      name: 'tutorial',
+      component: Tutorial,
       meta: { requiresAuth: true }
     },
     // Catch-all: redirect unknown routes to login

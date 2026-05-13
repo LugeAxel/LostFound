@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useRouter, RouterLink, useRoute } from 'vue-router';
+import { useI18n } from '../i18n';
 
 const router = useRouter();
 const route = useRoute();
+const { t } = useI18n();
 
 const handleLogout = () => {
   localStorage.removeItem('user');
@@ -20,8 +22,8 @@ const handleLogout = () => {
             <span class="material-symbols-outlined text-[#387b41]">domain</span>
           </div>
           <div>
-            <h1 class="text-lg font-bold text-[#387b41] leading-tight">Lost & Found</h1>
-            <p class="text-[10px] text-[#40493d] font-medium uppercase tracking-wider">Digital Concierge</p>
+            <h1 class="text-lg font-bold text-[#387b41] leading-tight">{{ t('nav.brand') }}</h1>
+            <p class="text-[10px] text-[#40493d] font-medium uppercase tracking-wider">{{ t('nav.brand_sub') }}</p>
           </div>
         </div>
       </div>
@@ -33,7 +35,7 @@ const handleLogout = () => {
               ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
               : 'text-[#40493d] hover:text-[#387b41] hover:bg-[#f3f7f3]']">
           <span class="material-symbols-outlined">dashboard</span>
-          <span class="text-sm">Dashboard</span>
+          <span class="text-sm">{{ t('nav.dashboard') }}</span>
         </RouterLink>
         <RouterLink to="/my-reports" 
           :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
@@ -41,7 +43,7 @@ const handleLogout = () => {
               ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
               : 'text-[#40493d] hover:text-[#387b41] hover:bg-[#f3f7f3]']">
           <span class="material-symbols-outlined">inventory</span>
-          <span class="text-sm">My Reports</span>
+          <span class="text-sm">{{ t('nav.my_reports') }}</span>
         </RouterLink>
         <RouterLink to="/report" 
           :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
@@ -49,26 +51,26 @@ const handleLogout = () => {
               ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
               : 'text-[#40493d] hover:text-[#387b41] hover:bg-[#f3f7f3]']">
           <span class="material-symbols-outlined">report</span>
-          <span class="text-sm">Lapor</span>
+          <span class="text-sm">{{ t('nav.report') }}</span>
         </RouterLink>
         <a href="#" class="flex items-center gap-3 px-4 py-3 text-[#40493d] hover:text-[#387b41] hover:bg-[#f3f7f3] transition-colors duration-200">
           <span class="material-symbols-outlined">search</span>
-          <span class="text-sm">Pencarian</span>
+          <span class="text-sm">{{ t('nav.search') }}</span>
         </a>
         <a href="#" class="flex items-center gap-3 px-4 py-3 text-[#40493d] hover:text-[#387b41] hover:bg-[#f3f7f3] transition-colors duration-200">
           <span class="material-symbols-outlined">leaderboard</span>
-          <span class="text-sm">Statistik</span>
+          <span class="text-sm">{{ t('nav.statistics') }}</span>
         </a>
       </nav>
       
       <div class="px-4 space-y-3 mt-auto">
         <RouterLink to="/report" class="w-full py-3 px-4 bg-[#0d631b] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#0a4d15] transition-all shadow-sm active:scale-95">
           <span class="material-symbols-outlined text-[20px]">add</span>
-          <span class="text-xs">Report Found Item</span>
+          <span class="text-xs">{{ t('nav.report_found') }}</span>
         </RouterLink>
         <button @click="handleLogout" class="w-full py-3 px-4 bg-[#fef2f2] text-[#ba1a1a] rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#fde8e8] transition-all active:scale-95">
           <span class="material-symbols-outlined text-[20px]">logout</span>
-          <span class="text-xs">Logout</span>
+          <span class="text-xs">{{ t('nav.logout') }}</span>
         </button>
       </div>
     </div>
