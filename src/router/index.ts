@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { API_URL } from '@/config/api'
 import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Report from '../views/Report.vue'
@@ -74,8 +75,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && isAuthenticated) {
     // Verify token is still valid by calling /api/auth/me
     try {
-      const apiUrl = (import.meta as any).env.VITE_API_URL
-      const response = await fetch(`${apiUrl}/api/auth/me`, {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 

@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import { API_URL } from '@/config/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -25,8 +26,7 @@ const getAuthHeaders = () => {
 
 const fetchItemDetails = async () => {
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    const res = await axios.get(`${apiUrl}/api/items`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items`, { headers: getAuthHeaders() });
     item.value = res.data.find((i: any) => i._id === itemId);
     if (!item.value) {
       alert('Item not found or already returned');
@@ -60,8 +60,7 @@ const submitClaim = async () => {
 
   isSubmitting.value = true;
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    await axios.post(`${apiUrl}/api/items/${itemId}/claim`, {
+    await axios.post(`${API_URL}/api/items/${itemId}/claim`, {
       claimNotes: form.value.claimNotes,
       claimPhoto: form.value.claimPhoto
     }, { headers: getAuthHeaders() });

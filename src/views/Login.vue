@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { API_URL } from '@/config/api';
 
 const router = useRouter();
 const status = ref('Ready to scan');
@@ -29,13 +30,12 @@ const onScanSuccess = async (decodedText: string) => {
   if (decodedText === lastScan.value) return;
   lastScan.value = decodedText;
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
     const isItemId = /^[0-9a-fA-F]{24}$/.test(decodedText.trim());
     if (isItemId) {
       const token = localStorage.getItem('token');
       if (!token) { setStatus("Please login first to claim items.", "error"); return; }
       setStatus("Claiming item...", "info");
-      const res = await axios.post(`${apiUrl}/api/items/${decodedText.trim()}/claim`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.post(`${API_URL}/api/items/${decodedText.trim()}/claim`, {}, { headers: { Authorization: `Bearer ${token}` } });
       if (res.data.success) { setStatus("Item claimed!", "success"); setTimeout(() => router.push('/dashboard'), 2000); }
       return;
     }
@@ -46,7 +46,7 @@ const onScanSuccess = async (decodedText: string) => {
     const data = { nama: lines[0] || 'Unknown', nisn: nisData[0], nis: nisData[1], jurusan: lines[2], ttl: lines[3], agama: lines[4], gender: lines[5] };
     resultData.value = data;
     setStatus("Student ID verified", "success");
-    const res = await axios.post(`${apiUrl}/api/login`, data);
+    const res = await axios.post(`${API_URL}/api/login`, data);
     if (res.data.success) {
       storeAuth(res.data.token, res.data.user);
       setStatus("Login successful! Redirecting...", "success");
@@ -61,8 +61,7 @@ const handleEmailSubmit = async () => {
   if (isSubmitting.value) return;
   isSubmitting.value = true;
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    const url = isEmailMode.value === 'login' ? `${apiUrl}/api/auth/login-email` : `${apiUrl}/api/auth/register-email`;
+    const url = isEmailMode.value === 'login' ? `${API_URL}/api/auth/login-email` : `${API_URL}/api/auth/register-email`;
     const payload = isEmailMode.value === 'login' ? { email: emailForm.value.email, password: emailForm.value.password } : { ...emailForm.value };
     if (isEmailMode.value === 'register' && !emailForm.value.nama.trim()) { setStatus('Name required', 'error'); isSubmitting.value = false; return; }
     const res = await axios.post(url, payload);

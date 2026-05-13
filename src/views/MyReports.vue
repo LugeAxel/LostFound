@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import QrcodeVue from 'qrcode.vue';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
+import { API_URL } from '@/config/api';
 
 const router = useRouter();
 const items = ref<any[]>([]);
@@ -17,9 +18,8 @@ const getAuthHeaders = () => {
 
 const fetchMyReports = async () => {
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
     // Uses the new /api/items/mine endpoint — backend scopes to authenticated user
-    const res = await axios.get(`${apiUrl}/api/items/mine`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items/mine`, { headers: getAuthHeaders() });
     items.value = res.data;
   } catch (error: any) {
     if (error.response?.status === 401) {

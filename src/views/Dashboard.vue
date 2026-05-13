@@ -5,6 +5,7 @@ import { RouterLink, useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import ItemCard from '../components/ItemCard.vue';
+import { API_URL } from '@/config/api';
 
 const router = useRouter();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
@@ -18,8 +19,7 @@ const getAuthHeaders = () => {
 
 const fetchStats = async () => {
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    const res = await axios.get(`${apiUrl}/api/stats`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/stats`, { headers: getAuthHeaders() });
     stats.value = res.data;
   } catch (error: any) {
     if (error.response?.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); router.push('/'); }
@@ -29,8 +29,7 @@ const fetchStats = async () => {
 
 const fetchItems = async () => {
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    const res = await axios.get(`${apiUrl}/api/items`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items`, { headers: getAuthHeaders() });
     items.value = res.data;
   } catch (error: any) {
     if (error.response?.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); router.push('/'); }

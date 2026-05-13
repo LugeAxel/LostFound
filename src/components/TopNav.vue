@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { API_URL, SOCKET_URL } from '@/config/api';
 
 const router = useRouter();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
@@ -18,8 +19,7 @@ const getAuthHeaders = () => {
 
 const fetchNotifications = async () => {
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    const res = await axios.get(`${apiUrl}/api/notifications`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/notifications`, { headers: getAuthHeaders() });
     notifications.value = res.data;
     unreadCount.value = notifications.value.filter(n => !n.isRead).length;
   } catch (error) {
@@ -29,8 +29,7 @@ const fetchNotifications = async () => {
 
 const markAsRead = async (id: string) => {
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    await axios.post(`${apiUrl}/api/notifications/${id}/read`, {}, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/notifications/${id}/read`, {}, { headers: getAuthHeaders() });
     fetchNotifications();
   } catch (error) {
     console.error('Error marking as read:', error);
@@ -39,8 +38,7 @@ const markAsRead = async (id: string) => {
 
 onMounted(() => {
   fetchNotifications();
-  const apiUrl = (import.meta as any).env.VITE_API_URL;
-  socket = io(apiUrl, {
+  socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
     withCredentials: true
   });

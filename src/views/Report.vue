@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import LocationPicker from '../components/LocationPicker.vue';
 import TopNav from '../components/TopNav.vue';
 import SideNav from '../components/SideNav.vue';
+import { API_URL } from '@/config/api';
 
 const router = useRouter();
 
@@ -88,7 +89,6 @@ const submitReport = async () => {
 
   isSubmitting.value = true;
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
     
     // Explicitly build the payload to avoid sending 'coordinates: null'
     const payload: any = {
@@ -107,7 +107,7 @@ const submitReport = async () => {
       };
     }
 
-    await axios.post(`${apiUrl}/api/items`, payload, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items`, payload, { headers: getAuthHeaders() });
     alert('Report submitted successfully! You can find the claim QR code in "My Reports".');
     router.push('/my-reports');
   } catch (error: any) {

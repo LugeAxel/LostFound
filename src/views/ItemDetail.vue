@@ -8,6 +8,7 @@ import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 
 import { io } from 'socket.io-client';
+import { API_URL, SOCKET_URL } from '@/config/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -30,8 +31,7 @@ const getAuthHeaders = () => {
 
 const fetchItem = async () => {
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    const res = await axios.get(`${apiUrl}/api/items/${itemId}`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items/${itemId}`, { headers: getAuthHeaders() });
     item.value = res.data;
     
     // Set loading to false so the v-else-if="item" block (with map container) renders
@@ -53,8 +53,7 @@ const fetchItem = async () => {
 
 onMounted(() => {
   fetchItem();
-  const apiUrl = (import.meta as any).env.VITE_API_URL;
-  socket = io(apiUrl, {
+  socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
     withCredentials: true
   });
@@ -85,8 +84,7 @@ onBeforeUnmount(() => {
 
 const startClaim = async () => {
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    await axios.post(`${apiUrl}/api/items/${itemId}/start-claim`, {}, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId}/start-claim`, {}, { headers: getAuthHeaders() });
     await fetchItem();
   } catch (error: any) {
     alert(error.response?.data?.message || 'Failed to start claim');
@@ -97,8 +95,7 @@ const sendMessage = async () => {
   if (!newMessage.value.trim()) return;
   isSending.value = true;
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    const res = await axios.post(`${apiUrl}/api/items/${itemId}/chat`, { text: newMessage.value }, { headers: getAuthHeaders() });
+    const res = await axios.post(`${API_URL}/api/items/${itemId}/chat`, { text: newMessage.value }, { headers: getAuthHeaders() });
     item.value.messages = res.data.messages;
     newMessage.value = '';
     scrollToBottom();
@@ -113,8 +110,7 @@ const fileComplaint = async () => {
   const reason = prompt('Please describe why you are filing a complaint:');
   if (!reason) return;
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    await axios.post(`${apiUrl}/api/items/${itemId}/complaint`, { reason }, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId}/complaint`, { reason }, { headers: getAuthHeaders() });
     alert('Complaint filed successfully');
     await fetchItem();
   } catch (error: any) {
@@ -135,8 +131,7 @@ const isClaimer = () => item.value?.claimer === currentUser.value?._id || item.v
 const resolveClaim = async (userId: string) => {
   if (!confirm('Are you sure you want to resolve this claim to this student?')) return;
   try {
-    const apiUrl = (import.meta as any).env.VITE_API_URL;
-    await axios.post(`${apiUrl}/api/items/${itemId}/resolve`, { userId }, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId}/resolve`, { userId }, { headers: getAuthHeaders() });
     alert('Claim resolved successfully');
     await fetchItem();
   } catch (error: any) {
@@ -202,7 +197,7 @@ const formatDate = (date: string) => {
 
     <main class="md:ml-64 pt-16 flex-1 flex flex-col overflow-hidden">
       <!-- Item specific header below TopNav -->
-      <header class="bg-white/60 backdrop-blur-md border-b border-[#e0e4df] px-8 py-4 sticky top-16 z-30">
+      <header class="bg-white/60 backdrop-blur-md border-b border-[#e0e4df] px-8 py-4 sticky top-3 z-30">
         <div class="flex items-center justify-between">
         <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] hover:text-[#387b41] font-bold text-sm transition-all group">
           <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
