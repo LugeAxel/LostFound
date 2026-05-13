@@ -3,8 +3,11 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { useI18n } from '../i18n';
+import schoolLogo from '../assets/school-logo.png';
 
 const router = useRouter();
+const { t, locale, toggleLocale } = useI18n();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
 const notifications = ref<any[]>([]);
 const unreadCount = ref(0);
@@ -66,11 +69,20 @@ onBeforeUnmount(() => {
       <div class="flex items-center gap-4 w-full max-w-md">
         <div class="relative w-full focus-within:ring-2 focus-within:ring-[#387b41]/20 rounded-lg transition-all">
           <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#40493d] text-xl">search</span>
-          <input type="text" placeholder="Search for items..." class="w-full bg-[#f3f5f2] border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-0 outline-none" />
+          <input type="text" :placeholder="t('topnav.search_placeholder')" class="w-full bg-[#f3f5f2] border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-0 outline-none" />
         </div>
       </div>
 
-      <div class="flex items-center gap-6">
+      <div class="flex items-center gap-4">
+        <!-- Language Toggle -->
+        <button @click="toggleLocale"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-[#e0e4df] hover:border-[#387b41]/30 hover:bg-[#f0fdf4]"
+          :class="locale === 'id' ? 'bg-[#f0fdf4] text-[#387b41] border-[#387b41]/20' : 'bg-[#f3f5f2] text-[#40493d]'"
+          :title="locale === 'en' ? 'Switch to Indonesian' : 'Ganti ke Bahasa Inggris'">
+          <span class="text-base leading-none">{{ locale === 'en' ? '🇺🇸' : '🇮🇩' }}</span>
+          <span>{{ locale === 'en' ? 'EN' : 'ID' }}</span>
+        </button>
+
         <!-- Notifications -->
         <div class="relative">
           <button @click="showDropdown = !showDropdown" class="text-[#40493d] hover:text-[#387b41] transition-colors relative p-2 rounded-full hover:bg-[#f3f5f2]">
@@ -83,8 +95,8 @@ onBeforeUnmount(() => {
           <!-- Dropdown -->
           <div v-if="showDropdown" class="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-[#e0e4df] overflow-hidden">
             <div class="p-4 border-b border-[#e0e4df] flex justify-between items-center bg-[#f8faf7]">
-              <h4 class="font-bold text-sm text-[#1c1b1b]">Notifications</h4>
-              <span class="text-[10px] text-[#40493d] font-bold uppercase tracking-wider">{{ unreadCount }} New</span>
+              <h4 class="font-bold text-sm text-[#1c1b1b]">{{ t('topnav.notifications') }}</h4>
+              <span class="text-[10px] text-[#40493d] font-bold uppercase tracking-wider">{{ unreadCount }} {{ t('topnav.new') }}</span>
             </div>
             <div class="max-h-96 overflow-y-auto">
               <div v-for="notif in notifications" :key="notif._id" 
@@ -100,21 +112,26 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div v-if="notifications.length === 0" class="p-8 text-center text-[#40493d] text-xs italic">
-                No notifications yet.
+                {{ t('topnav.no_notifications') }}
               </div>
             </div>
           </div>
         </div>
 
-        <div class="h-8 w-[1px] bg-[#e0e4df] mx-2"></div>
+        <div class="h-8 w-[1px] bg-[#e0e4df]"></div>
 
         <!-- User Profile -->
         <div class="flex items-center gap-3">
           <div class="text-right hidden lg:block">
-            <p class="text-sm font-bold text-[#1c1b1b]">{{ user.nama || 'Student' }}</p>
-            <p class="text-[10px] text-[#40493d] font-medium">{{ user.nisn ? `Student (${user.nisn})` : user.email || 'Student' }}</p>
+            <p class="text-sm font-bold text-[#1c1b1b]">{{ user.nama || t('topnav.student') }}</p>
+            <p class="text-[10px] text-[#40493d] font-medium">{{ user.nisn ? `${t('topnav.student')} (${user.nisn})` : user.email || t('topnav.student') }}</p>
           </div>
-          <div class="w-10 h-10 rounded-full border-2 border-[#387b41]/20 bg-[#f0fdf4] flex items-center justify-center">
+          <!-- QR login user: show school logo -->
+          <div v-if="user.nisn" class="w-10 h-10 rounded-full border-2 border-[#387b41]/20 overflow-hidden bg-white flex items-center justify-center">
+            <img :src="schoolLogo" alt="School Logo" class="w-full h-full object-cover" />
+          </div>
+          <!-- Email login user: show default letter avatar -->
+          <div v-else class="w-10 h-10 rounded-full border-2 border-[#387b41]/20 bg-[#f0fdf4] flex items-center justify-center">
             <span class="text-[#387b41] font-bold text-lg">{{ (user.nama || 'S').charAt(0) }}</span>
           </div>
         </div>

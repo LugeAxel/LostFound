@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
+import { createI18n, provideI18n } from './i18n'
+
+const i18n = createI18n()
+provideI18n(i18n)
 </script>
 
 <template>

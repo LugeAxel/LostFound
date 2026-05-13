@@ -5,8 +5,10 @@ import { RouterLink, useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import ItemCard from '../components/ItemCard.vue';
+import { useI18n } from '../i18n';
 
 const router = useRouter();
+const { t } = useI18n();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
 const items = ref<any[]>([]);
 const stats = ref({ currentlyLost: 0, foundToday: 0, returnedAllTime: 0 });
@@ -53,11 +55,11 @@ onMounted(() => { fetchStats(); fetchItems(); });
       <section class="mb-10">
         <div class="relative overflow-hidden rounded-[2rem] bg-[#387b41] p-10 text-white flex justify-between items-center shadow-lg">
           <div class="relative z-10 max-w-xl">
-            <h2 class="text-4xl font-bold mb-4 tracking-tight">Welcome back, {{ user.nama ? user.nama.split(' ')[0] : 'Student' }}!</h2>
-            <p class="text-lg opacity-90 mb-8 leading-relaxed">Lost something on campus? Our digital concierge helps you find your belongings.</p>
+            <h2 class="text-4xl font-bold mb-4 tracking-tight">{{ t('dash.welcome') }} {{ user.nama ? user.nama.split(' ')[0] : 'Student' }}!</h2>
+            <p class="text-lg opacity-90 mb-8 leading-relaxed">{{ t('dash.welcome_sub') }}</p>
             <div class="flex gap-4">
-              <RouterLink to="/my-reports" class="px-6 py-3 bg-white text-[#387b41] rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-md">View My Items</RouterLink>
-              <button class="px-6 py-3 bg-transparent border border-white/40 text-white rounded-xl font-bold hover:bg-white/10 transition-all">How it works</button>
+              <RouterLink to="/my-reports" class="px-6 py-3 bg-white text-[#387b41] rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-md">{{ t('dash.view_my_items') }}</RouterLink>
+              <RouterLink to="/tutorial" class="px-6 py-3 bg-transparent border border-white/40 text-white rounded-xl font-bold hover:bg-white/10 transition-all">{{ t('dash.how_it_works') }}</RouterLink>
             </div>
           </div>
           <div class="absolute right-10 top-1/2 -translate-y-1/2 h-4/5 w-1/4 opacity-20 flex items-center justify-center pointer-events-none">
@@ -73,8 +75,8 @@ onMounted(() => { fetchStats(); fetchItems(); });
             <span class="material-symbols-outlined text-2xl">search</span>
           </div>
           <div>
-            <p class="text-xs text-[#40493d] font-bold uppercase tracking-wider">Currently Lost</p>
-            <h3 class="text-2xl font-bold text-[#1c1b1b]">{{ stats.currentlyLost.toLocaleString() }} Items</h3>
+            <p class="text-xs text-[#40493d] font-bold uppercase tracking-wider">{{ t('dash.currently_lost') }}</p>
+            <h3 class="text-2xl font-bold text-[#1c1b1b]">{{ stats.currentlyLost.toLocaleString() }} {{ t('dash.items') }}</h3>
           </div>
         </div>
         <div class="bg-white p-6 rounded-2xl border border-[#e0e4df] shadow-sm flex items-center gap-5">
@@ -82,8 +84,8 @@ onMounted(() => { fetchStats(); fetchItems(); });
             <span class="material-symbols-outlined text-2xl">check_circle</span>
           </div>
           <div>
-            <p class="text-xs text-[#40493d] font-bold uppercase tracking-wider">Found Today</p>
-            <h3 class="text-2xl font-bold text-[#1c1b1b]">{{ stats.foundToday.toLocaleString() }} Items</h3>
+            <p class="text-xs text-[#40493d] font-bold uppercase tracking-wider">{{ t('dash.found_today') }}</p>
+            <h3 class="text-2xl font-bold text-[#1c1b1b]">{{ stats.foundToday.toLocaleString() }} {{ t('dash.items') }}</h3>
           </div>
         </div>
         <div class="bg-white p-6 rounded-2xl border border-[#e0e4df] shadow-sm flex items-center gap-5">
@@ -91,8 +93,8 @@ onMounted(() => { fetchStats(); fetchItems(); });
             <span class="material-symbols-outlined text-2xl">handshake</span>
           </div>
           <div>
-            <p class="text-xs text-[#40493d] font-bold uppercase tracking-wider">Returned All-time</p>
-            <h3 class="text-2xl font-bold text-[#1c1b1b]">{{ stats.returnedAllTime.toLocaleString() }} Items</h3>
+            <p class="text-xs text-[#40493d] font-bold uppercase tracking-wider">{{ t('dash.returned_all_time') }}</p>
+            <h3 class="text-2xl font-bold text-[#1c1b1b]">{{ stats.returnedAllTime.toLocaleString() }} {{ t('dash.items') }}</h3>
           </div>
         </div>
       </section>
@@ -100,26 +102,26 @@ onMounted(() => { fetchStats(); fetchItems(); });
       <!-- Quick Actions -->
       <section class="mb-12">
         <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
-          <span class="material-symbols-outlined text-[#387b41]">bolt</span> Quick Actions
+          <span class="material-symbols-outlined text-[#387b41]">bolt</span> {{ t('dash.quick_actions') }}
         </h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <RouterLink to="/report" class="bg-white rounded-[2rem] p-8 border border-[#e0e4df] shadow-sm hover:shadow-md transition-all group border-l-[6px] border-l-[#1b6d24]">
             <span class="material-symbols-outlined text-4xl text-[#1b6d24] mb-6">find_in_page</span>
-            <h4 class="text-xl font-bold mb-2">Report Lost</h4>
-            <p class="text-sm text-[#40493d] mb-6 leading-relaxed">Misplaced something? Let the community know.</p>
-            <div class="flex items-center text-[#1b6d24] font-bold text-sm gap-2">Start Report <span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
+            <h4 class="text-xl font-bold mb-2">{{ t('dash.report_lost') }}</h4>
+            <p class="text-sm text-[#40493d] mb-6 leading-relaxed">{{ t('dash.report_lost_desc') }}</p>
+            <div class="flex items-center text-[#1b6d24] font-bold text-sm gap-2">{{ t('dash.start_report') }} <span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
           <RouterLink to="/report" class="bg-white rounded-[2rem] p-8 border border-[#e0e4df] shadow-sm hover:shadow-md transition-all group border-l-[6px] border-l-[#387b41]">
             <span class="material-symbols-outlined text-4xl text-[#387b41] mb-6">add_a_photo</span>
-            <h4 class="text-xl font-bold mb-2">Report Found</h4>
-            <p class="text-sm text-[#40493d] mb-6 leading-relaxed">Found someone's property? Log the details here.</p>
-            <div class="flex items-center text-[#387b41] font-bold text-sm gap-2">Log Item <span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
+            <h4 class="text-xl font-bold mb-2">{{ t('dash.report_found') }}</h4>
+            <p class="text-sm text-[#40493d] mb-6 leading-relaxed">{{ t('dash.report_found_desc') }}</p>
+            <div class="flex items-center text-[#387b41] font-bold text-sm gap-2">{{ t('dash.log_item') }} <span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
           <RouterLink to="/scan" class="bg-white rounded-[2rem] p-8 border border-[#e0e4df] shadow-sm hover:shadow-md transition-all group border-l-[6px] border-l-[#707a6c]">
             <span class="material-symbols-outlined text-4xl text-[#707a6c] mb-6">qr_code_2</span>
-            <h4 class="text-xl font-bold mb-2">Scan to Claim</h4>
-            <p class="text-sm text-[#40493d] mb-6 leading-relaxed">At the concierge desk? Scan the QR code to verify.</p>
-            <div class="flex items-center text-[#1c1b1b] font-bold text-sm gap-2">Open Scanner <span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
+            <h4 class="text-xl font-bold mb-2">{{ t('dash.scan_to_claim') }}</h4>
+            <p class="text-sm text-[#40493d] mb-6 leading-relaxed">{{ t('dash.scan_to_claim_desc') }}</p>
+            <div class="flex items-center text-[#1c1b1b] font-bold text-sm gap-2">{{ t('dash.open_scanner') }} <span class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
         </div>
       </section>
@@ -128,13 +130,13 @@ onMounted(() => { fetchStats(); fetchItems(); });
       <section>
         <div class="flex justify-between items-end mb-8">
           <div>
-            <h3 class="text-lg font-bold">Recent Items</h3>
-            <p class="text-sm text-[#40493d]">Newly reported items in the school ecosystem</p>
+            <h3 class="text-lg font-bold">{{ t('dash.recent_items') }}</h3>
+            <p class="text-sm text-[#40493d]">{{ t('dash.recent_items_sub') }}</p>
           </div>
         </div>
         <div v-if="items.length === 0" class="text-center py-20 bg-white rounded-[2rem] border border-dashed border-[#e0e4df]">
           <span class="material-symbols-outlined text-6xl text-[#40493d]/10 mb-4">inventory_2</span>
-          <p class="text-[#40493d] font-medium">No items reported yet.</p>
+          <p class="text-[#40493d] font-medium">{{ t('dash.no_items') }}</p>
         </div>
         <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <ItemCard v-for="item in items" :key="item._id" :item="item" />
