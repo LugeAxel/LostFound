@@ -8,6 +8,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
 require('dotenv').config({ path: '../.env' });
+const cron = require('node-cron');
+const cloudinary = require('./config/cloudinary');
 
 // 1. DNS FIX (For Atlas connection issues on restricted networks)
 dns.setServers(['1.1.1.1', '8.8.8.8']);
@@ -16,6 +18,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
+app.set('trust proxy', 1);
+const upload = require('./middleware/upload');
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -31,7 +35,9 @@ if (!JWT_SECRET) {
 // ─────────────────────────────────────────────
 
 // Security headers
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: false
+}));
 
 // CORS — restrict to frontend origin in production
 const allowedOrigins = [
@@ -43,12 +49,18 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, curl, etc in dev)
-        if (!origin) return callback(null, true);
+        // Allow Postman/mobile apps/no-origin requests
+        if (!origin) {
+            return callback(null, true);
+        }
+
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
-        return callback(null, true); // Fallback for dev
+
+        console.warn(`❌ Blocked by CORS: ${origin}`);
+
+        return callback(new Error('Not allowed by CORS'));
     },
     credentials: true
 }));
@@ -145,7 +157,7 @@ const ItemSchema = new mongoose.Schema({
     status: { type: String, default: 'Available', enum: ['Available', 'On Progress', 'Returned'] },
     type: { type: String, required: true, enum: ['found', 'lost'], lowercase: true },
     reportedAt: { type: Date, default: Date.now },
-    imageUrl: { type: String, maxlength: 3000000 }, // base64 images can be large
+    imageUrl: { type: String, maxlength: 500 },
     description: { type: String, trim: true, maxlength: 500 },
     reporter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     // Live Location
@@ -174,6 +186,11 @@ const ItemSchema = new mongoose.Schema({
 });
 
 const Item = mongoose.model('Item', ItemSchema);
+
+ItemSchema.index({ status: 1 });
+ItemSchema.index({ type: 1 });
+ItemSchema.index({ reportedAt: -1 });
+ItemSchema.index({ reporter: 1 });
 
 // Sync indexes once connection is open
 mongoose.connection.once('open', async () => {
@@ -478,16 +495,38 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
 // Get all items (public feed for dashboard)
 app.get('/api/items', authMiddleware, async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
         const items = await Item.find()
             .populate('reporter', 'nama nisn jurusan')
             .populate('claimer', 'nama')
             .sort({ reportedAt: -1 })
-            .limit(50);
-        res.json(items);
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Item.countDocuments();
+
+        res.json({
+            items,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalItems: total
+        });
+
     } catch (error) {
         console.error('Error fetching items:', error.message);
         res.status(500).json({ success: false, message: 'Failed to fetch items.' });
     }
+});
+
+// Notifications (Mock for now to prevent 404s)
+app.get('/api/notifications', authMiddleware, (req, res) => {
+    res.json([]);
+});
+app.post('/api/notifications/:id/read', authMiddleware, (req, res) => {
+    res.json({ success: true });
 });
 
 // Get MY reports only (scoped to authenticated user)
@@ -526,6 +565,7 @@ app.get('/api/items/:id', authMiddleware, async (req, res) => {
 // Create new item (reporter is always the authenticated user)
 app.post('/api/items',
     authMiddleware,
+    upload.single('image'),
     [
         body('name').trim().notEmpty().withMessage('Item name is required')
             .isLength({ max: 200 }).withMessage('Item name too long'),
@@ -535,14 +575,34 @@ app.post('/api/items',
         body('type').trim().notEmpty().isIn(['found', 'lost']).withMessage('Type must be found or lost'),
         body('description').optional().trim().isLength({ max: 500 }).withMessage('Description too long'),
         body('imageUrl').optional().isLength({ max: 3000000 }).withMessage('Image too large'),
-        body('coordinates').optional({ nullable: true }).isObject().withMessage('Coordinates must be an object'),
-        body('coordinates.latitude').if(body('coordinates').exists({ checkNull: true })).isFloat({ min: -90, max: 90 }).withMessage('Invalid latitude'),
-        body('coordinates.longitude').if(body('coordinates').exists({ checkNull: true })).isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude'),
+        body('coordinates').optional({ nullable: true }),
+        body('coordinates').custom((value) => {
+            if (!value) return true;
+            try {
+                const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+                if (typeof parsed !== 'object') throw new Error('Must be an object');
+                if (parsed.latitude && (parsed.latitude < -90 || parsed.latitude > 90)) throw new Error('Invalid latitude');
+                if (parsed.longitude && (parsed.longitude < -180 || parsed.longitude > 180)) throw new Error('Invalid longitude');
+            } catch (e) {
+                throw new Error('Invalid coordinates format');
+            }
+            return true;
+        }),
     ],
     handleValidationErrors,
     async (req, res) => {
         try {
-            const { name, location, category, type, description, imageUrl, coordinates } = req.body;
+            const { name, location, category, type, description } = req.body;
+            let coordinates;
+            if (req.body.coordinates) {
+                try {
+                    coordinates = typeof req.body.coordinates === 'string' ? JSON.parse(req.body.coordinates) : req.body.coordinates;
+                } catch (e) {
+                    console.error('Failed to parse coordinates');
+                }
+            }
+
+            const imageUrl = req.file ? req.file.path : null;
 
             const newItemData = {
                 name,
@@ -612,7 +672,15 @@ app.post('/api/items/:id/chat',
     authMiddleware,
     async (req, res) => {
         try {
-            const { text } = req.body;
+            const text = req.body.text?.trim();
+
+            if (!text || text.length > 1000) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid message'
+                });
+            }
+
             const item = await Item.findById(req.params.id);
             if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
 
@@ -670,6 +738,15 @@ app.post('/api/items/:id/complaint',
                 reason
             });
             await item.save();
+
+            // Notify founder about the complaint
+            await Notification.create({
+                user: item.reporter,
+                type: 'complaint',
+                item: item._id,
+                text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${item.name}".`
+            });
+
             res.json({ success: true, message: 'Complaint filed' });
         } catch (error) {
             res.status(500).json({ success: false, message: error.message });
@@ -775,7 +852,7 @@ app.use('/api/{*path}', (req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-    console.error('💥 Unhandled Error:', err.message);
+    console.error('💥 Unhandled Error Stack:', err.stack || err);
     res.status(500).json({ success: false, message: 'Internal server error.' });
 });
 
@@ -831,8 +908,17 @@ app.post('/api/notifications/:id/read', authMiddleware, async (req, res) => {
 
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
-        methods: ["GET", "POST"],
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            console.warn(`❌ Socket blocked by CORS: ${origin}`);
+            return callback(new Error('Socket CORS blocked'));
+        },
+        methods: ['GET', 'POST'],
         credentials: true
     },
     allowEIO3: true
@@ -840,12 +926,12 @@ const io = new Server(server, {
 
 io.on('connection', (socket) => {
     console.log('🔌 New socket connection:', socket.id);
-    
+
     socket.on('join-user', (userId) => {
         socket.join(`user-${userId}`);
         console.log(`👤 User joined room: user-${userId}`);
     });
-    
+
     socket.on('join-item', (itemId) => {
         socket.join(`item-${itemId}`);
         console.log(`📦 Joined item room: item-${itemId}`);
@@ -854,6 +940,64 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('🔌 Socket disconnected:', socket.id);
     });
+});
+
+// ─────────────────────────────────────────────
+// 11. CRON JOBS (Auto Cleanup)
+// ─────────────────────────────────────────────
+// Run every hour
+cron.schedule('0 * * * *', async () => {
+    console.log('🧹 Running Auto-Cleanup Job...');
+    try {
+        const now = new Date();
+        const tenDaysAgo = new Date(new Date().setDate(new Date().getDate() - 10));
+        const twoDaysAgo = new Date(new Date().setDate(new Date().getDate() - 2));
+
+        // 1. Delete items not returned and older than 10 days
+        const expiredUnclaimed = await Item.find({
+            status: { $ne: 'Returned' },
+            reportedAt: { $lte: tenDaysAgo }
+        });
+
+        // 2. Delete items returned and resolved older than 2 days
+        const expiredReturned = await Item.find({
+            status: 'Returned',
+            resolvedAt: { $lte: twoDaysAgo }
+        });
+
+        const itemsToDelete = [...expiredUnclaimed, ...expiredReturned];
+
+        if (itemsToDelete.length > 0) {
+            console.log(`🗑️ Found ${itemsToDelete.length} items to auto-delete.`);
+            
+            for (const item of itemsToDelete) {
+                // Delete image from Cloudinary
+                if (item.imageUrl && item.imageUrl.includes('cloudinary')) {
+                    try {
+                        const urlParts = item.imageUrl.split('/');
+                        const fileWithExt = urlParts[urlParts.length - 1];
+                        const publicId = `lost-found-items/${fileWithExt.split('.')[0]}`;
+                        await cloudinary.uploader.destroy(publicId);
+                    } catch (cloudinaryErr) {
+                        console.error('Failed to delete Cloudinary image:', cloudinaryErr.message);
+                    }
+                }
+
+                // Notify reporter
+                await Notification.create({
+                    user: item.reporter,
+                    type: 'message',
+                    item: null,
+                    text: `Pemberitahuan Sistem: Laporan "${item.name}" Anda telah dihapus otomatis sesuai kebijakan retensi (10 hari belum kembali / 2 hari setelah dikembalikan).`
+                });
+
+                await Item.findByIdAndDelete(item._id);
+            }
+            console.log(`✅ Successfully deleted ${itemsToDelete.length} items.`);
+        }
+    } catch (error) {
+        console.error('❌ Auto-Cleanup Job failed:', error.message);
+    }
 });
 
 server.listen(PORT, '0.0.0.0', () => {

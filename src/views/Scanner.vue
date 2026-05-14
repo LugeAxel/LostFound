@@ -40,20 +40,20 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] flex flex-col items-center justify-center p-6">
-    <div class="w-full max-w-md bg-white rounded-[2.5rem] shadow-xl p-8 border border-[#e0e4df] text-center">
-      <h2 class="text-2xl font-bold text-[#1c1b1b] mb-2">Scan QR Code</h2>
-      <p class="text-sm text-[#40493d] mb-8">Scan the reporter's QR code to claim your item.</p>
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center p-6">
+    <div class="w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-xl p-4 md:p-8 border border-[#e0e4df] dark:border-[#374151] text-center">
+      <h2 class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2">Scan QR Code</h2>
+      <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mb-8">Scan the reporter's QR code to claim your item.</p>
       
       <div class="flex justify-center mb-6">
-        <div class="w-24 h-24 bg-[#f3f5f2] rounded-full flex items-center justify-center text-[#387b41]">
+        <div class="w-24 h-24 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-full flex items-center justify-center text-[#387b41]">
           <span class="material-symbols-outlined text-5xl">qr_code_2</span>
         </div>
       </div>
       
-      <div id="qr-reader" class="overflow-hidden rounded-3xl border-2 border-[#e0e4df]"></div>
+      <div id="qr-reader" class="overflow-hidden rounded-3xl border-2 border-[#e0e4df] dark:border-[#374151]"></div>
       
-      <button @click="router.back()" class="mt-8 px-8 py-3 bg-[#f3f5f2] text-[#1c1b1b] rounded-xl font-bold hover:bg-[#e0e4df] transition-all">
+      <button @click="router.back()" class="mt-8 px-8 py-3 bg-[#f3f5f2] dark:bg-[#2a2a2a] text-[#1c1b1b] dark:text-[#f3f4f6] rounded-xl font-bold hover:bg-[#e0e4df] transition-all">
         Back to Dashboard
       </button>
     </div>

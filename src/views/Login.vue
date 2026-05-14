@@ -88,55 +88,55 @@ onUnmounted(() => stopCamera());
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] flex flex-col items-center justify-center p-6 font-sans">
-    <div class="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-10 border border-[#e0e4df] relative overflow-hidden">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center p-4 md:p-6 font-sans">
+    <div class="w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-2xl p-10 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
       <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-5 rounded-full"></div>
       <div class="flex flex-col items-center mb-8 relative z-10">
         <div class="w-20 h-20 bg-[#f0fdf4] rounded-2xl flex items-center justify-center mb-6 shadow-sm">
           <span class="material-symbols-outlined text-4xl text-[#387b41]">{{ loginMode === 'qr' ? 'qr_code_scanner' : 'mail' }}</span>
         </div>
-        <h2 class="text-3xl font-bold text-[#1c1b1b] tracking-tight">Student Login</h2>
-        <p class="text-sm text-[#40493d] text-center mt-3 leading-relaxed px-4">
+        <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">Student Login</h2>
+        <p class="text-sm text-[#40493d] dark:text-[#9ca3af] text-center mt-3 leading-relaxed px-4">
           {{ loginMode === 'qr' ? "Scan your Student ID QR code below." : isEmailMode === 'login' ? "Sign in with email." : "Create a new account." }}
         </p>
       </div>
 
       <!-- Mode Switcher -->
-      <div class="grid grid-cols-2 gap-2 p-1 bg-[#f3f5f2] rounded-2xl mb-8">
-        <button @click="switchMode('qr')" :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', loginMode === 'qr' ? 'bg-white text-[#387b41] shadow-sm' : 'text-[#40493d]']">
+      <div class="grid grid-cols-2 gap-2 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl mb-8">
+        <button @click="switchMode('qr')" :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', loginMode === 'qr' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af]']">
           <span class="material-symbols-outlined text-xl">qr_code_scanner</span> QR Code
         </button>
-        <button @click="switchMode('email')" :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', loginMode === 'email' ? 'bg-white text-[#387b41] shadow-sm' : 'text-[#40493d]']">
+        <button @click="switchMode('email')" :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', loginMode === 'email' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af]']">
           <span class="material-symbols-outlined text-xl">mail</span> Email
         </button>
       </div>
 
       <!-- QR Mode -->
       <div v-if="loginMode === 'qr'" class="relative mb-8">
-        <div id="reader" class="qr-reader overflow-hidden rounded-3xl border-2 border-[#e0e4df] bg-[#1c1b1b] aspect-square w-full max-w-[280px] mx-auto shadow-inner -rotate-y-180"></div>
+        <div id="reader" class="qr-reader overflow-hidden rounded-3xl border-2 border-[#e0e4df] dark:border-[#374151] bg-[#1c1b1b] aspect-square w-full max-w-[280px] mx-auto shadow-inner -rotate-y-180"></div>
       </div>
 
       <!-- Email Mode -->
       <form v-else @submit.prevent="handleEmailSubmit" class="space-y-5 mb-6">
         <div v-if="isEmailMode === 'register'" class="space-y-2">
-          <label class="text-xs font-bold text-[#1c1b1b] px-1 uppercase tracking-wider">Full Name</label>
+          <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Full Name</label>
           <div class="relative">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] text-xl">person</span>
-            <input v-model="emailForm.nama" type="text" placeholder="Your full name" class="w-full bg-[#f3f5f2] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white outline-none transition-all text-sm font-medium" required />
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">person</span>
+            <input v-model="emailForm.nama" type="text" placeholder="Your full name" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <div class="space-y-2">
-          <label class="text-xs font-bold text-[#1c1b1b] px-1 uppercase tracking-wider">Email</label>
+          <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Email</label>
           <div class="relative">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] text-xl">mail</span>
-            <input v-model="emailForm.email" type="email" placeholder="student@school.edu" class="w-full bg-[#f3f5f2] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white outline-none transition-all text-sm font-medium" required />
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">mail</span>
+            <input v-model="emailForm.email" type="email" placeholder="student@school.edu" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <div class="space-y-2">
-          <label class="text-xs font-bold text-[#1c1b1b] px-1 uppercase tracking-wider">Password</label>
+          <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Password</label>
           <div class="relative">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] text-xl">lock</span>
-            <input v-model="emailForm.password" type="password" placeholder="Min. 6 characters" class="w-full bg-[#f3f5f2] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white outline-none transition-all text-sm font-medium" required />
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">lock</span>
+            <input v-model="emailForm.password" type="password" placeholder="Min. 6 characters" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <button type="submit" :disabled="isSubmitting" class="w-full py-4 bg-[#387b41] text-white rounded-xl font-bold text-sm hover:bg-[#2d6334] transition-all shadow-md active:scale-95 disabled:opacity-50">
@@ -149,29 +149,29 @@ onUnmounted(() => stopCamera());
       </form>
 
       <!-- Status -->
-      <div v-if="status" :class="['py-4 px-6 rounded-2xl text-center font-bold text-sm flex items-center justify-center gap-2 shadow-sm mt-6', statusType === 'success' ? 'bg-[#abf4ac] text-[#07521d]' : statusType === 'error' ? 'bg-[#fef2f2] text-[#ef4444]' : 'bg-[#f3f5f2] text-[#40493d]']">
+      <div v-if="status" :class="['py-4 px-6 rounded-2xl text-center font-bold text-sm flex items-center justify-center gap-2 shadow-sm mt-6', statusType === 'success' ? 'bg-[#abf4ac] text-[#07521d]' : statusType === 'error' ? 'bg-[#fef2f2] text-[#ef4444]' : 'bg-[#f3f5f2] dark:bg-[#2a2a2a] text-[#40493d] dark:text-[#9ca3af]']">
         <span class="material-symbols-outlined text-xl">{{ statusType === 'success' ? 'check_circle' : statusType === 'error' ? 'error' : 'sync' }}</span>
         {{ status }}
       </div>
 
       <!-- QR result -->
-      <div v-if="resultData" class="p-6 bg-[#f8faf7] rounded-3xl border border-[#e0e4df] mt-6">
+      <div v-if="resultData" class="p-6 bg-[#f8faf7] dark:bg-[#121212] rounded-3xl border border-[#e0e4df] dark:border-[#374151] mt-6">
         <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#387b41] font-bold shadow-sm">{{ resultData.nama.charAt(0) }}</div>
-          <h3 class="text-lg font-bold text-[#1c1b1b]">{{ resultData.nama }}</h3>
+          <div class="w-10 h-10 rounded-full bg-white dark:bg-[#1e1e1e] flex items-center justify-center text-[#387b41] font-bold shadow-sm">{{ resultData.nama.charAt(0) }}</div>
+          <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ resultData.nama }}</h3>
         </div>
         <div class="space-y-2">
-          <div class="flex justify-between text-xs"><span class="text-[#40493d]">NISN</span><span class="font-bold">{{ resultData.nisn }}</span></div>
-          <div class="flex justify-between text-xs"><span class="text-[#40493d]">Jurusan</span><span class="font-bold">{{ resultData.jurusan }}</span></div>
+          <div class="flex justify-between text-xs"><span class="text-[#40493d] dark:text-[#9ca3af]">NISN</span><span class="font-bold">{{ resultData.nisn }}</span></div>
+          <div class="flex justify-between text-xs"><span class="text-[#40493d] dark:text-[#9ca3af]">Jurusan</span><span class="font-bold">{{ resultData.jurusan }}</span></div>
         </div>
       </div>
     </div>
     <div class="mt-10 text-center">
       <div class="flex items-center justify-center gap-2 mb-2">
         <div class="w-6 h-6 bg-[#387b41] rounded flex items-center justify-center"><span class="material-symbols-outlined text-white text-[14px]">school</span></div>
-        <p class="text-sm font-bold text-[#1c1b1b]">LostFound</p>
+        <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">LostFound</p>
       </div>
-      <p class="text-[11px] text-[#40493d] font-medium uppercase tracking-[0.2em]">SMKN 2 Depok Digital Concierge</p>
+      <p class="text-[11px] text-[#40493d] dark:text-[#9ca3af] font-medium uppercase tracking-[0.2em]">SMKN 2 Depok Digital Concierge</p>
     </div>
   </div>
 </template>

@@ -116,6 +116,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.category.Clothing': 'Clothing',
     'card.category.Books/Stationery': 'Books/Stationery',
     'card.category.Others': 'Others',
+    'marquee.retention_policy': 'Retention Policy: Unclaimed items deleted after 10 days. Returned items deleted after 2 days.',
   },
   id: {
     // === SideNav ===
@@ -228,6 +229,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.category.Clothing': 'Pakaian',
     'card.category.Books/Stationery': 'Buku/Alat Tulis',
     'card.category.Others': 'Lainnya',
+    'marquee.retention_policy': 'Kebijakan Retensi: Barang tidak diklaim dihapus setelah 10 hari. Barang kembali dihapus setelah 2 hari.',
   }
 };
 

@@ -82,11 +82,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="relative w-full h-[300px] rounded-2xl overflow-hidden border border-[#e0e4df] mt-2">
+  <div class="relative w-full h-[300px] rounded-2xl overflow-hidden border border-[#e0e4df] dark:border-[#374151] mt-2">
     <div ref="mapContainer" class="w-full h-full"></div>
-    <div class="absolute bottom-4 left-4 z-[1000] bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-[#e0e4df] shadow-sm flex items-center gap-2">
+    <div class="absolute bottom-4 left-4 z-[1000] bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full border border-[#e0e4df] dark:border-[#374151] shadow-sm flex items-center gap-2">
       <span class="material-symbols-outlined text-[#387b41] text-sm">info</span>
-      <span class="text-[10px] font-bold text-[#40493d] uppercase tracking-wider">Drag marker to refine location</span>
+      <span class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider">Drag marker to refine location</span>
     </div>
   </div>
 </template>

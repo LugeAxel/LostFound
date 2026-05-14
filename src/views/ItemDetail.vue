@@ -191,15 +191,15 @@ const formatDate = (date: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] flex font-sans">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex font-sans pb-20 pt-12">
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-16 flex-1 flex flex-col overflow-hidden">
+    <main class="md:ml-64 pt-13 flex-1 flex flex-col overflow-hidden">
       <!-- Item specific header below TopNav -->
-      <header class="bg-white/60 backdrop-blur-md border-b border-[#e0e4df] px-8 py-4 sticky top-3 z-30">
+      <header class="bg-white dark:bg-[#1e1e1e]/60 backdrop-blur-md border-b border-[#e0e4df] dark:border-[#374151] px-8 py-4 sticky top-3 z-30">
         <div class="flex items-center justify-between">
-        <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] hover:text-[#387b41] font-bold text-sm transition-all group">
+        <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] font-bold text-sm transition-all group">
           <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
           Back
         </button>
@@ -217,7 +217,7 @@ const formatDate = (date: string) => {
       </div>
     </header>
 
-      <div class="flex-1 max-w-[1200px] w-full mx-auto p-6 md:p-10 space-y-10 overflow-y-auto">
+      <div class="flex-1 max-w-[1200px] w-full mx-auto p-4 md:p-6 md:p-10 space-y-10 overflow-y-auto">
       <div v-if="isLoading" class="flex justify-center py-20">
         <div class="w-10 h-10 border-4 border-[#387b41]/20 border-t-[#387b41] rounded-full animate-spin"></div>
       </div>
@@ -225,74 +225,74 @@ const formatDate = (date: string) => {
       <div v-else-if="item" class="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <!-- Left: Images and Description -->
         <div class="space-y-8">
-          <div class="bg-white rounded-[2.5rem] overflow-hidden border border-[#e0e4df] shadow-sm">
-            <div class="aspect-video relative bg-[#f3f5f2] flex items-center justify-center">
+          <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm">
+            <div class="aspect-video relative bg-[#f3f5f2] dark:bg-[#2a2a2a] flex items-center justify-center">
               <img v-if="item.imageUrl" :src="item.imageUrl" class="w-full h-full object-cover" />
-              <span v-else class="material-symbols-outlined text-7xl text-[#40493d]/20">{{ item.type === 'lost' ? 'search' : 'inventory_2' }}</span>
+              <span v-else class="material-symbols-outlined text-7xl text-[#40493d] dark:text-[#9ca3af]/20">{{ item.type === 'lost' ? 'search' : 'inventory_2' }}</span>
             </div>
             <div class="p-8">
-              <h1 class="text-3xl font-bold text-[#1c1b1b] mb-4">{{ item.name }}</h1>
-              <p class="text-[#40493d] leading-relaxed mb-6">{{ item.description || 'No description provided.' }}</p>
+              <h1 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-4">{{ item.name }}</h1>
+              <p class="text-[#40493d] dark:text-[#9ca3af] leading-relaxed mb-6">{{ item.description || 'No description provided.' }}</p>
               
               <div class="grid grid-cols-2 gap-4">
-                <div class="p-4 bg-[#f3f5f2] rounded-2xl">
-                  <p class="text-[10px] font-bold text-[#40493d] uppercase tracking-wider mb-1">Category</p>
-                  <p class="text-sm font-bold text-[#1c1b1b]">{{ item.category }}</p>
+                <div class="p-4 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
+                  <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider mb-1">Category</p>
+                  <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.category }}</p>
                 </div>
-                <div class="p-4 bg-[#f3f5f2] rounded-2xl">
-                  <p class="text-[10px] font-bold text-[#40493d] uppercase tracking-wider mb-1">Reported At</p>
-                  <p class="text-sm font-bold text-[#1c1b1b]">{{ formatDate(item.reportedAt) }}</p>
+                <div class="p-4 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
+                  <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider mb-1">Reported At</p>
+                  <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ formatDate(item.reportedAt) }}</p>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Reporter Info -->
-          <div class="bg-white rounded-3xl p-6 border border-[#e0e4df] flex items-center justify-between shadow-sm">
+          <div class="bg-white dark:bg-[#1e1e1e] rounded-3xl p-4 md:p-6 border border-[#e0e4df] dark:border-[#374151] flex items-center justify-between shadow-sm">
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 rounded-full bg-[#f0fdf4] border-2 border-[#387b41]/20 flex items-center justify-center">
                 <span class="text-[#387b41] font-bold text-xl">{{ (item.reporter?.nama || 'S').charAt(0) }}</span>
               </div>
               <div>
-                <p class="text-[10px] font-bold text-[#40493d] uppercase tracking-wider">Reported By</p>
-                <p class="text-sm font-bold text-[#1c1b1b]">{{ item.reporter?.nama || 'Anonymous' }}</p>
+                <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider">Reported By</p>
+                <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.reporter?.nama || 'Anonymous' }}</p>
               </div>
             </div>
             <div v-if="item.status === 'Returned' && item.claimer" class="text-right">
               <p class="text-[10px] font-bold text-[#387b41] uppercase tracking-wider ">Claimed By</p>
-              <p class="text-sm font-bold text-[#1c1b1b]">{{ item.claimer.nama }}</p>
+              <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.claimer.nama }}</p>
             </div>
             <div v-else-if="item.status === 'On Progress' && item.claimer" class="text-right">
               <p class="text-[10px] font-bold text-[#f57f17] uppercase tracking-wider">Being Claimed By</p>
-              <p class="text-sm font-bold text-[#1c1b1b]">{{ typeof item.claimer === 'object' ? item.claimer.nama : 'Another Student' }}</p>
+              <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ typeof item.claimer === 'object' ? item.claimer.nama : 'Another Student' }}</p>
             </div>
           </div>
 
           <!-- Chat System (Only for Founder and Claimer) -->
           <div v-if="(item.status === 'On Progress' || item.status === 'Returned') && (isFounder() || isClaimer())" 
-            class="bg-white rounded-[2rem] border border-[#e0e4df] shadow-sm overflow-hidden flex flex-col h-[400px]">
-            <div class="p-4 border-b border-[#e0e4df] bg-[#f8faf7] flex items-center gap-2">
+            class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm overflow-hidden flex flex-col h-[300px] md:h-[400px]">
+            <div class="p-4 border-b border-[#e0e4df] dark:border-[#374151] bg-[#f8faf7] dark:bg-[#121212] flex items-center gap-2">
               <span class="material-symbols-outlined text-[#387b41]">forum</span>
-              <h3 class="font-bold text-sm text-[#1c1b1b]">Chat with {{ isFounder() ? 'Claimer' : 'Founder' }}</h3>
+              <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">Chat with {{ isFounder() ? 'Claimer' : 'Founder' }}</h3>
             </div>
             
             <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
               <div v-for="msg in item.messages" :key="msg._id" 
                 :class="['flex flex-col max-w-[80%]', msg.sender === currentUser._id ? 'ml-auto items-end' : 'mr-auto items-start']">
                 <div :class="['px-4 py-2 rounded-2xl text-sm font-medium shadow-sm', 
-                  msg.sender === currentUser._id ? 'bg-[#387b41] text-white rounded-tr-none' : 'bg-[#f3f5f2] text-[#1c1b1b] rounded-tl-none']">
+                  msg.sender === currentUser._id ? 'bg-[#387b41] text-white rounded-tr-none' : 'bg-[#f3f5f2] dark:bg-[#2a2a2a] text-[#1c1b1b] dark:text-[#f3f4f6] rounded-tl-none']">
                   {{ msg.text }}
                 </div>
-                <span class="text-[8px] text-[#40493d] mt-1">{{ formatDate(msg.timestamp) }}</span>
+                <span class="text-[8px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ formatDate(msg.timestamp) }}</span>
               </div>
-              <div v-if="!item.messages?.length" class="h-full flex items-center justify-center text-[#40493d]/40 text-xs italic">
+              <div v-if="!item.messages?.length" class="h-full flex items-center justify-center text-[#40493d] dark:text-[#9ca3af]/40 text-xs italic">
                 No messages yet. Start the conversation!
               </div>
             </div>
 
-            <form @submit.prevent="sendMessage" class="p-4 border-t border-[#e0e4df] flex gap-2">
+            <form @submit.prevent="sendMessage" class="p-4 border-t border-[#e0e4df] dark:border-[#374151] flex gap-2">
               <input v-model="newMessage" type="text" placeholder="Type a message..." 
-                class="flex-1 bg-[#f3f5f2] border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[#387b41] outline-none" />
+                class="flex-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[#387b41] outline-none" />
               <button type="submit" :disabled="isSending" 
                 class="w-10 h-10 bg-[#387b41] text-white rounded-xl flex items-center justify-center hover:bg-[#2d6334] transition-all disabled:opacity-50">
                 <span class="material-symbols-outlined">{{ isSending ? 'sync' : 'send' }}</span>
@@ -302,9 +302,9 @@ const formatDate = (date: string) => {
 
           <!-- Resolution System (Only for Founder) -->
           <div v-if="isFounder() && (item.status === 'On Progress' || (item.status === 'Returned' && item.complaints?.length > 0))" 
-            class="bg-white rounded-[2rem] border border-[#e0e4df] shadow-sm p-8 space-y-6">
-            <h3 class="text-lg font-bold text-[#1c1b1b]">Finalize Ownership</h3>
-            <p class="text-xs text-[#40493d] mb-4">Choose the correct owner for this item. This will permanently mark the item as returned to this student.</p>
+            class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm p-4 md:p-8 space-y-6">
+            <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">Finalize Ownership</h3>
+            <p class="text-xs text-[#40493d] dark:text-[#9ca3af] mb-4">Choose the correct owner for this item. This will permanently mark the item as returned to this student.</p>
             
             <div class="space-y-4">
               <!-- Original Claimer -->
@@ -312,7 +312,7 @@ const formatDate = (date: string) => {
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-[#387b41] text-white flex items-center justify-center text-xs font-bold">C</div>
                   <div>
-                    <p class="text-xs font-bold text-[#1c1b1b]">{{ typeof item.claimer === 'object' ? item.claimer.nama : 'Original Claimer' }}</p>
+                    <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ typeof item.claimer === 'object' ? item.claimer.nama : 'Original Claimer' }}</p>
                     <p class="text-[10px] text-[#387b41]">Claimer</p>
                   </div>
                 </div>
@@ -328,7 +328,7 @@ const formatDate = (date: string) => {
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold">P</div>
                   <div>
-                    <p class="text-xs font-bold text-[#1c1b1b]">{{ complaint.user?.nama || 'Another Student' }}</p>
+                    <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ complaint.user?.nama || 'Another Student' }}</p>
                     <p class="text-[10px] text-red-600">Complained: "{{ complaint.reason }}"</p>
                   </div>
                 </div>
@@ -343,24 +343,24 @@ const formatDate = (date: string) => {
 
         <!-- Right: Map and Location Details -->
         <div class="space-y-8">
-          <div class="bg-white rounded-[2.5rem] overflow-hidden border border-[#e0e4df] shadow-sm flex flex-col h-full min-h-[500px]">
-            <div class="p-8 border-b border-[#e0e4df]">
-              <h2 class="text-xl font-bold text-[#1c1b1b] flex items-center gap-2">
+          <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm flex flex-col h-full min-h-[350px] md:min-h-[500px]">
+            <div class="p-6 md:p-8 border-b border-[#e0e4df] dark:border-[#374151]">
+              <h2 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2">
                 <span class="material-symbols-outlined text-[#387b41]">location_on</span>
                 Location Details
               </h2>
-              <p class="text-sm text-[#40493d] mt-1">{{ item.location }}</p>
+              <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mt-1">{{ item.location }}</p>
             </div>
             
-            <div v-if="item.coordinates?.latitude != null && item.coordinates?.longitude != null" ref="mapContainer" class="flex-1 w-full min-h-[300px]"></div>
-            <div v-else class="flex-1 bg-[#f3f5f2] flex flex-col items-center justify-center text-center p-10 space-y-4">
-              <span class="material-symbols-outlined text-5xl text-[#40493d]/20">map</span>
-              <p class="text-sm text-[#40493d] max-w-[200px]">No precise GPS coordinates available for this item.</p>
+            <div v-if="item.coordinates?.latitude != null && item.coordinates?.longitude != null" ref="mapContainer" class="flex-1 w-full min-h-[250px] md:min-h-[300px]"></div>
+            <div v-else class="flex-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] flex flex-col items-center justify-center text-center p-6 md:p-10 space-y-4">
+              <span class="material-symbols-outlined text-5xl text-[#40493d] dark:text-[#9ca3af]/20">map</span>
+              <p class="text-sm text-[#40493d] dark:text-[#9ca3af] max-w-[200px]">No precise GPS coordinates available for this item.</p>
             </div>
 
-            <div class="p-8 bg-[#fcf9f8] border-t border-[#e0e4df] space-y-4">
-              <h3 class="text-sm font-bold text-[#1c1b1b] mb-2">How to collect?</h3>
-              <p class="text-xs text-[#40493d] leading-relaxed">
+            <div class="p-6 md:p-8 bg-[#fcf9f8] dark:bg-[#1e1e1e] border-t border-[#e0e4df] dark:border-[#374151] space-y-4">
+              <h3 class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2">How to collect?</h3>
+              <p class="text-xs text-[#40493d] dark:text-[#9ca3af] leading-relaxed">
                 If you are the owner of this item, please visit the location mentioned above or contact the school concierge with the claim QR code found in your profile.
               </p>
               

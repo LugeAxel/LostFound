@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import LocationPicker from '../components/LocationPicker.vue';
 import TopNav from '../components/TopNav.vue';
 import SideNav from '../components/SideNav.vue';
+import Footer from '../components/Footer.vue';
 import { API_URL } from '@/config/api';
 
 const router = useRouter();
@@ -23,6 +24,52 @@ const isSubmitting = ref(false);
 const isGettingLocation = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const imagePreview = ref<string | null>(null);
+
+const isCameraOpen = ref(false);
+const videoElement = ref<HTMLVideoElement | null>(null);
+let stream: MediaStream | null = null;
+
+const startCamera = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    if (videoElement.value) {
+      videoElement.value.srcObject = stream;
+    }
+    isCameraOpen.value = true;
+    imagePreview.value = null;
+  } catch (error) {
+    console.error('Error accessing camera:', error);
+    alert('Unable to access camera. Please allow camera permissions.');
+  }
+};
+
+const stopCamera = () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+  isCameraOpen.value = false;
+};
+
+const takePhoto = () => {
+  if (!videoElement.value) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = videoElement.value.videoWidth;
+  canvas.height = videoElement.value.videoHeight;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.drawImage(videoElement.value, 0, 0, canvas.width, canvas.height);
+    imagePreview.value = canvas.toDataURL('image/jpeg', 0.8);
+    form.value.imageUrl = imagePreview.value;
+    stopCamera();
+  }
+};
+
+const retakePhoto = () => {
+  imagePreview.value = null;
+  form.value.imageUrl = '';
+  startCamera();
+};
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -89,25 +136,33 @@ const submitReport = async () => {
 
   isSubmitting.value = true;
   try {
-    
-    // Explicitly build the payload to avoid sending 'coordinates: null'
-    const payload: any = {
-      name: form.value.name,
-      location: form.value.location,
-      category: form.value.category,
-      type: form.value.type,
-      description: form.value.description,
-      imageUrl: form.value.imageUrl
-    };
+    const formData = new FormData();
+    formData.append('name', form.value.name);
+    formData.append('location', form.value.location);
+    formData.append('category', form.value.category);
+    formData.append('type', form.value.type);
+    formData.append('description', form.value.description);
 
     if (form.value.coordinates && typeof form.value.coordinates.latitude === 'number' && typeof form.value.coordinates.longitude === 'number') {
-      payload.coordinates = {
+      formData.append('coordinates', JSON.stringify({
         latitude: form.value.coordinates.latitude,
         longitude: form.value.coordinates.longitude
-      };
+      }));
     }
 
-    await axios.post(`${API_URL}/api/items`, payload, { headers: getAuthHeaders() });
+    if (form.value.imageUrl) {
+      try {
+        const fetchRes = await fetch(form.value.imageUrl);
+        const blob = await fetchRes.blob();
+        formData.append('image', blob, 'item_photo.jpg');
+      } catch (e) {
+        console.error('Failed to convert image to blob', e);
+      }
+    }
+
+    await axios.post(`${API_URL}/api/items`, formData, { 
+      headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' } 
+    });
     alert('Report submitted successfully! You can find the claim QR code in "My Reports".');
     router.push('/my-reports');
   } catch (error: any) {
@@ -126,72 +181,99 @@ const submitReport = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] flex font-sans">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex font-sans">
     <SideNav />
     <TopNav />
 
     <main class="md:ml-64 pt-24 px-8 pb-12 w-full max-w-[1200px] mx-auto">
-      <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
-        <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
+      <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
+        <span class="text-[#1c1b1b] dark:text-[#f3f4f6] material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
         Back to Dashboard
       </button>
 
-      <div class="bg-white rounded-[2.5rem] shadow-xl p-8 md:p-12 border border-[#e0e4df] relative overflow-hidden">
+      <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-xl p-4 md:p-8 md:p-12 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
         <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-5 rounded-full"></div>
         
-        <h2 class="text-3xl font-bold text-[#1c1b1b] mb-2 tracking-tight">Create Report</h2>
-        <p class="text-[#40493d] mb-10 text-sm font-medium">Help the community find their belongings.</p>
+        <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2 tracking-tight">Create Report</h2>
+        <p class="text-[#40493d] dark:text-[#9ca3af] mb-10 text-sm font-medium">Help the community find their belongings.</p>
 
         <form @submit.prevent="submitReport" class="space-y-8 relative z-10">
           <!-- Type Toggle -->
-          <div class="grid grid-cols-2 gap-4 p-1 bg-[#f3f5f2] rounded-2xl">
+          <div class="grid grid-cols-2 gap-4 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
             <button type="button" @click="form.type = 'found'; imagePreview = null; form.imageUrl = ''"
               :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', 
-              form.type === 'found' ? 'bg-white text-[#387b41] shadow-sm' : 'text-[#40493d] hover:text-[#387b41]']">
+              form.type === 'found' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41]']">
               <span class="material-symbols-outlined text-xl">add_a_photo</span> Found
             </button>
             <button type="button" @click="form.type = 'lost'; imagePreview = null; form.imageUrl = ''"
               :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', 
-              form.type === 'lost' ? 'bg-white text-[#ba1a1a] shadow-sm' : 'text-[#40493d] hover:text-[#ba1a1a]']">
+              form.type === 'lost' ? 'bg-white dark:bg-[#1e1e1e] text-[#ba1a1a] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#ba1a1a]']">
               <span class="material-symbols-outlined text-xl">search</span> Lost
             </button>
           </div>
 
           <!-- Image Input -->
           <div class="space-y-3">
-            <label class="text-xs font-bold text-[#1c1b1b] px-1 uppercase tracking-wider">
+            <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">
               {{ form.type === 'found' ? 'Photo of Item (Direct Camera) *' : 'Photo of Item (Optional)' }}
             </label>
-            <div @click="triggerFileInput" class="relative group cursor-pointer">
-              <div v-if="!imagePreview" class="w-full h-48 border-2 border-dashed border-[#e0e4df] rounded-3xl bg-[#f8faf7] flex flex-col items-center justify-center gap-2 group-hover:bg-[#f3f5f2] group-hover:border-[#387b41]/30 transition-all">
-                <span class="material-symbols-outlined text-4xl text-[#40493d]/40">{{ form.type === 'found' ? 'photo_camera' : 'upload_file' }}</span>
-                <p class="text-xs font-bold text-[#40493d]">{{ form.type === 'found' ? 'Click to Open Camera' : 'Click to Upload' }}</p>
-                <p v-if="form.type === 'found'" class="text-[10px] text-[#387b41] font-bold">REQUIRED FOR FOUND ITEMS</p>
-                <p v-else class="text-[10px] text-[#40493d]/50">Will use default icon if empty</p>
-              </div>
-              <div v-else class="w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df]">
-                <img :src="imagePreview" class="w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <p class="text-white font-bold text-sm">Change Photo</p>
+            <div class="relative w-full">
+              <!-- Found Item Native Camera Interface -->
+              <div v-if="form.type === 'found'" class="w-full">
+                <div v-if="!imagePreview && !isCameraOpen" @click="startCamera" class="w-full aspect-video md:h-64 border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-3xl bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center gap-2 hover:bg-[#f3f5f2] dark:bg-[#2a2a2a] hover:border-[#387b41]/30 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined text-4xl text-[#40493d] dark:text-[#9ca3af]/40">photo_camera</span>
+                  <p class="text-xs font-bold text-[#40493d] dark:text-[#9ca3af]">Click to Open Camera</p>
+                  <p class="text-[10px] text-[#387b41] font-bold">REQUIRED FOR FOUND ITEMS</p>
+                </div>
+                
+                <div v-show="isCameraOpen && !imagePreview" class="relative w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151] bg-black">
+                  <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover"></video>
+                  <button @click.prevent="takePhoto" type="button" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white dark:bg-[#1e1e1e] rounded-full border-4 border-[#387b41] shadow-lg flex items-center justify-center hover:scale-105 transition-transform">
+                    <div class="w-12 h-12 rounded-full border-2 border-[#e0e4df] dark:border-[#374151]"></div>
+                  </button>
+                  <button @click.prevent="stopCamera" type="button" class="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                  </button>
+                </div>
+
+                <div v-if="imagePreview" class="relative w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151]">
+                  <img :src="imagePreview" class="w-full h-full object-cover" />
+                  <button @click.prevent="retakePhoto" type="button" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2 hover:bg-white dark:bg-[#1e1e1e] transition-all">
+                    <span class="material-symbols-outlined text-lg">refresh</span> Retake Photo
+                  </button>
                 </div>
               </div>
-              <input v-if="form.type === 'found'" ref="fileInput" type="file" accept="image/*" capture="environment" class="hidden" @change="handleFileUpload" />
-              <input v-else ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileUpload" />
+
+              <!-- Lost Item File Upload Interface -->
+              <div v-else @click="triggerFileInput" class="w-full relative group cursor-pointer">
+                <div v-if="!imagePreview" class="w-full aspect-video md:h-64 border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-3xl bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center gap-2 group-hover:bg-[#f3f5f2] dark:bg-[#2a2a2a] group-hover:border-[#387b41]/30 transition-all">
+                  <span class="material-symbols-outlined text-4xl text-[#40493d] dark:text-[#9ca3af]/40">upload_file</span>
+                  <p class="text-xs font-bold text-[#40493d] dark:text-[#9ca3af]">Click to Upload</p>
+                  <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af]/50">Will use default icon if empty</p>
+                </div>
+                <div v-else class="w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151]">
+                  <img :src="imagePreview" class="w-full h-full object-cover" />
+                  <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <p class="text-white font-bold text-sm">Change Photo</p>
+                  </div>
+                </div>
+                <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileUpload" />
+              </div>
             </div>
           </div>
 
           <!-- Details -->
           <div class="space-y-6">
             <div class="space-y-2">
-              <label class="text-xs font-bold text-[#1c1b1b] px-1 uppercase tracking-wider">Item Name *</label>
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Item Name *</label>
               <input v-model="form.name" type="text" placeholder="e.g. Blue Hydroflask, MacBook Air" 
-                class="w-full bg-[#f3f5f2] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white outline-none transition-all text-sm font-medium" required />
+                class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
             </div>
             
             <!-- Live Location Section -->
             <div class="space-y-3">
               <div class="flex justify-between items-center px-1">
-                <label class="text-xs font-bold text-[#1c1b1b] uppercase tracking-wider">Location *</label>
+                <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] uppercase tracking-wider">Location *</label>
                 <button type="button" @click="getLiveLocation" :disabled="isGettingLocation"
                   class="flex items-center gap-1 text-[10px] font-bold text-[#387b41] hover:underline disabled:opacity-50">
                   <span class="material-symbols-outlined text-sm">{{ isGettingLocation ? 'sync' : 'my_location' }}</span>
@@ -200,8 +282,8 @@ const submitReport = async () => {
               </div>
               <div class="relative">
                 <input v-model="form.location" type="text" placeholder="e.g. Lab 3, Library" 
-                  class="w-full bg-[#f3f5f2] border-2 border-transparent rounded-xl px-5 py-4 pl-12 focus:border-[#387b41] focus:bg-white outline-none transition-all text-sm font-medium" required />
-                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d]">location_on</span>
+                  class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 pl-12 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af]">location_on</span>
               </div>
               <div v-if="form.coordinates" class="space-y-2">
                 <div class="flex justify-between items-center px-1">
@@ -217,23 +299,23 @@ const submitReport = async () => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-xs font-bold text-[#1c1b1b] px-1 uppercase tracking-wider">Category</label>
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Category</label>
               <div class="relative">
-                <select v-model="form.category" class="w-full bg-[#f3f5f2] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white outline-none transition-all text-sm font-medium appearance-none">
+                <select v-model="form.category" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium appearance-none">
                   <option>Electronics</option>
                   <option>Daily Use</option>
                   <option>Clothing</option>
                   <option>Books/Stationery</option>
                   <option>Others</option>
                 </select>
-                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d]">expand_more</span>
+                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
               </div>
             </div>
 
             <div class="space-y-2">
-              <label class="text-xs font-bold text-[#1c1b1b] px-1 uppercase tracking-wider">Description</label>
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Description</label>
               <textarea v-model="form.description" rows="3" placeholder="Color, brand, or other identifying features..." 
-                class="w-full bg-[#f3f5f2] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white outline-none transition-all text-sm font-medium resize-none"></textarea>
+                class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium resize-none"></textarea>
             </div>
           </div>
 
@@ -244,6 +326,7 @@ const submitReport = async () => {
           </button>
         </form>
       </div>
+      <Footer />
     </main>
     </div>
 </template>

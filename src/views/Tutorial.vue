@@ -28,14 +28,14 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] flex">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex">
     <SideNav />
     <TopNav />
 
     <main class="md:ml-64 pt-24 px-8 pb-12 min-h-screen w-full max-w-[1200px] mx-auto">
       <!-- Back Button -->
       <button @click="router.push('/dashboard')"
-        class="flex items-center gap-2 text-[#40493d] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
+        class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
         <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
         {{ t('tutorial.back') }}
       </button>
@@ -66,15 +66,15 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
             <span class="material-symbols-outlined text-[#22c55e]">verified</span>
           </div>
           <div>
-            <h2 class="text-2xl font-bold text-[#1c1b1b] tracking-tight">{{ t('tutorial.claim_title') }}</h2>
-            <p class="text-sm text-[#40493d]">{{ t('tutorial.claim_subtitle') }}</p>
+            <h2 class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">{{ t('tutorial.claim_title') }}</h2>
+            <p class="text-sm text-[#40493d] dark:text-[#9ca3af]">{{ t('tutorial.claim_subtitle') }}</p>
           </div>
         </div>
 
         <div class="mt-8 relative">
           <div class="space-y-6 z-10">
             <div v-for="(step, index) in claimSteps" :key="step.key"
-              class="relative flex gap-6 items-start group ">
+              class="relative flex gap-4 md:gap-6 items-start group ">
               <!-- Step number circle -->
               <div class="relative z-10 shrink-0">
                 <div
@@ -85,14 +85,14 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
               </div>
               <!-- Content Card -->
               <div
-                class="flex-1 bg-white rounded-2xl p-6 border border-[#e0e4df] shadow-sm group-hover:shadow-md group-hover:border-[#387b41]/20 transition-all z-10">
+                class="flex-1 bg-white dark:bg-[#1e1e1e] rounded-2xl p-4 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm group-hover:shadow-md group-hover:border-[#387b41]/20 transition-all z-10">
                 <div class="flex items-center gap-3 mb-2">
                   <span
                     class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white z-50"
                     :style="{ backgroundColor: step.color }">{{ index + 1 }}</span>
-                  <h3 class="text-lg font-bold text-[#1c1b1b]">{{ t(`tutorial.${step.key}_title`) }}</h3>
+                  <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t(`tutorial.${step.key}_title`) }}</h3>
                 </div>
-                <p class="text-sm text-[#40493d] leading-relaxed pl-10">{{ t(`tutorial.${step.key}_desc`) }}</p>
+                <p class="text-sm text-[#40493d] dark:text-[#9ca3af] leading-relaxed pl-10">{{ t(`tutorial.${step.key}_desc`) }}</p>
               </div>
             </div>
           </div>
@@ -106,8 +106,8 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
             <span class="material-symbols-outlined text-[#ef4444]">edit_document</span>
           </div>
           <div>
-            <h2 class="text-2xl font-bold text-[#1c1b1b] tracking-tight">{{ t('tutorial.report_title') }}</h2>
-            <p class="text-sm text-[#40493d]">{{ t('tutorial.report_subtitle') }}</p>
+            <h2 class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">{{ t('tutorial.report_title') }}</h2>
+            <p class="text-sm text-[#40493d] dark:text-[#9ca3af]">{{ t('tutorial.report_subtitle') }}</p>
           </div>
         </div>
 
@@ -116,7 +116,7 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
 
           <div class="space-y-6 z-10">
             <div v-for="(step, index) in reportSteps" :key="step.key"
-              class="relative flex gap-6 items-start group">
+              class="relative flex gap-4 md:gap-6 items-start group">
               <!-- Step number circle -->
               <div class="relative z-10 shrink-0">
                 <div
@@ -127,14 +127,14 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
               </div>
               <!-- Content Card -->
               <div
-                class="flex-1 bg-white rounded-2xl p-6 border border-[#e0e4df] shadow-sm group-hover:shadow-md group-hover:border-[#387b41]/20 transition-all z-10">
+                class="flex-1 bg-white dark:bg-[#1e1e1e] rounded-2xl p-4 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm group-hover:shadow-md group-hover:border-[#387b41]/20 transition-all z-10">
                 <div class="flex items-center gap-3 mb-2">
                   <span
                     class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white z-50"
                     :style="{ backgroundColor: step.color }">{{ index + 1 }}</span>
-                  <h3 class="text-lg font-bold text-[#1c1b1b]">{{ t(`tutorial.${step.key}_title`) }}</h3>
+                  <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t(`tutorial.${step.key}_title`) }}</h3>
                 </div>
-                <p class="text-sm text-[#40493d] leading-relaxed pl-10">{{ t(`tutorial.${step.key}_desc`) }}</p>
+                <p class="text-sm text-[#40493d] dark:text-[#9ca3af] leading-relaxed pl-10">{{ t(`tutorial.${step.key}_desc`) }}</p>
               </div>
             </div>
           </div>
@@ -144,7 +144,7 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
       <!-- ===== Tips Section ===== -->
       <section class="mb-12">
         <div
-          class="bg-gradient-to-br from-[#fffbeb] to-[#fef3c7] rounded-[2rem] p-8 border border-[#fde68a]/40 shadow-sm">
+          class="bg-gradient-to-br from-[#fffbeb] to-[#fef3c7] rounded-[2rem] p-4 md:p-8 border border-[#fde68a]/40 shadow-sm">
           <div class="flex items-center gap-3 mb-6">
             <div class="w-10 h-10 rounded-xl bg-[#f59e0b]/15 flex items-center justify-center">
               <span class="material-symbols-outlined text-[#f59e0b]">lightbulb</span>
@@ -164,12 +164,12 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
 
       <!-- CTA -->
       <section class="text-center mb-8">
-        <div class="bg-white rounded-[2rem] p-10 border border-[#e0e4df] shadow-sm">
-          <span class="material-symbols-outlined text-5xl text-[#387b41]/20 mb-4">rocket_launch</span>
-          <h3 class="text-xl font-bold text-[#1c1b1b] mb-2">
+        <div class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] p-10 border border-[#e0e4df] dark:border-[#374151] shadow-sm">
+          <span class="material-symbols-outlined text-5xl text-[#22c55e]/100 mb-4">rocket_launch</span>
+          <h3 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2">
             {{ t('tutorial.back') === 'Back to Dashboard' ? 'Ready to get started?' : 'Siap untuk mulai?' }}
           </h3>
-          <p class="text-sm text-[#40493d] mb-6">
+          <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mb-6">
             {{ t('tutorial.back') === 'Back to Dashboard' ? 'Head back to the Dashboard and start finding or reporting items.' : 'Kembali ke Beranda dan mulai temukan atau laporkan barang.' }}
           </p>
           <div class="flex justify-center gap-4 flex-wrap">
@@ -178,7 +178,7 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
               {{ t('nav.dashboard') }}
             </router-link>
             <router-link to="/report"
-              class="px-6 py-3 bg-white border-2 border-[#387b41] text-[#387b41] rounded-xl font-bold hover:bg-[#f0fdf4] transition-all">
+              class="px-6 py-3 bg-white dark:bg-[#1e1e1e] border-2 border-[#387b41] text-[#387b41] rounded-xl font-bold hover:bg-[#f0fdf4] transition-all">
               {{ t('nav.report') }}
             </router-link>
           </div>

@@ -49,3 +49,7 @@ QR TIDAK digunakan sebagai:
 Project menggunakan:
 ```txt
 Semi-Manual Verification
+
+
+IF ITS ABOUT DESIGNING UI/UX THEN/ UI/UX TASK
+READ uiux.md

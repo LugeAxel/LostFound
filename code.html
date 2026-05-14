@@ -1,366 +1,294 @@
 <!DOCTYPE html>
 
-<html class="light" lang="en"><head>
+<html class="dark" lang="id"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "tertiary-fixed": "#abf4ac",
-                        "secondary-fixed-dim": "#c2c9bb",
-                        "on-error": "#ffffff",
-                        "tertiary-fixed-dim": "#90d792",
-                        "on-primary-container": "#cbffc2",
-                        "surface-container-lowest": "#ffffff",
-                        "on-surface-variant": "#40493d",
-                        "primary-fixed-dim": "#88d982",
-                        "secondary-fixed": "#dee5d6",
-                        "surface-bright": "#fcf9f8",
-                        "on-surface": "#1c1b1b",
-                        "on-tertiary": "#ffffff",
-                        "on-tertiary-fixed-variant": "#07521d",
-                        "background": "#fcf9f8",
-                        "inverse-on-surface": "#f3f0ef",
-                        "on-primary-fixed-variant": "#005312",
-                        "primary-fixed": "#a3f69c",
-                        "error-container": "#ffdad6",
-                        "surface-container-low": "#f6f3f2",
-                        "tertiary-container": "#387b41",
-                        "on-primary-fixed": "#002204",
-                        "on-tertiary-container": "#c7ffc5",
-                        "surface-container": "#f0edec",
-                        "surface-container-high": "#ebe7e7",
-                        "on-error-container": "#93000a",
-                        "on-secondary-container": "#5f665b",
-                        "error": "#ba1a1a",
-                        "surface-tint": "#1b6d24",
-                        "surface-dim": "#dcd9d9",
-                        "secondary-container": "#dee5d6",
-                        "surface-container-highest": "#e5e2e1",
-                        "on-secondary-fixed": "#171d14",
-                        "on-tertiary-fixed": "#002107",
-                        "on-secondary-fixed-variant": "#42493e",
-                        "surface": "#fcf9f8",
-                        "surface-variant": "#e5e2e1",
-                        "outline": "#707a6c",
-                        "on-background": "#1c1b1b",
-                        "on-secondary": "#ffffff",
-                        "on-primary": "#ffffff",
-                        "primary": "#0d631b",
-                        "primary-container": "#2e7d32",
-                        "tertiary": "#1d622b",
-                        "inverse-surface": "#313030",
-                        "secondary": "#596055",
-                        "outline-variant": "#bfcaba",
-                        "inverse-primary": "#88d982"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                    "spacing": {
-                        "gutter": "24px",
-                        "unit": "8px",
-                        "container-max": "1200px",
-                        "margin-mobile": "16px",
-                        "margin-desktop": "32px"
-                    },
-                    "fontFamily": {
-                        "body-sm": ["Inter"],
-                        "headline-lg": ["Inter"],
-                        "label-md": ["Inter"],
-                        "label-sm": ["Inter"],
-                        "body-lg": ["Inter"],
-                        "headline-sm": ["Inter"],
-                        "body-md": ["Inter"],
-                        "headline-md": ["Inter"],
-                        "headline-xl": ["Inter"]
-                    },
-                    "fontSize": {
-                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
-                        "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
-                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
-                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
-                    }
-                },
-            },
-        }
-    </script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-container": "#6e6d6d",
+            "on-error": "#690005",
+            "outline": "#8a9485",
+            "surface-container-high": "#2a2a2a",
+            "secondary": "#94d5a8",
+            "secondary-fixed": "#aff2c2",
+            "inverse-primary": "#1b6d24",
+            "tertiary-fixed-dim": "#c8c6c5",
+            "on-secondary-fixed": "#00210f",
+            "primary": "#88d982",
+            "inverse-surface": "#e5e2e1",
+            "primary-fixed": "#a3f69c",
+            "on-tertiary-container": "#f3f0f0",
+            "on-error-container": "#ffdad6",
+            "on-surface": "#e5e2e1",
+            "tertiary-fixed": "#e5e2e1",
+            "error-container": "#93000a",
+            "inverse-on-surface": "#303030",
+            "on-secondary-fixed-variant": "#0d512f",
+            "on-primary-fixed": "#002204",
+            "surface-dim": "#131313",
+            "primary-container": "#2e7d32",
+            "error": "#ffb4ab",
+            "surface-container-highest": "#353535",
+            "on-background": "#e5e2e1",
+            "surface-container": "#202020",
+            "on-tertiary-fixed": "#1c1b1b",
+            "surface": "#131313",
+            "on-surface-variant": "#bfcaba",
+            "on-secondary": "#00391e",
+            "on-primary": "#003909",
+            "on-tertiary": "#313030",
+            "surface-bright": "#393939",
+            "secondary-fixed-dim": "#94d5a8",
+            "on-primary-fixed-variant": "#005312",
+            "surface-variant": "#353535",
+            "on-primary-container": "#cbffc2",
+            "surface-container-low": "#1b1b1c",
+            "tertiary": "#c8c6c5",
+            "surface-tint": "#88d982",
+            "secondary-container": "#115431",
+            "outline-variant": "#40493d",
+            "surface-container-lowest": "#0e0e0e",
+            "primary-fixed-dim": "#88d982",
+            "on-tertiary-fixed-variant": "#474646",
+            "on-secondary-container": "#86c79a",
+            "background": "#131313"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "xs": "0.5rem",
+            "lg": "2rem",
+            "gutter": "1.5rem",
+            "unit": "4px",
+            "md": "1.5rem",
+            "sm": "1rem",
+            "margin-mobile": "1rem",
+            "xl": "3rem",
+            "margin-desktop": "2.5rem"
+          },
+          "fontFamily": {
+            "label-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "headline-lg-mobile": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "headline-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg": ["Inter"]
+          },
+          "fontSize": {
+            "label-sm": ["12px", {"lineHeight": "1.2", "fontWeight": "600"}],
+            "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "headline-sm": ["20px", {"lineHeight": "1.4", "fontWeight": "500"}],
+            "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+            "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
 <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        body {
-            background-color: #fcf9f8;
-            color: #1c1b1b;
-        }
-    </style>
+    .glass-card {
+      background: rgba(32, 32, 32, 0.6);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .glass-nav {
+      background: rgba(19, 19, 19, 0.8);
+      backdrop-filter: blur(24px);
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .active-icon {
+      font-variation-settings: 'FILL' 1;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
 </head>
-<body class="font-body-md text-on-background">
-<!-- SideNavBar -->
-<aside class="h-screen w-64 fixed left-0 top-0 bg-surface dark:bg-inverse-surface shadow-sm z-50 overflow-y-auto">
-<div class="flex flex-col h-full py-8 px-4">
-<div class="mb-10 px-4">
-<div class="flex items-center gap-3 mb-2">
-<img alt="School Logo" class="w-10 h-10 object-contain" data-alt="A sophisticated minimalist logo for a prestigious educational institution, featuring clean geometric lines and a subtle green accent. The logo is displayed against a bright, professional light-mode background, evoking a sense of trust, organization, and academic excellence within a modern campus environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3j_geGFneUaJWCnvalltAoUe-Cbml0XCKw7__emoefOPkIa0l8ClMBc_9ZtcdaMozTN2VIX1-gxfidI3CyioWftuvPbyYM8qCKmbmL8AHTdMIdunD5ZDb1-2EEf_IM6LPSyLQlkiHPnriJWrGzbrDCejzSu3Gh8LIdXT36ZNRp5BaJwtul3xVIGNpO4G3fMEjWY_P0xTimIlNSacMd6zg46bC9lRRmaVa6rI4OjWYJppwmYO1uFu8jhSxrepH0LY7q4DdSXxC5Nn_"/>
-<div>
-<h1 class="text-headline-sm font-headline-sm font-bold text-primary dark:text-inverse-primary">Lost &amp; Found</h1>
-<p class="text-label-sm font-label-sm text-on-surface-variant">Digital Concierge</p>
+<body class="bg-background text-on-background font-body-md selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="bg-surface/60 backdrop-blur-xl dark:bg-surface/60 docked full-width top-0 sticky z-40 border-b border-white/5 shadow-sm">
+<div class="flex justify-between items-center px-gutter w-full max-w-7xl mx-auto h-16">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 transition-transform" data-icon="menu">menu</span>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary tracking-tight">EduLost</h1>
 </div>
-</div>
-</div>
-<nav class="flex-1 space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-inverse-primary border-r-4 border-primary dark:border-inverse-primary font-bold bg-primary-container/10 active:scale-95 transition-all duration-200" href="#">
-<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
-<span class="font-body-md text-body-md">Dashboard</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-secondary-fixed-dim hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors duration-200 active:scale-95" href="#">
-<span class="material-symbols-outlined" data-icon="report">report</span>
-<span class="font-body-md text-body-md">Lapor</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-secondary-fixed-dim hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors duration-200 active:scale-95" href="#">
-<span class="material-symbols-outlined" data-icon="search">search</span>
-<span class="font-body-md text-body-md">Pencarian</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-secondary-fixed-dim hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors duration-200 active:scale-95" href="#">
-<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
-<span class="font-body-md text-body-md">Statistik</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-secondary-fixed-dim hover:text-primary hover:bg-surface-container-high dark:hover:bg-surface-variant transition-colors duration-200 active:scale-95" href="#">
-<span class="material-symbols-outlined" data-icon="qr_code_scanner">qr_code_scanner</span>
-<span class="font-body-md text-body-md">QR Claim</span>
-</a>
-</nav>
-<div class="mt-auto px-4">
-<button class="w-full py-3 px-4 bg-primary text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary-container transition-colors shadow-sm">
-<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
-                    Report Found Item
-                </button>
-</div>
-</div>
-</aside>
-<!-- TopNavBar -->
-<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-md shadow-sm z-40">
-<div class="flex justify-between items-center px-8 w-full h-full">
-<div class="flex items-center gap-4 w-96">
-<div class="relative w-full focus-within:ring-2 focus-within:ring-primary rounded-lg transition-all">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
-<input class="w-full bg-surface-container-low border-none rounded-lg pl-10 pr-4 py-2 text-body-sm focus:ring-0" placeholder="Search for items..." type="text"/>
-</div>
-</div>
-<div class="flex items-center gap-6">
-<div class="flex items-center gap-4">
-<button class="text-on-surface-variant hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-</button>
-<button class="text-on-surface-variant hover:text-primary transition-colors">
-<span class="material-symbols-outlined" data-icon="help">help</span>
-</button>
-</div>
-<div class="h-8 w-[1px] bg-outline-variant mx-2"></div>
-<div class="flex items-center gap-3">
-<div class="text-right hidden lg:block">
-<p class="text-label-md font-bold text-on-surface">Alex Rivera</p>
-<p class="text-label-sm text-on-surface-variant">Student (220104)</p>
-</div>
-<img alt="User Profile" class="w-10 h-10 rounded-full border-2 border-primary/20" data-alt="A clean and professional profile portrait of a modern university student, set against a bright, airy campus background. The student has a friendly and dependable expression, perfectly matching the modern corporate and minimalist aesthetic of a digital school concierge service. The lighting is soft and high-key, emphasizing clarity and trust." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQj_BhAhgIfXaVpLJJ-SQYmgNbZ-cFn9kI9WUNPiyyhUFQzepnaghw1o8BupudhIQV66lLhxn0SSfIEM76vHO3_fo4rYji05YILUuEM4Frq1nf5RIegZkn6KZRT4X2g7W1cgLZmHnLsmqbf42zioveGyWBrPWwuN1EwX8-xNwlJSq8__u-8dHjPXnmk_CHhA8uPN_y8C1jH4DxP0ajL7ZBVN8yCGbsG1zNHnmRox6eY_5R-85oESTzn4QVfL1mxgmlLo7Mezc1dqSW"/>
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full border-2 border-primary/20 p-0.5 overflow-hidden cursor-pointer active:scale-95 transition-transform">
+<img alt="Student Profile Avatar" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeGZ0AtxcPD2utzsG6CtBZzqrslF9ueVUIkIBlDb0FiAfn2dRJ1Kso-CdWmM0Uc81GH_NEzeqTqmlvwkC8GcclocBSmDEU3vMdrJ8B5rxcHxbmY7Q278-vUYHHOkDzNluhC7eVsOPtsrs0gpv9gvTlSo3ash5Io_7HPnPakBSPVF0HLtjiYPtsmada0iDW9ELo7XOA9HiH6iKqUnsKdVyXxv1Gy3X624J95iXF6cAAnlfbsfh2bmn-DkYdVfR3CU3j8aX1IdB8kEQv"/>
 </div>
 </div>
 </div>
 </header>
-<!-- Main Content -->
-<main class="ml-64 pt-24 px-8 pb-12 min-h-screen max-w-[1200px] mx-auto">
-<!-- Welcome Banner -->
-<section class="mb-10">
-<div class="relative overflow-hidden rounded-3xl bg-primary-container p-10 text-white flex justify-between items-center shadow-md">
-<div class="relative z-10 max-w-xl">
-<h2 class="font-headline-xl text-headline-xl mb-4 text-on-primary-container">Welcome back, Alex!</h2>
-<p class="font-body-lg text-body-lg text-on-primary-container/90 mb-8">Lost something on campus? Our digital concierge is here to help you find your belongings and reconnect with what matters.</p>
-<div class="flex gap-4">
-<button class="px-6 py-3 bg-white text-primary rounded-xl font-bold hover:bg-surface-container-high transition-all shadow-sm">View My Items</button>
-<button class="px-6 py-3 bg-primary/20 border border-white/30 text-white backdrop-blur-sm rounded-xl font-bold hover:bg-primary/30 transition-all">How it works</button>
+<main class="pb-24 max-w-7xl mx-auto">
+<!-- Hero Section -->
+<section class="px-gutter pt-lg pb-md">
+<div class="relative overflow-hidden rounded-xl p-lg bg-gradient-to-br from-primary-container/40 to-surface-container border border-white/5 shadow-xl">
+<div class="relative z-10 space-y-2">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-primary max-w-md leading-tight">Selamat Datang di Lost &amp; Found School Center</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-sm">Temukan dan laporkan barang dengan mudah, cepat, dan aman.</p>
 </div>
+<div class="absolute -right-10 -bottom-10 w-48 h-48 bg-primary/10 rounded-full blur-3xl"></div>
 </div>
-<!-- Decorative Graphic -->
-<div class="absolute right-0 top-0 h-full w-1/3 opacity-20 flex items-center justify-center">
-<span class="material-symbols-outlined text-[240px]" data-icon="inventory_2" style="font-variation-settings: 'FILL' 1;">inventory_2</span>
+</section>
+<!-- Search Bar -->
+<section class="px-gutter mb-lg">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full bg-surface-container border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded-xl py-4 pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant transition-all outline-none" placeholder="Cari nama barang, kategori, lokasi..." type="text"/>
+</div>
+</section>
+<!-- Quick Access Bento Grid -->
+<section class="px-gutter mb-xl">
+<h3 class="font-headline-sm text-headline-sm mb-md px-1">Layanan Utama</h3>
+<div class="grid grid-cols-2 gap-sm">
+<!-- Card 1 -->
+<div class="glass-card p-md rounded-xl flex flex-col items-start gap-sm cursor-pointer hover:bg-white/5 transition-all active:scale-95 group">
+<div class="w-10 h-10 rounded-lg bg-error-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-error" data-icon="report_problem">report_problem</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Lapor Barang Hilang</span>
+</div>
+<!-- Card 2 -->
+<div class="glass-card p-md rounded-xl flex flex-col items-start gap-sm cursor-pointer hover:bg-white/5 transition-all active:scale-95 group">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="add_circle">add_circle</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Lapor Barang Ditemukan</span>
+</div>
+<!-- Card 3 -->
+<div class="glass-card p-md rounded-xl flex flex-col items-start gap-sm cursor-pointer hover:bg-white/5 transition-all active:scale-95 group">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="history">history</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Riwayat Barang</span>
+</div>
+<!-- Card 4 -->
+<div class="glass-card p-md rounded-xl flex flex-col items-start gap-sm cursor-pointer hover:bg-white/5 transition-all active:scale-95 group">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="chat">chat</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Chat Admin</span>
 </div>
 </div>
 </section>
-<!-- Stats Bento Grid -->
-<section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-<div class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
-<div class="w-14 h-14 rounded-full bg-error-container/20 flex items-center justify-center text-error">
-<span class="material-symbols-outlined text-3xl" data-icon="search">search</span>
+<!-- Recent Items Section -->
+<section class="px-gutter mb-xl">
+<div class="flex justify-between items-center mb-md">
+<h3 class="font-headline-sm text-headline-sm">Barang Terbaru</h3>
+<button class="text-primary font-label-md text-label-md hover:underline">Lihat Semua</button>
 </div>
-<div>
-<p class="text-label-md text-on-surface-variant">Currently Lost</p>
-<h3 class="text-headline-md font-bold text-on-surface">128 Items</h3>
-</div>
-</div>
-<div class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
-<div class="w-14 h-14 rounded-full bg-primary-fixed/20 flex items-center justify-center text-primary">
-<span class="material-symbols-outlined text-3xl" data-icon="check_circle">check_circle</span>
-</div>
-<div>
-<p class="text-label-md text-on-surface-variant">Found Today</p>
-<h3 class="text-headline-md font-bold text-on-surface">14 Items</h3>
-</div>
-</div>
-<div class="bg-white p-6 rounded-2xl border border-outline-variant shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
-<div class="w-14 h-14 rounded-full bg-tertiary-container/10 flex items-center justify-center text-tertiary">
-<span class="material-symbols-outlined text-3xl" data-icon="handshake">handshake</span>
-</div>
-<div>
-<p class="text-label-md text-on-surface-variant">Returned All-time</p>
-<h3 class="text-headline-md font-bold text-on-surface">2,410 Items</h3>
-</div>
-</div>
-</section>
-<!-- Action Cards Grid -->
-<section class="mb-12">
-<h3 class="text-headline-sm font-bold mb-6 flex items-center gap-2">
-<span class="material-symbols-outlined text-primary" data-icon="bolt">bolt</span>
-                Quick Actions
-            </h3>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-<div class="bg-white rounded-3xl p-8 border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer border-l-8 border-l-primary">
-<span class="material-symbols-outlined text-5xl text-primary mb-6 group-hover:scale-110 transition-transform" data-icon="find_in_page">find_in_page</span>
-<h4 class="text-headline-sm font-bold mb-2">Report Lost</h4>
-<p class="text-body-md text-on-surface-variant mb-6">Misplaced something? Let the community know so we can help find it.</p>
-<div class="flex items-center text-primary font-bold gap-2 group-hover:gap-3 transition-all">
-                        Start Report <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
-</div>
-</div>
-<div class="bg-white rounded-3xl p-8 border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer border-l-8 border-l-tertiary">
-<span class="material-symbols-outlined text-5xl text-tertiary mb-6 group-hover:scale-110 transition-transform" data-icon="add_a_photo">add_a_photo</span>
-<h4 class="text-headline-sm font-bold mb-2">Report Found</h4>
-<p class="text-body-md text-on-surface-variant mb-6">Found someone's property? Secure it and log the details here.</p>
-<div class="flex items-center text-tertiary font-bold gap-2 group-hover:gap-3 transition-all">
-                        Log Item <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
-</div>
-</div>
-<div class="bg-white rounded-3xl p-8 border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer border-l-8 border-l-secondary-container">
-<span class="material-symbols-outlined text-5xl text-on-secondary-container mb-6 group-hover:scale-110 transition-transform" data-icon="qr_code_2">qr_code_2</span>
-<h4 class="text-headline-sm font-bold mb-2">Scan to Claim</h4>
-<p class="text-body-md text-on-surface-variant mb-6">At the concierge desk? Scan the QR code on the item to verify ownership.</p>
-<div class="flex items-center text-on-secondary-container font-bold gap-2 group-hover:gap-3 transition-all">
-                        Open Scanner <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
-</div>
-</div>
-</div>
-</section>
-<!-- Recent Items -->
-<section>
-<div class="flex justify-between items-end mb-8">
-<div>
-<h3 class="text-headline-sm font-bold">Recent Items</h3>
-<p class="text-body-md text-on-surface-variant">Newly reported items in the school ecosystem</p>
-</div>
-<a class="text-primary font-bold flex items-center gap-1 hover:underline" href="#">
-                    View Gallery <span class="material-symbols-outlined" data-icon="open_in_new">open_in_new</span>
-</a>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
 <!-- Item Card 1 -->
-<div class="bg-white rounded-2xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-md transition-all group">
-<div class="relative h-48 w-full overflow-hidden">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A clean, high-resolution photo of a silver laptop resting on a modern wooden library table in a sunlit university campus setting. The lighting is bright and natural, highlighting the metallic texture of the laptop and the warm tones of the wood. The overall aesthetic is minimalist and organized, fitting a professional educational dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDjMdDv0ZdFPdKNbbzPbOHK9rmTaNE7UQrSiJQivVSTlOW2e_jAs49IUNo04Gje1GMYzTtCfAn3BsTjIe6V-oM1R9zKjlcaN-gSYPS0bvbhE0I6upIJR8stVVZ6eTwk_ztR_Oy1CX0gtREE8FCS9rzyZV8BTjzwaKhdN3rLT-hwZi9_3SM8qqB9YSpyrDKjuFiWD8w8hts_YlElk6tc3tColm0FT0dpm3xAOJvo87ajUdDHCuEpWlVky9Fnha9Wk4AJ1huac1PEHV0"/>
-<div class="absolute top-3 left-3 flex gap-2">
-<span class="bg-primary/90 text-white text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded shadow-sm">Just Found</span>
-<span class="bg-white/90 backdrop-blur-sm text-on-surface text-[10px] font-bold px-2 py-1 rounded shadow-sm">Electronics</span>
+<div class="glass-card p-sm rounded-xl flex gap-md overflow-hidden">
+<div class="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-surface-container-highest">
+<img alt="Laptop Bag" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxQ_KZtRPSB1cqkjbmEfT4jKkRNlK_ehORKHHTqlIqTdNCxIP28LEDc9U0zr5xopE4j2sKmEMfR21tKw9LFzWN0zFmAiMUD6O6kAwpNLAR1PezKvCdUIlY-ju2uwouTPKXTMfq22wIXatYHDL3JbBye_ggM3FSWFcR1EleNG7WAwF8RxgHgkN1QYiV9E53E7r1UJ6dRkpzMRROCgeOvtU1RTMel_4v0USZgccomku4zy-dSzTEK0bW6wPZewZ0iIEzoZLnOY44ZAj8"/>
 </div>
+<div class="flex flex-col justify-between py-1 flex-1">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-label-md text-label-md text-on-surface">Tas Laptop Hitam</h4>
+<span class="px-2 py-0.5 bg-error-container/20 text-error text-[10px] font-bold rounded-full uppercase tracking-wider">Hilang</span>
 </div>
-<div class="p-5">
-<h4 class="font-headline-sm text-body-md font-bold mb-1 truncate">Silver MacBook Air M2</h4>
-<p class="text-label-sm text-on-surface-variant flex items-center gap-1 mb-4">
-<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
-                            Main Library, 2nd Floor
-                        </p>
-<div class="flex items-center justify-between">
-<span class="text-label-sm px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-bold">Available</span>
-<span class="text-[10px] text-on-surface-variant">2 hours ago</span>
+<p class="text-on-surface-variant text-[12px] flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span> Perpustakaan Lt. 2
+              </p>
+</div>
+<div class="flex justify-between items-end">
+<span class="text-on-surface-variant text-[10px]">12 Okt 2023, 14:20</span>
+<span class="material-symbols-outlined text-primary text-[20px] cursor-pointer" data-icon="chevron_right">chevron_right</span>
 </div>
 </div>
 </div>
 <!-- Item Card 2 -->
-<div class="bg-white rounded-2xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-md transition-all group">
-<div class="relative h-48 w-full overflow-hidden">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A focused studio-style photograph of a distinctive navy blue reusable water bottle with a silver cap, placed on a white marble surface with soft, diffused lighting. The background is a clean, neutral grey, maintaining the professional and minimalist aesthetic. The image is crisp and clear, designed to help an owner easily identify their lost property." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDriEfb3BoB9a3gKT8k879PF2xMVlQ613d1DEzGZgB6iyetv3YIPtjfOHuLqcOkp39Pau7NhkYnre7YJkkLAa6Y6SDjQjQGACGZR6dgj-8wp_Z5C3bMrEEJUhU9uWKAgOt9tBVw8LFpCpGb3NgCfWHGw9BEcmtUzkc3o2PpqBbuVBBJ08DEi5M_ldGmFtBapFxQimjDxizk9BURpslymdyWYv-_QlRmqPtOtFGCZ6oY1zLH7kKxYoGC3s6FqYk8UBtobtiFiRWRVt2a"/>
-<div class="absolute top-3 left-3 flex gap-2">
-<span class="bg-white/90 backdrop-blur-sm text-on-surface text-[10px] font-bold px-2 py-1 rounded shadow-sm">Daily Use</span>
+<div class="glass-card p-sm rounded-xl flex gap-md overflow-hidden">
+<div class="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-surface-container-highest">
+<img alt="Headphones" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBr4u59KtqmcncmiK8qUDN9KFBbiO5WJ0zBz0KjyjDiOwAA9KGChis1c4EK-vdgFBynK6oRSSbV5S0nYhcwZQ2Z02hB91Wu3CQLtUURniijAS0KuxzsBrZTwkvbtKfIK_vZlekAFe14gzp4Lh2nOW6IfzxJ14mfXRMp7ZWRU0IgoKeUeHLxV5vYY5ETO46gMo9yiz0bcxwAuknRsCjyS6wXHQaJOY8CjVxP95RrcTZuKDrzsmQAvJfHdTHSbuTVcjkL6ZxjMQ7Wdklp"/>
 </div>
+<div class="flex flex-col justify-between py-1 flex-1">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-label-md text-label-md text-on-surface">Headphone Wireless</h4>
+<span class="px-2 py-0.5 bg-primary-container/20 text-primary text-[10px] font-bold rounded-full uppercase tracking-wider">Ditemukan</span>
 </div>
-<div class="p-5">
-<h4 class="font-headline-sm text-body-md font-bold mb-1 truncate">Navy Blue Hydroflask</h4>
-<p class="text-label-sm text-on-surface-variant flex items-center gap-1 mb-4">
-<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
-                            Sports Complex Hallway
-                        </p>
-<div class="flex items-center justify-between">
-<span class="text-label-sm px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-bold">Available</span>
-<span class="text-[10px] text-on-surface-variant">5 hours ago</span>
+<p class="text-on-surface-variant text-[12px] flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span> Kantin Area A
+              </p>
+</div>
+<div class="flex justify-between items-end">
+<span class="text-on-surface-variant text-[10px]">13 Okt 2023, 09:15</span>
+<span class="material-symbols-outlined text-primary text-[20px] cursor-pointer" data-icon="chevron_right">chevron_right</span>
 </div>
 </div>
 </div>
 <!-- Item Card 3 -->
-<div class="bg-white rounded-2xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-md transition-all group">
-<div class="relative h-48 w-full overflow-hidden opacity-80">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A close-up photograph of a set of keys with a distinctive leather keychain, lying on a dark textured surface. The lighting is moody but clear, highlighting the metallic shine of the keys and the grain of the leather. The background is softly blurred to keep focus on the item, matching the dependable and organized aesthetic of the lost and found system." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6rKm44dbLOtck_l40c0ad6pVAvfEhTM5j06Or39_SNuH2VdASwjRkd5r-cWqS4omlt95jlnI7FnFqpjXDGfG3zR6RS1ZAnPrkiu-ZmI04H4PRJtkg2eiYMJDs2lXx0F36uFd995fdUpsOWOQ9YO6Y1hT9sInFkxPk-QB1grUt-qxxBxtJD04Mo-A5BCFpSEBHGDUgz4wI7jm25Xe2x-0TYPo2ft0kXxdJBRPYUYVarqksi12-C1OEVv9cEX-groqLzMLSbhpJoo_Y"/>
-<div class="absolute inset-0 bg-on-surface/5 flex items-center justify-center">
-<div class="bg-white/90 px-4 py-2 rounded-lg shadow-md flex items-center gap-2">
-<span class="material-symbols-outlined text-primary" data-icon="verified">verified</span>
-<span class="font-bold text-label-md">Pending Verification</span>
+<div class="glass-card p-sm rounded-xl flex gap-md overflow-hidden">
+<div class="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-surface-container-highest opacity-70">
+<img alt="Watch" class="w-full h-full object-cover grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZ4lunimbkBszoaUddrvQ4zsP7ocmQHHqV1rQD73VAwE3c5OOjIGQ1jEnGDX21uQBw7jt5QnW2BLBidkhcUuG4w2KhMha5Bg5Pl2F8aFqP8Ear01r87z-zvBctz6Jk6hTzWvD2hD84KzbBaJj4iIebbxqxNQ2CYolWDgQWKJPsFFhMBo9s4l4S2W0tG92h6KVOv_qD74mnATK6BMt9S48Bu7x45Hj9RJfvFrL6jE6-4vKcKQlpG97ymd7_1BsqeCov_wLSnlFflQiy"/>
 </div>
+<div class="flex flex-col justify-between py-1 flex-1">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-label-md text-label-md text-on-surface">Jam Tangan Digital</h4>
+<span class="px-2 py-0.5 bg-secondary-container/20 text-secondary text-[10px] font-bold rounded-full uppercase tracking-wider">Sudah Diambil</span>
 </div>
+<p class="text-on-surface-variant text-[12px] flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span> Lapangan Basket
+              </p>
 </div>
-<div class="p-5">
-<h4 class="font-headline-sm text-body-md font-bold mb-1 truncate">Dorm Keys (Room 304)</h4>
-<p class="text-label-sm text-on-surface-variant flex items-center gap-1 mb-4">
-<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
-                            Cafeteria Area B
-                        </p>
-<div class="flex items-center justify-between">
-<span class="text-label-sm px-3 py-1 bg-secondary-fixed text-on-secondary-fixed-variant rounded-full font-bold">In Process</span>
-<span class="text-[10px] text-on-surface-variant">1 day ago</span>
-</div>
-</div>
-</div>
-<!-- Item Card 4 -->
-<div class="bg-white rounded-2xl overflow-hidden border border-outline-variant shadow-sm hover:shadow-md transition-all group">
-<div class="relative h-48 w-full overflow-hidden">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A high-quality image of a vibrant red knitted scarf, neatly folded on a clean light grey background. The texture of the wool is clearly visible, and the lighting is soft and even to accurately represent the color. The visual style is modern, professional, and minimalist, designed to facilitate trust and easy recognition in a school dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9p8OITGGZBir-ZH9rygjfHNdKA1yvVasaoFH1XuKx1x-82rAotjCYhWe1s8-GKGz2G8b2jOrfekBSK5-ze1Wl4XfkfQw2J6Dgz7bdJd33adjIO_CO8pCQX6yZVmoG-VqUWJJPylHb-ipZQ3hH8DU0jD0JG-xD7-wQgHqc6KsRsa4UJWunyxbBag7Q_1d04UgAdzDxi7ZXTdCN8QBi6umI3In-w6NqhPC7zZOTlSBtphPGHa6BLdyAz1jq3O6_yD86XvcNcs_H1Nrj"/>
-<div class="absolute top-3 left-3 flex gap-2">
-<span class="bg-white/90 backdrop-blur-sm text-on-surface text-[10px] font-bold px-2 py-1 rounded shadow-sm">Clothing</span>
-</div>
-</div>
-<div class="p-5">
-<h4 class="font-headline-sm text-body-md font-bold mb-1 truncate">Red Knitted Scarf</h4>
-<p class="text-label-sm text-on-surface-variant flex items-center gap-1 mb-4">
-<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
-                            Science Lab 3
-                        </p>
-<div class="flex items-center justify-between">
-<span class="text-label-sm px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-bold">Available</span>
-<span class="text-[10px] text-on-surface-variant">2 days ago</span>
+<div class="flex justify-between items-end">
+<span class="text-on-surface-variant text-[10px]">11 Okt 2023, 16:45</span>
+<span class="material-symbols-outlined text-on-surface-variant/40 text-[20px]" data-icon="check_circle">check_circle</span>
 </div>
 </div>
 </div>
 </div>
 </section>
 </main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl glass-nav border-t border-white/5 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] md:hidden">
+<div class="flex justify-around items-center h-16 px-4">
+<a class="flex flex-col items-center text-primary font-bold active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined active-icon" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm mt-0.5">Beranda</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant opacity-60 hover:text-primary/80 active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-label-sm text-label-sm mt-0.5">Cari</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant opacity-60 hover:text-primary/80 active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="add_box">add_box</span>
+<span class="font-label-sm text-label-sm mt-0.5">Lapor</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant opacity-60 hover:text-primary/80 active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm mt-0.5">Profil</span>
+</a>
+</div>
+</nav>
+<!-- Desktop FAB -->
+<button class="fixed bottom-8 right-8 hidden md:flex items-center gap-2 bg-primary text-on-primary px-6 py-4 rounded-full shadow-lg hover:scale-105 active:scale-95 transition-all z-40">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span class="font-label-md text-label-md">Lapor Barang</span>
+</button>
 </body></html>

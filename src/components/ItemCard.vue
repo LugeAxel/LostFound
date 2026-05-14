@@ -49,14 +49,14 @@ const translateStatus = (status: string) => {
 </script>
 
 <template>
-  <RouterLink :to="`/item/${item._id}`" :class="['bg-white rounded-2xl overflow-hidden border transition-all group relative block', 
-    item.status === 'Returned' ? 'border-[#abf4ac] opacity-80' : 'border-[#e0e4df] shadow-sm hover:shadow-md']">
+  <RouterLink :to="`/item/${item._id}`" :class="['bg-white dark:bg-[#1e1e1e] rounded-2xl overflow-hidden border transition-all group relative block', 
+    item.status === 'Returned' ? 'border-[#abf4ac] opacity-80' : 'border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md']">
     
     <div v-if="item.status === 'Returned'" class="absolute top-2 right-2 z-10">
       <span class="bg-[#387b41] text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-sm">{{ t('card.returned') }}</span>
     </div>
 
-    <div class="relative h-48 w-full overflow-hidden bg-[#f3f5f2]">
+    <div class="relative h-48 w-full overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a]">
       <img v-if="item.imageUrl" :src="item.imageUrl" 
         :class="['w-full h-full object-cover group-hover:scale-105 transition-transform duration-500',
           item.status === 'Returned' ? 'grayscale' : '']" 
@@ -68,7 +68,7 @@ const translateStatus = (status: string) => {
         <p class="text-[10px] font-bold uppercase tracking-widest">{{ item.type === 'lost' ? t('card.lost_item') : t('card.found_item') }}</p>
       </div>
 
-      <div class="absolute top-3 left-3 flex gap-2">
+      <div class="absolute bottom-3 left-3 flex gap-2">
         <span :class="['text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded shadow-sm', 
           item.type === 'lost' ? 'bg-[#ba1a1a] text-white' : 'bg-[#1b6d24] text-white']">
           {{ item.type === 'lost' ? t('card.lost') : t('card.found') }}
@@ -79,9 +79,9 @@ const translateStatus = (status: string) => {
       </div>
     </div>
     <div class="p-5">
-      <h4 class="font-bold mb-1 truncate text-[#1c1b1b]">{{ item.name }}</h4>
+      <h4 class="font-bold mb-1 truncate text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.name }}</h4>
       <div class="flex flex-col gap-1 mb-4">
-        <p class="text-xs text-[#40493d] flex items-center gap-1">
+        <p class="text-xs text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1">
           <span class="material-symbols-outlined text-base">location_on</span>
           {{ item.location }}
         </p>
@@ -94,10 +94,10 @@ const translateStatus = (status: string) => {
           item.status === 'Available' ? 'bg-[#abf4ac] text-[#07521d]' : 'bg-[#dee5d6] text-[#42493e]']">
           {{ translateStatus(item.status) }}
         </span>
-        <span v-if="item.status === 'Returned' && item.claimer" class="text-[9px] text-[#387b41] font-bold ml-3">
+        <span v-if="item.status === 'Returned' && item.claimer" class="text-[9px] text-[#387b41] font-bold ml-3 truncate max-w-full" :title="item.claimer.nama">
           {{ t('card.claimed_by') }} {{ item.claimer.nama }}
         </span>
-        <span v-else class="text-[10px] text-[#40493d] font-medium">{{ formatDate(item.reportedAt) }}</span>
+        <span v-else class="text-[10px] text-[#40493d] dark:text-[#9ca3af] font-medium">{{ formatDate(item.reportedAt) }}</span>
       </div>
     </div>
   </RouterLink>
