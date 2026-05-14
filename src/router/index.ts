@@ -7,8 +7,11 @@ import MyReports from '../views/MyReports.vue'
 import Claim from '../views/Claim.vue'
 import ItemDetail from '../views/ItemDetail.vue'
 import Scanner from '../views/Scanner.vue'
+import Search from '../views/Search.vue'
 import Tutorial from '../views/Tutorial.vue'
 import DeveloperView from '../views/DeveloperView.vue'
+import Rating from '../views/Rating.vue'
+import Statistics from '../views/Statistics.vue'
 
 const router = createRouter({
   history: createWebHistory((import.meta as any).env.BASE_URL),
@@ -56,6 +59,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/search',
+      name: 'search',
+      component: Search,
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/tutorial',
       name: 'tutorial',
       component: Tutorial,
@@ -65,6 +74,18 @@ const router = createRouter({
       path: '/developer',
       name: 'developer',
       component: DeveloperView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/rating',
+      name: 'rating',
+      component: Rating,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/statistics',
+      name: 'statistics',
+      component: Statistics,
       meta: { requiresAuth: true }
     },
     // Catch-all: redirect unknown routes to login
@@ -87,21 +108,24 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.requiresAuth && isAuthenticated) {
-    // Verify token is still valid by calling /api/auth/me
-    try {
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+    // Only verify token on full page reload (no previous route)
+    // Skip verification on SPA navigation for performance
+    if (!from.name) {
+      try {
+        const response = await fetch(`${API_URL}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
 
-      if (!response.ok) {
-        // Token expired or invalid → clear and redirect
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        return next({ name: 'login' })
+        if (!response.ok) {
+          // Token expired or invalid → clear and redirect
+          localStorage.removeItem('token')
+          localStorage.removeItem('user')
+          return next({ name: 'login' })
+        }
+      } catch {
+        // Network error — allow navigation but token may fail later
+        // Don't block the user if backend is temporarily down
       }
-    } catch {
-      // Network error — allow navigation but token may fail later
-      // Don't block the user if backend is temporarily down
     }
   }
 

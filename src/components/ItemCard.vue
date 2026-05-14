@@ -56,7 +56,7 @@ const translateStatus = (status: string) => {
       <span class="bg-[#387b41] text-white text-[8px] font-bold px-2 py-0.5 rounded-full shadow-sm">{{ t('card.returned') }}</span>
     </div>
 
-    <div class="relative h-48 w-full overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a]">
+    <div class="relative aspect-[4/3] sm:aspect-[4/3] w-full overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a]">
       <img v-if="item.imageUrl" :src="item.imageUrl" 
         :class="['w-full h-full object-cover group-hover:scale-105 transition-transform duration-500',
           item.status === 'Returned' ? 'grayscale' : '']" 
@@ -73,20 +73,20 @@ const translateStatus = (status: string) => {
           item.type === 'lost' ? 'bg-[#ba1a1a] text-white' : 'bg-[#1b6d24] text-white']">
           {{ item.type === 'lost' ? t('card.lost') : t('card.found') }}
         </span>
-        <span class="bg-white/90 backdrop-blur-sm text-[#1c1b1b] text-[10px] font-bold px-2 py-1 rounded shadow-sm">
+        <span class="bg-white/90 backdrop-blur-sm text-[#1c1b1b] text-[10px] font-bold px-2 py-1 rounded shadow-sm truncate max-w-[70px]">
           {{ translateCategory(item.category) }}
         </span>
       </div>
     </div>
-    <div class="p-5">
-      <h4 class="font-bold mb-1 truncate text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.name }}</h4>
-      <div class="flex flex-col gap-1 mb-4">
-        <p class="text-xs text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1">
-          <span class="material-symbols-outlined text-base">location_on</span>
+    <div class="p-3 sm:p-4 md:p-5">
+      <h4 class="font-bold mb-1 truncate text-sm sm:text-base text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.name }}</h4>
+      <div class="flex flex-col gap-0.5 sm:gap-1 mb-2 sm:mb-4">
+        <p class="text-[11px] sm:text-xs text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1 pl-1 truncate">
+          <span class="material-symbols-outlined text-sm sm:text-base shrink-0">location_on</span>
           {{ item.location }}
         </p>
-        <p v-if="item.coordinates" class="text-[9px] text-[#387b41] font-bold flex items-center gap-1 ml-1">
-          <span class="material-symbols-outlined text-xs">gps_fixed</span> {{ t('card.gps_verified') }}
+        <p v-if="item.coordinates" class="text-[8px] sm:text-[9px] text-[#387b41] font-bold flex items-center gap-1 ml-1">
+          <span class="material-symbols-outlined text-[10px] sm:text-xs">gps_fixed</span> {{ t('card.gps_verified') }}
         </p>
       </div>
       <div class="flex items-center justify-between">

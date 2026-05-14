@@ -3,9 +3,11 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { API_URL } from '@/config/api';
+import { useToast } from '../composables/useToast';
 
 const route = useRoute();
 const router = useRouter();
+const toast = useToast();
 const itemId = route.params.id as string;
 
 const item = ref<any>(null);
@@ -26,14 +28,12 @@ const getAuthHeaders = () => {
 
 const fetchItemDetails = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/items`, { headers: getAuthHeaders() });
-    item.value = res.data.find((i: any) => i._id === itemId);
-    if (!item.value) {
-      alert('Item not found or already returned');
-      router.push('/dashboard');
-    }
-  } catch (error) {
+    const res = await axios.get(`${API_URL}/api/items/${itemId}`, { headers: getAuthHeaders() });
+    item.value = res.data;
+  } catch (error: any) {
     console.error('Error fetching item:', error);
+    toast.show(error.response?.data?.message || 'Item not found', 'error');
+    router.push('/dashboard');
   } finally {
     isLoading.value = false;
   }
@@ -54,7 +54,7 @@ const handleFileUpload = (event: Event) => {
 
 const submitClaim = async () => {
   if (!form.value.claimPhoto) {
-    alert('Please provide a verification photo (You with the item)');
+    toast.show('Please provide a verification photo (You with the item)', 'error');
     return;
   }
 
@@ -65,11 +65,11 @@ const submitClaim = async () => {
       claimPhoto: form.value.claimPhoto
     }, { headers: getAuthHeaders() });
     
-    alert('Claim submitted successfully! The item is now marked as Returned.');
+    toast.show('Claim submitted successfully! The item is now marked as Returned.', 'success');
     router.push('/dashboard');
   } catch (error: any) {
     console.error('Error submitting claim:', error);
-    alert(error.response?.data?.message || 'Failed to submit claim');
+    toast.show(error.response?.data?.message || 'Failed to submit claim', 'error');
   } finally {
     isSubmitting.value = false;
   }
@@ -79,7 +79,7 @@ onMounted(fetchItemDetails);
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] p-4 md:p-6 md:p-12 font-sans">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] p-3 sm:p-4 md:p-8 font-sans">
     <div class="max-w-2xl mx-auto">
       <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
         <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
@@ -90,7 +90,7 @@ onMounted(fetchItemDetails);
         <div class="w-10 h-10 border-4 border-[#387b41]/20 border-t-[#387b41] rounded-full animate-spin"></div>
       </div>
 
-      <div v-else-if="item" class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-xl p-4 md:p-8 md:p-12 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
+      <div v-else-if="item" class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] sm:rounded-[2.5rem] shadow-xl p-4 sm:p-8 md:p-10 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
         <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-5 rounded-full"></div>
         
         <header class="mb-10">
@@ -134,7 +134,7 @@ onMounted(fetchItemDetails);
           <div class="space-y-2">
             <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Additional Notes (Optional)</label>
             <textarea v-model="form.claimNotes" rows="3" placeholder="Any details about the handover..." 
-              class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium resize-none"></textarea>
+              class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium resize-none"></textarea>
           </div>
 
           <button type="submit" :disabled="isSubmitting"

@@ -10,6 +10,7 @@ const { body, param, validationResult } = require('express-validator');
 require('dotenv').config({ path: '../.env' });
 const cron = require('node-cron');
 const cloudinary = require('./config/cloudinary');
+const { cache, invalidateCache } = require('./middleware/cache');
 
 // 1. DNS FIX (For Atlas connection issues on restricted networks)
 dns.setServers(['1.1.1.1', '8.8.8.8']);
@@ -40,10 +41,13 @@ app.use(helmet({
 }));
 
 // CORS — restrict to frontend origin in production
+const isProduction = process.env.NODE_ENV === 'production';
 const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:4173',
+    ...(isProduction ? [] : [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:4173',
+    ]),
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -88,6 +92,15 @@ const authLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: 'Too many login attempts, please try again later.' }
+});
+
+// Strict rate limiter for heavy endpoints
+const heavyEndpointLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests to this endpoint.' }
 });
 
 // ─────────────────────────────────────────────
@@ -142,7 +155,7 @@ const User = mongoose.model('User', UserSchema);
 
 const NotificationSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, enum: ['message', 'claim', 'resolved', 'complaint'], required: true },
+    type: { type: String, enum: ['message', 'claim', 'resolved', 'complaint', 'system'], required: true },
     item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
     text: { type: String, required: true },
     isRead: { type: Boolean, default: false },
@@ -191,6 +204,9 @@ ItemSchema.index({ status: 1 });
 ItemSchema.index({ type: 1 });
 ItemSchema.index({ reportedAt: -1 });
 ItemSchema.index({ reporter: 1 });
+ItemSchema.index({ type: 1, status: 1 });
+ItemSchema.index({ type: 1, reportedAt: -1 });
+NotificationSchema.index({ user: 1, createdAt: -1 });
 
 // Sync indexes once connection is open
 mongoose.connection.once('open', async () => {
@@ -275,10 +291,10 @@ const authMiddleware = async (req, res, next) => {
 
 // Health check (public)
 app.get('/api/health', (req, res) => {
+    const dbConnected = mongoose.connection.readyState === 1;
     res.json({
         status: 'online',
-        db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-        readyState: mongoose.connection.readyState
+        db: dbConnected ? 'connected' : 'disconnected'
     });
 });
 
@@ -301,7 +317,8 @@ app.post('/api/login',
     ],
     handleValidationErrors,
     async (req, res) => {
-        console.log('📥 QR Login request for NISN:', req.body.nisn);
+        const maskedNisn = req.body.nisn ? req.body.nisn.slice(0, -4) + '****' : '(none)';
+        console.log('📥 QR Login request for NISN:', maskedNisn);
 
         try {
             if (mongoose.connection.readyState !== 1) {
@@ -387,7 +404,7 @@ app.post('/api/auth/register-email',
 
             const token = generateToken(user._id);
 
-            console.log('✨ New email user registered:', email);
+            console.log('✨ New email user registered:', email?.split('@')[0] + '@***');
 
             res.status(201).json({
                 success: true,
@@ -452,7 +469,7 @@ app.post('/api/auth/login-email',
             }
 
             const token = generateToken(user._id);
-            console.log('👋 Email login:', email);
+            console.log('👋 Email login:', email?.split('@')[0] + '@***');
 
             res.json({
                 success: true,
@@ -493,13 +510,22 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
 // ── ITEM ROUTES (all protected) ──────────────
 
 // Get all items (public feed for dashboard)
-app.get('/api/items', authMiddleware, async (req, res) => {
+// Only cache page 1 (most commonly requested for dashboard)
+app.get('/api/items', authMiddleware, (req, res, next) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    if (page === 1 && limit <= 20) {
+        return cache(30)(req, res, next);
+    }
+    next();
+}, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
         const skip = (page - 1) * limit;
 
         const items = await Item.find()
+            .select('-messages -complaints -claimPhoto -claimNotes -coordinates')
             .populate('reporter', 'nama nisn jurusan')
             .populate('claimer', 'nama')
             .sort({ reportedAt: -1 })
@@ -521,20 +547,13 @@ app.get('/api/items', authMiddleware, async (req, res) => {
     }
 });
 
-// Notifications (Mock for now to prevent 404s)
-app.get('/api/notifications', authMiddleware, (req, res) => {
-    res.json([]);
-});
-app.post('/api/notifications/:id/read', authMiddleware, (req, res) => {
-    res.json({ success: true });
-});
-
 // Get MY reports only (scoped to authenticated user)
 app.get('/api/items/mine', authMiddleware, async (req, res) => {
     try {
         const items = await Item.find({ reporter: req.user._id })
             .populate('reporter', 'nama nisn jurusan')
             .populate('claimer', 'nama')
+            .populate('complaints.user', 'nama nisn jurusan')
             .sort({ reportedAt: -1 });
         res.json(items);
     } catch (error) {
@@ -544,14 +563,18 @@ app.get('/api/items/mine', authMiddleware, async (req, res) => {
 });
 
 // Get single item
-app.get('/api/items/:id', authMiddleware, async (req, res) => {
+app.get('/api/items/:id',
+    authMiddleware,
+    [
+        param('id').isMongoId().withMessage('Invalid item ID'),
+    ],
+    handleValidationErrors,
+    async (req, res) => {
     try {
-        if (!mongoose.isValidObjectId(req.params.id)) {
-            return res.status(400).json({ success: false, message: 'Invalid item ID format' });
-        }
         const item = await Item.findById(req.params.id)
             .populate('reporter', 'nama nisn jurusan')
-            .populate('claimer', 'nama');
+            .populate('claimer', 'nama')
+            .populate('complaints.user', 'nama nisn jurusan');
         if (!item) {
             return res.status(404).json({ success: false, message: 'Item not found' });
         }
@@ -624,6 +647,8 @@ app.post('/api/items',
 
             const newItem = new Item(newItemData);
             await newItem.save();
+            invalidateCache('/api/items');
+            invalidateCache('/api/stats');
             res.status(201).json({ success: true, item: newItem });
         } catch (error) {
             console.error('Error creating item:', error.message);
@@ -632,23 +657,51 @@ app.post('/api/items',
     }
 );
 
+// ── RATING MODEL ──────────────────────────────
+const RatingSchema = new mongoose.Schema({
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    comment: { type: String, trim: true, maxlength: 500 },
+    createdAt: { type: Date, default: Date.now }
+});
+const Rating = mongoose.model('Rating', RatingSchema);
+
 // Claim an item
 // Start claim (Change status to On Progress)
 app.post('/api/items/:id/start-claim',
     authMiddleware,
+    [
+        param('id').isMongoId().withMessage('Invalid item ID'),
+    ],
+    handleValidationErrors,
     async (req, res) => {
         try {
-            const item = await Item.findById(req.params.id);
-            if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
-            if (item.status !== 'Available') return res.status(400).json({ success: false, message: 'Item is already being claimed or returned' });
-
-            if (item.reporter.toString() === req.user._id.toString()) {
-                return res.status(400).json({ success: false, message: 'You cannot claim your own item' });
+            // Atomic claim to prevent race conditions (TOCTOU)
+            const item = await Item.findOneAndUpdate(
+                {
+                    _id: req.params.id,
+                    status: 'Available',
+                    reporter: { $ne: req.user._id }
+                },
+                {
+                    $set: {
+                        status: 'On Progress',
+                        claimer: req.user._id
+                    }
+                },
+                { new: true }
+            );
+            if (!item) {
+                const existing = await Item.findById(req.params.id).select('reporter status');
+                if (!existing) return res.status(404).json({ success: false, message: 'Item not found' });
+                if (existing.reporter.toString() === req.user._id.toString()) {
+                    return res.status(400).json({ success: false, message: 'You cannot claim your own item' });
+                }
+                return res.status(400).json({ success: false, message: 'Item is already being claimed or returned' });
             }
 
-            item.status = 'On Progress';
-            item.claimer = req.user._id;
-            await item.save();
+            invalidateCache('/api/items');
+            invalidateCache('/api/stats');
 
             // Notify reporter
             const notif = new Notification({
@@ -662,7 +715,8 @@ app.post('/api/items/:id/start-claim',
 
             res.json({ success: true, item });
         } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+            console.error('Start claim error:', error.message);
+            res.status(500).json({ success: false, message: 'Failed to start claim.' });
         }
     }
 );
@@ -670,6 +724,10 @@ app.post('/api/items/:id/start-claim',
 // Chat in item
 app.post('/api/items/:id/chat',
     authMiddleware,
+    [
+        param('id').isMongoId().withMessage('Invalid item ID'),
+    ],
+    handleValidationErrors,
     async (req, res) => {
         try {
             const text = req.body.text?.trim();
@@ -719,7 +777,8 @@ app.post('/api/items/:id/chat',
 
             res.json({ success: true, messages: item.messages });
         } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+            console.error('Chat error:', error.message);
+            res.status(500).json({ success: false, message: 'Failed to send message.' });
         }
     }
 );
@@ -727,17 +786,31 @@ app.post('/api/items/:id/chat',
 // File a complaint
 app.post('/api/items/:id/complaint',
     authMiddleware,
+    [
+        param('id').isMongoId().withMessage('Invalid item ID'),
+        body('reason').trim().notEmpty().withMessage('Reason is required')
+            .isLength({ min: 3, max: 500 }).withMessage('Reason must be 3-500 characters'),
+    ],
+    handleValidationErrors,
     async (req, res) => {
         try {
             const { reason } = req.body;
             const item = await Item.findById(req.params.id);
             if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
 
+            // Check if user already filed a complaint
+            const alreadyComplained = item.complaints.some(c => c.user.toString() === req.user._id.toString());
+            if (alreadyComplained) {
+                return res.status(400).json({ success: false, message: 'You have already filed a complaint for this item' });
+            }
+
             item.complaints.push({
                 user: req.user._id,
                 reason
             });
             await item.save();
+
+            invalidateCache('/api/items');
 
             // Notify founder about the complaint
             await Notification.create({
@@ -749,31 +822,11 @@ app.post('/api/items/:id/complaint',
 
             res.json({ success: true, message: 'Complaint filed' });
         } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+            console.error('Complaint error:', error.message);
+            res.status(500).json({ success: false, message: 'Failed to file complaint.' });
         }
     }
 );
-
-// Background task: Cleanup returned items after 2 days if no complaints
-setInterval(async () => {
-    try {
-        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-        const itemsToDelete = await Item.find({
-            status: 'Returned',
-            claimedAt: { $lte: twoDaysAgo },
-            complaints: { $size: 0 }
-        });
-
-        if (itemsToDelete.length > 0) {
-            console.log(`🧹 Cleaning up ${itemsToDelete.length} old returned items...`);
-            await Item.deleteMany({
-                _id: { $in: itemsToDelete.map(i => i._id) }
-            });
-        }
-    } catch (error) {
-        console.error('Error during cleanup task:', error.message);
-    }
-}, 6 * 60 * 60 * 1000); // Check every 6 hours
 
 app.post('/api/items/:id/claim',
     authMiddleware,
@@ -810,6 +863,9 @@ app.post('/api/items/:id/claim',
 
             await item.save();
 
+            invalidateCache('/api/items');
+            invalidateCache('/api/stats');
+
             return res.json({
                 success: true,
                 message: 'Item claimed successfully! Proof submitted.'
@@ -825,7 +881,7 @@ app.post('/api/items/:id/claim',
 );
 
 // Stats (protected)
-app.get('/api/stats', authMiddleware, async (req, res) => {
+app.get('/api/stats', authMiddleware, cache(60), async (req, res) => {
     try {
         const currentlyLost = await Item.countDocuments({
             type: 'lost',
@@ -844,24 +900,187 @@ app.get('/api/stats', authMiddleware, async (req, res) => {
     }
 });
 
-// ── CATCH-ALL ────────────────────────────────
-// Handle 404 for unknown API routes
-app.use('/api/{*path}', (req, res) => {
-    res.status(404).json({ success: false, message: 'API route not found.' });
+// ── RATING ROUTES ──────────────────────────
+
+app.post('/api/ratings',
+    authMiddleware,
+    [
+        body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
+        body('comment').optional().trim().isLength({ max: 500 }).withMessage('Comment too long'),
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const { rating, comment } = req.body;
+
+            const existing = await Rating.findOne({ user: req.user._id });
+            if (existing) {
+                existing.rating = rating;
+                if (comment !== undefined) existing.comment = comment;
+                await existing.save();
+                invalidateCache('/api/ratings');
+                return res.json({ success: true, message: 'Rating updated', rating: existing });
+            }
+            const newRating = new Rating({ user: req.user._id, rating, comment });
+            await newRating.save();
+            res.json({ success: true, message: 'Rating submitted', rating: newRating });
+        } catch (error) {
+            console.error('Submit rating error:', error.message);
+            res.status(500).json({ success: false, message: 'Failed to submit rating.' });
+        }
+    }
+);
+
+app.get('/api/ratings', authMiddleware, cache(300), async (req, res) => {
+    try {
+        const ratings = await Rating.find().populate('user', 'nama').sort({ createdAt: -1 });
+        const totalRatings = ratings.length;
+        const averageRating = totalRatings > 0
+            ? (ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings)
+            : 0;
+
+        res.json({
+            averageRating: Math.round(averageRating * 10) / 10,
+            totalRatings,
+            ratings: ratings.map(r => ({
+                rating: r.rating,
+                comment: r.comment,
+                createdAt: r.createdAt
+            }))
+        });
+    } catch (error) {
+        console.error('Fetch ratings error:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch ratings.' });
+    }
 });
 
-// Global error handler
-app.use((err, req, res, next) => {
-    console.error('💥 Unhandled Error Stack:', err.stack || err);
-    res.status(500).json({ success: false, message: 'Internal server error.' });
+app.get('/api/ratings/mine', authMiddleware, async (req, res) => {
+    try {
+        const rating = await Rating.findOne({ user: req.user._id });
+        res.json({ rating: rating || null });
+    } catch (error) {
+        console.error('Fetch my rating error:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch your rating.' });
+    }
 });
 
-// ─────────────────────────────────────────────
-// 8. START SERVER
-// ─────────────────────────────────────────────
-// Resolve claim (Founder decides)
+// ── DETAILED STATS ROUTE ─────────────────────
+
+app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300), async (req, res) => {
+    try {
+        // Items per day (last 14 days)
+        const fourteenDaysAgo = new Date();
+        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+        const itemsSince = await Item.find({ reportedAt: { $gte: fourteenDaysAgo } }).sort({ reportedAt: 1 });
+
+        const itemsPerDay = [];
+        for (let i = 0; i < 14; i++) {
+            const day = new Date(fourteenDaysAgo);
+            day.setDate(day.getDate() + i);
+            const dayStart = new Date(day.setHours(0, 0, 0, 0));
+            const dayEnd = new Date(day.setHours(23, 59, 59, 999));
+
+            const dayItems = itemsSince.filter(item =>
+                item.reportedAt >= dayStart && item.reportedAt <= dayEnd
+            );
+
+            itemsPerDay.push({
+                date: dayStart.toISOString().split('T')[0],
+                lost: dayItems.filter(i => i.type === 'lost').length,
+                found: dayItems.filter(i => i.type === 'found').length,
+                returned: dayItems.filter(i => i.status === 'Returned').length
+            });
+        }
+
+        // Top locations
+        const allItems = await Item.find({});
+        const locationCount = {};
+        allItems.forEach(item => {
+            const loc = item.location?.trim();
+            if (loc) {
+                locationCount[loc] = (locationCount[loc] || 0) + 1;
+            }
+        });
+        const topLocations = Object.entries(locationCount)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([location, count]) => ({ location, count }));
+
+        // Top categories
+        const categoryCount = {};
+        allItems.forEach(item => {
+            const cat = item.category?.trim() || 'Others';
+            categoryCount[cat] = (categoryCount[cat] || 0) + 1;
+        });
+        const topCategories = Object.entries(categoryCount)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([category, count]) => ({ category, count }));
+
+        // Fun facts
+        const totalItems = allItems.length;
+        const totalReturned = allItems.filter(i => i.status === 'Returned').length;
+        const returnRate = totalItems > 0 ? Math.round((totalReturned / totalItems) * 100) : 0;
+
+        // Most common location
+        const mostCommonLocation = topLocations[0]?.location || 'N/A';
+
+        // Most lost category
+        const mostLostCategory = topCategories[0]?.category || 'N/A';
+
+        // Busiest day of week
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const dayCount = [0, 0, 0, 0, 0, 0, 0];
+        allItems.forEach(item => {
+            const day = new Date(item.reportedAt).getDay();
+            dayCount[day]++;
+        });
+        const busiestDayIndex = dayCount.indexOf(Math.max(...dayCount));
+        const busiestDay = dayNames[busiestDayIndex];
+
+        // Average time to return
+        const returnedItems = allItems.filter(i => i.status === 'Returned' && i.claimedAt);
+        let totalHours = 0;
+        let avgHours = 0;
+        if (returnedItems.length > 0) {
+            totalHours = returnedItems.reduce((sum, item) => {
+                const reported = new Date(item.reportedAt).getTime();
+                const claimed = new Date(item.claimedAt).getTime();
+                return sum + (claimed - reported);
+            }, 0);
+            avgHours = totalHours / returnedItems.length / (1000 * 60 * 60);
+        }
+        const avgDaysToReturn = avgHours > 0 ? Math.round((avgHours / 24) * 10) / 10 : 0;
+
+        res.json({
+            itemsPerDay,
+            topLocations,
+            topCategories,
+            funFacts: {
+                mostCommonLocation,
+                mostLostCategory,
+                busiestDay,
+                totalItems,
+                totalReturned,
+                returnRate,
+                avgDaysToReturn
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching detailed stats:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch detailed stats.' });
+    }
+});
+
+// Reassign claimer (Founder decides who claims — no permanent Returned marking)
 app.post('/api/items/:id/resolve',
     authMiddleware,
+    [
+        param('id').isMongoId().withMessage('Invalid item ID'),
+        body('userId').isMongoId().withMessage('Invalid user ID'),
+    ],
+    handleValidationErrors,
     async (req, res) => {
         try {
             const { userId } = req.body;
@@ -869,16 +1088,19 @@ app.post('/api/items/:id/resolve',
             if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
 
             if (item.reporter.toString() !== req.user._id.toString()) {
-                return res.status(403).json({ success: false, message: 'Only founder can resolve' });
+                return res.status(403).json({ success: false, message: 'Only founder can assign claimer' });
             }
 
-            item.status = 'Returned';
+            // Only reassign claimer — keep status as-is (final claim requires QR + photo)
             item.claimer = userId;
-            item.resolvedAt = new Date();
             await item.save();
-            res.json({ success: true, message: 'Item successfully resolved' });
+
+            invalidateCache('/api/items');
+
+            res.json({ success: true, message: 'Claimer reassigned successfully' });
         } catch (error) {
-            res.status(500).json({ success: false, message: error.message });
+            console.error('Resolve error:', error.message);
+            res.status(500).json({ success: false, message: 'Failed to reassign claimer.' });
         }
     }
 );
@@ -889,7 +1111,8 @@ app.get('/api/notifications', authMiddleware, async (req, res) => {
         const notifs = await Notification.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(20);
         res.json(notifs);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Fetch notifications error:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch notifications.' });
     }
 });
 
@@ -898,8 +1121,21 @@ app.post('/api/notifications/:id/read', authMiddleware, async (req, res) => {
         await Notification.findOneAndUpdate({ _id: req.params.id, user: req.user._id }, { isRead: true });
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.error('Mark as read error:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to mark notification as read.' });
     }
+});
+
+// ── CATCH-ALL ────────────────────────────────
+// Handle 404 for unknown API routes
+app.use('/api', (req, res) => {
+    res.status(404).json({ success: false, message: 'API route not found.' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('💥 Unhandled Error Stack:', err.stack || err);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
 });
 
 // ─────────────────────────────────────────────
@@ -920,25 +1156,81 @@ const io = new Server(server, {
         },
         methods: ['GET', 'POST'],
         credentials: true
-    },
-    allowEIO3: true
+    }
 });
 
+// Socket.IO authentication middleware
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) {
+        return next(new Error('Authentication required'));
+    }
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        socket.userId = decoded.id;
+        next();
+    } catch (err) {
+        next(new Error('Invalid or expired token'));
+    }
+});
+
+// Per-socket rate limiting for messages
+const socketRateLimit = new Map();
+const SOCKET_RATE_LIMIT_WINDOW = 10000; // 10 seconds
+const SOCKET_RATE_LIMIT_MAX = 20;
+
+const checkSocketRateLimit = (socketId) => {
+    const now = Date.now();
+    const entry = socketRateLimit.get(socketId);
+    if (!entry || now - entry.windowStart > SOCKET_RATE_LIMIT_WINDOW) {
+        socketRateLimit.set(socketId, { windowStart: now, count: 1 });
+        return true;
+    }
+    if (entry.count >= SOCKET_RATE_LIMIT_MAX) {
+        return false;
+    }
+    entry.count++;
+    return true;
+};
+
 io.on('connection', (socket) => {
-    console.log('🔌 New socket connection:', socket.id);
+    console.log('🔌 New socket connection:', socket.userId);
 
     socket.on('join-user', (userId) => {
-        socket.join(`user-${userId}`);
-        console.log(`👤 User joined room: user-${userId}`);
+        if (socket.userId === userId) {
+            socket.join(`user-${userId}`);
+        }
     });
 
-    socket.on('join-item', (itemId) => {
-        socket.join(`item-${itemId}`);
-        console.log(`📦 Joined item room: item-${itemId}`);
+    socket.on('join-item', async (itemId) => {
+        try {
+            if (!mongoose.isValidObjectId(itemId)) return;
+            const item = await Item.findById(itemId).select('reporter claimer').lean();
+            if (!item) return;
+            const uid = socket.userId;
+            const isReporter = item.reporter.toString() === uid;
+            const isClaimer = item.claimer && item.claimer.toString() === uid;
+            if (isReporter || isClaimer) {
+                socket.join(`item-${itemId}`);
+            }
+        } catch (e) {
+            // silently ignore invalid join
+        }
+    });
+
+    socket.on('send-message', async (data) => {
+        if (!checkSocketRateLimit(socket.id)) {
+            socket.emit('rate-limited', { message: 'Too many messages. Please slow down.' });
+            return;
+        }
+        // Forward to the chat HTTP handler can pick it up, or handle directly
+        // For now, this is a safety valve — main chat goes through HTTP POST
+        socket.broadcast.to(`item-${data.itemId}`).emit('new-message', data);
     });
 
     socket.on('disconnect', () => {
-        console.log('🔌 Socket disconnected:', socket.id);
+        socketRateLimit.delete(socket.id);
+        console.log('🔌 Socket disconnected:', socket.userId);
     });
 });
 
@@ -984,12 +1276,18 @@ cron.schedule('0 * * * *', async () => {
                 }
 
                 // Notify reporter
-                await Notification.create({
+                const notif = await Notification.create({
                     user: item.reporter,
-                    type: 'message',
+                    type: 'system',
                     item: null,
                     text: `Pemberitahuan Sistem: Laporan "${item.name}" Anda telah dihapus otomatis sesuai kebijakan retensi (10 hari belum kembali / 2 hari setelah dikembalikan).`
                 });
+
+                try {
+                    io.to(`user-${item.reporter}`).emit('notification', notif);
+                } catch (emitErr) {
+                    console.error('Failed to emit notification:', emitErr.message);
+                }
 
                 await Item.findByIdAndDelete(item._id);
             }

@@ -14,14 +14,24 @@ onMounted(() => {
   );
   
   scanner.value.render((decodedText) => {
-    // Check if the decoded text is a URL or just an ID
-    // If it's a URL, extract the ID or just navigate
-    if (decodedText.includes('/claim/')) {
-      const url = new URL(decodedText);
-      router.push(url.pathname);
-    } else {
-      // Assume it's an ID
-      router.push(`/claim/${decodedText}`);
+    try {
+      if (decodedText.includes('/claim/')) {
+        let path = decodedText;
+        try {
+          path = new URL(decodedText).pathname;
+        } catch {
+          // not a full URL, use as-is
+        }
+        router.push(path);
+      } else if (/^[a-fA-F0-9]{24}$/.test(decodedText.trim())) {
+        router.push(`/claim/${decodedText.trim()}`);
+      } else {
+        // Unknown format — try as ID anyway but warn
+        console.warn('QR scanned unexpected content:', decodedText);
+        router.push(`/claim/${decodedText.trim()}`);
+      }
+    } catch (e) {
+      console.error('QR scan handler error:', e);
     }
     
     if (scanner.value) {

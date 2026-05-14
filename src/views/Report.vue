@@ -7,8 +7,10 @@ import TopNav from '../components/TopNav.vue';
 import SideNav from '../components/SideNav.vue';
 import Footer from '../components/Footer.vue';
 import { API_URL } from '@/config/api';
+import { useToast } from '../composables/useToast';
 
 const router = useRouter();
+const toast = useToast();
 
 const form = ref({
   name: '',
@@ -39,7 +41,7 @@ const startCamera = async () => {
     imagePreview.value = null;
   } catch (error) {
     console.error('Error accessing camera:', error);
-    alert('Unable to access camera. Please allow camera permissions.');
+    toast.show('Unable to access camera. Please allow camera permissions.', 'error');
   }
 };
 
@@ -78,7 +80,7 @@ const getAuthHeaders = () => {
 
 const getLiveLocation = () => {
   if (!navigator.geolocation) {
-    alert('Geolocation is not supported by your browser');
+    toast.show('Geolocation is not supported by your browser', 'error');
     return;
   }
 
@@ -97,7 +99,7 @@ const getLiveLocation = () => {
     },
     (error) => {
       console.error('Error getting location:', error);
-      alert('Unable to retrieve your location');
+      toast.show('Unable to retrieve your location', 'error');
       isGettingLocation.value = false;
     }
   );
@@ -108,7 +110,7 @@ const handleFileUpload = (event: Event) => {
   if (target.files && target.files[0]) {
     const file = target.files[0];
     if (file.size > 2 * 1024 * 1024) {
-      alert('File too large. Please select an image smaller than 2MB.');
+      toast.show('File too large. Please select an image smaller than 2MB.', 'error');
       return;
     }
     const reader = new FileReader();
@@ -126,11 +128,11 @@ const triggerFileInput = () => {
 
 const submitReport = async () => {
   if (!form.value.name || !form.value.location) {
-    alert('Please fill in required fields');
+    toast.show('Please fill in required fields', 'error');
     return;
   }
   if (!form.value.imageUrl && form.value.type === 'found') {
-    alert('Please provide a photo of the found item (Direct Camera Required)');
+    toast.show('Please provide a photo of the found item (Direct Camera Required)', 'error');
     return;
   }
 
@@ -163,7 +165,7 @@ const submitReport = async () => {
     await axios.post(`${API_URL}/api/items`, formData, { 
       headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' } 
     });
-    alert('Report submitted successfully! You can find the claim QR code in "My Reports".');
+    toast.show('Report submitted successfully! You can find the claim QR code in "My Reports".', 'success');
     router.push('/my-reports');
   } catch (error: any) {
     if (error.response?.status === 401) {
@@ -173,7 +175,7 @@ const submitReport = async () => {
       return;
     }
     console.error('Error submitting report:', error);
-    alert(error.response?.data?.message || 'Failed to submit report');
+    toast.show(error.response?.data?.message || 'Failed to submit report', 'error');
   } finally {
     isSubmitting.value = false;
   }
@@ -185,19 +187,19 @@ const submitReport = async () => {
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-24 px-8 pb-12 w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-12 w-full max-w-[1200px] mx-auto">
       <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
         <span class="text-[#1c1b1b] dark:text-[#f3f4f6] material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
         Back to Dashboard
       </button>
 
-      <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-xl p-4 md:p-8 md:p-12 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
+      <div class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] sm:rounded-[2.5rem] shadow-xl p-4 sm:p-8 md:p-10 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
         <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-5 rounded-full"></div>
         
         <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2 tracking-tight">Create Report</h2>
         <p class="text-[#40493d] dark:text-[#9ca3af] mb-10 text-sm font-medium">Help the community find their belongings.</p>
 
-        <form @submit.prevent="submitReport" class="space-y-8 relative z-10">
+        <form @submit.prevent="submitReport" class="space-y-5 sm:space-y-6 md:space-y-8 relative z-10">
           <!-- Type Toggle -->
           <div class="grid grid-cols-2 gap-4 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
             <button type="button" @click="form.type = 'found'; imagePreview = null; form.imageUrl = ''"
@@ -267,7 +269,7 @@ const submitReport = async () => {
             <div class="space-y-2">
               <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Item Name *</label>
               <input v-model="form.name" type="text" placeholder="e.g. Blue Hydroflask, MacBook Air" 
-                class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+                class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
             </div>
             
             <!-- Live Location Section -->
@@ -282,7 +284,7 @@ const submitReport = async () => {
               </div>
               <div class="relative">
                 <input v-model="form.location" type="text" placeholder="e.g. Lab 3, Library" 
-                  class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 pl-12 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+                  class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-5 py-4 pl-12 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af]">location_on</span>
               </div>
               <div v-if="form.coordinates" class="space-y-2">
@@ -301,7 +303,7 @@ const submitReport = async () => {
             <div class="space-y-2">
               <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Category</label>
               <div class="relative">
-                <select v-model="form.category" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium appearance-none">
+                <select v-model="form.category" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium appearance-none">
                   <option>Electronics</option>
                   <option>Daily Use</option>
                   <option>Clothing</option>
@@ -315,7 +317,7 @@ const submitReport = async () => {
             <div class="space-y-2">
               <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Description</label>
               <textarea v-model="form.description" rows="3" placeholder="Color, brand, or other identifying features..." 
-                class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium resize-none"></textarea>
+                class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium resize-none"></textarea>
             </div>
           </div>
 

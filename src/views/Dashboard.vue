@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { RouterLink, useRouter, useRoute } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import ItemCard from '../components/ItemCard.vue';
@@ -10,23 +10,10 @@ import { API_URL } from '@/config/api';
 import { useI18n } from '../i18n';
 
 const router = useRouter();
-const route = useRoute();
 const { t } = useI18n();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
 const items = ref<any[]>([]);
 const stats = ref({ currentlyLost: 0, foundToday: 0, returnedAllTime: 0 });
-
-import { computed } from 'vue';
-const searchQuery = computed(() => (route.query.q as string) || '');
-const filteredItems = computed(() => {
-  if (!searchQuery.value) return items.value;
-  const q = searchQuery.value.toLowerCase();
-  return items.value.filter(item => 
-    item.name.toLowerCase().includes(q) || 
-    (item.description && item.description.toLowerCase().includes(q)) ||
-    (item.location && item.location.toLowerCase().includes(q))
-  );
-});
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -45,7 +32,7 @@ const fetchStats = async () => {
 
 const fetchItems = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/items`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items?limit=6`, { headers: getAuthHeaders() });
     items.value = res.data.items || [];
   } catch (error: any) {
     if (error.response?.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); router.push('/'); }
@@ -62,7 +49,7 @@ onMounted(() => { fetchStats(); fetchItems(); });
     <TopNav />
 
     <!-- Main Content -->
-    <main class="md:ml-64 pt-24 px-8 pb-12 min-h-screen w-full max-w-[1200px] mx-auto pb-20">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-20 min-h-screen w-full max-w-[1200px] mx-auto">
       <!-- Welcome Banner -->
       <section class="mb-10 mt-10">
         <div class="relative overflow-hidden rounded-[2rem] bg-[#387b41] p-10 text-white flex justify-between items-center shadow-lg">
@@ -111,29 +98,35 @@ onMounted(() => { fetchStats(); fetchItems(); });
         </div>
       </section>
 
-      <!-- Quick Actions -->
-      <section class="mb-12">
-        <h3 class="text-lg font-bold mb-4 md:mb-6 dark:text-[#88d982] text-[#387b41] flex items-center gap-2">
+        <!-- Quick Actions -->
+      <section class="mb-10">
+        <h3 class="text-lg font-bold mb-4 sm:mb-6 dark:text-[#88d982] text-[#387b41] flex items-center gap-2">
           <span class="material-symbols-outlined text-[#387b41]">bolt</span> {{ t('dash.quick_actions') }}
         </h3>
-        <div class="flex overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 gap-4 md:grid md:grid-cols-3 md:gap-6 md:pb-0 md:mx-0 md:px-0 hide-scrollbar">
-          <RouterLink to="/report" class="min-w-[85vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[2rem] p-6 md:p-8 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[6px] border-l-[#1b6d24]">
-            <span class="material-symbols-outlined text-4xl text-[#1b6d24] mb-6">find_in_page</span>
-            <h4 class="text-xl dark:text-white text-black font-bold mb-2">{{ t('dash.report_lost') }}</h4>
-            <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mb-6 leading-relaxed">{{ t('dash.report_lost_desc') }}</p>
-            <div class="flex items-center text-[#387b41] font-bold text-sm gap-2">{{ t('dash.start_report') }} <span class="material-symbols-outlined text-base md:text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
+        <div class="flex overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 gap-3 sm:gap-4 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 md:pb-0 md:mx-0 md:px-0 hide-scrollbar">
+          <RouterLink to="/report" class="min-w-[75vw] sm:min-w-[65vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[4px] border-l-[#1b6d24]">
+            <span class="material-symbols-outlined text-2xl sm:text-3xl md:text-4xl text-[#1b6d24] mb-3 sm:mb-4">find_in_page</span>
+            <h4 class="text-base sm:text-lg md:text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1 sm:mb-2">{{ t('dash.report_lost') }}</h4>
+            <p class="text-xs sm:text-sm text-[#40493d] dark:text-[#9ca3af] mb-3 sm:mb-4 leading-relaxed line-clamp-2">{{ t('dash.report_lost_desc') }}</p>
+            <div class="flex items-center text-[#387b41] font-bold text-xs sm:text-sm gap-1 sm:gap-2">{{ t('dash.start_report') }} <span class="material-symbols-outlined text-sm sm:text-base group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
-          <RouterLink to="/report" class="min-w-[85vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[2rem] p-6 md:p-8 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[6px] border-l-[#387b41]">
-            <span class="material-symbols-outlined text-4xl text-[#387b41] mb-6">add_a_photo</span>
-            <h4 class="text-xl dark:text-white text-black font-bold mb-2">{{ t('dash.report_found') }}</h4>
-            <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mb-6 leading-relaxed">{{ t('dash.report_found_desc') }}</p>
-            <div class="flex items-center text-[#387b41] font-bold text-sm gap-2">{{ t('dash.log_item') }} <span class="material-symbols-outlined text-base md:text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
+          <RouterLink to="/report" class="min-w-[75vw] sm:min-w-[65vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[4px] border-l-[#387b41]">
+            <span class="material-symbols-outlined text-2xl sm:text-3xl md:text-4xl text-[#387b41] mb-3 sm:mb-4">add_a_photo</span>
+            <h4 class="text-base sm:text-lg md:text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1 sm:mb-2">{{ t('dash.report_found') }}</h4>
+            <p class="text-xs sm:text-sm text-[#40493d] dark:text-[#9ca3af] mb-3 sm:mb-4 leading-relaxed line-clamp-2">{{ t('dash.report_found_desc') }}</p>
+            <div class="flex items-center text-[#387b41] font-bold text-xs sm:text-sm gap-1 sm:gap-2">{{ t('dash.log_item') }} <span class="material-symbols-outlined text-sm sm:text-base group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
-          <RouterLink to="/scan" class="min-w-[85vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[2rem] p-6 md:p-8 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[6px] border-l-[#387b41]">
-            <span class="material-symbols-outlined text-4xl text-[#387b41] mb-6">qr_code_2</span>
-            <h4 class="text-xl dark:text-white text-black font-bold mb-2">{{ t('dash.scan_to_claim') }}</h4>
-            <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mb-6 leading-relaxed">{{ t('dash.scan_to_claim_desc') }}</p>
-            <div class="flex items-center text-[#387b41] font-bold text-sm gap-2">{{ t('dash.open_scanner') }} <span class="material-symbols-outlined text-base md:text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
+          <RouterLink to="/scan" class="min-w-[75vw] sm:min-w-[65vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[4px] border-l-[#387b41]">
+            <span class="material-symbols-outlined text-2xl sm:text-3xl md:text-4xl text-[#387b41] mb-3 sm:mb-4">qr_code_2</span>
+            <h4 class="text-base sm:text-lg md:text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1 sm:mb-2">{{ t('dash.scan_to_claim') }}</h4>
+            <p class="text-xs sm:text-sm text-[#40493d] dark:text-[#9ca3af] mb-3 sm:mb-4 leading-relaxed line-clamp-2">{{ t('dash.scan_to_claim_desc') }}</p>
+            <div class="flex items-center text-[#387b41] font-bold text-xs sm:text-sm gap-1 sm:gap-2">{{ t('dash.open_scanner') }} <span class="material-symbols-outlined text-sm sm:text-base group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
+          </RouterLink>
+          <RouterLink to="/statistics" class="min-w-[75vw] sm:min-w-[65vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[4px] border-l-[#8b5cf6]">
+            <span class="material-symbols-outlined text-2xl sm:text-3xl md:text-4xl text-[#8b5cf6] mb-3 sm:mb-4">leaderboard</span>
+            <h4 class="text-base sm:text-lg md:text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1 sm:mb-2">{{ t('nav.statistics') }}</h4>
+            <p class="text-xs sm:text-sm text-[#40493d] dark:text-[#9ca3af] mb-3 sm:mb-4 leading-relaxed line-clamp-2">{{ t('stats.subtitle') }}</p>
+            <div class="flex items-center text-[#8b5cf6] font-bold text-xs sm:text-sm gap-1 sm:gap-2">Explore <span class="material-symbols-outlined text-sm sm:text-base group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
         </div>
       </section>
@@ -145,13 +138,17 @@ onMounted(() => { fetchStats(); fetchItems(); });
             <h3 class="text-lg dark:text-white text-black font-bold">{{ t('dash.recent_items') }}</h3>
             <p class="text-sm text-[#40493d] dark:text-[#9ca3af]">{{ t('dash.recent_items_sub') }}</p>
           </div>
+          <RouterLink to="/search" class="text-sm text-[#387b41] font-bold flex items-center gap-1 hover:underline transition-all">
+            {{ t('dash.see_all') }}
+            <span class="material-symbols-outlined text-base">arrow_forward</span>
+          </RouterLink>
         </div>
         <div v-if="items.length === 0" class="text-center py-20 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
           <span class="material-symbols-outlined text-6xl text-[#40493d] dark:text-[#9ca3af]/10 mb-4">inventory_2</span>
           <p class="text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('dash.no_items') }}</p>
         </div>
-        <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
-          <ItemCard v-for="item in filteredItems" :key="item._id" :item="item" />
+        <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+          <ItemCard v-for="item in items" :key="item._id" :item="item" />
         </div>
       </section>
       

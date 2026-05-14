@@ -45,11 +45,11 @@ const formatDate = (date: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex font-sans">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex font-sans pt-10">
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-24 px-8 pb-12 w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-12 w-full max-w-[1200px] mx-auto">
       <div class="flex justify-between items-center mb-10">
         <div>
           <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">My Reports</h2>

@@ -34,9 +34,9 @@ const toggleTheme = () => {
 
 const handleSearch = () => {
   if (searchQuery.value.trim()) {
-    router.push({ path: '/dashboard', query: { q: searchQuery.value } });
+    router.push({ path: '/search', query: { q: searchQuery.value } });
   } else {
-    router.push({ path: '/dashboard' });
+    router.push({ path: '/search' });
   }
 };
 
@@ -72,9 +72,11 @@ onMounted(() => {
   }
 
   fetchNotifications();
+  const token = localStorage.getItem('token');
   socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
-    withCredentials: true
+    withCredentials: true,
+    auth: { token }
   });
   
   socket.on('connect', () => {
@@ -95,9 +97,9 @@ onBeforeUnmount(() => {
 <template>
   <header class="gap-4 md:gap-12 fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] h-16 bg-white/80 dark:bg-[#1e1e1e]/80 backdrop-blur-md border-b border-[#e0e4df] dark:border-[#374151] z-40">
     <div class="flex justify-between items-center px-4 md:px-8 w-full h-full">
-      <div class="flex items-center gap-4 w-full max-w-md">
+      <div class="flex items-center gap-4 w-full max-w-full">
         <div class="relative w-full focus-within:ring-2 focus-within:ring-[#387b41]/20 dark:focus-within:ring-[#88d982]/20 rounded-lg transition-all">
-          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 text-xl">search</span>
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 text-xl ">search</span>
           <input v-model="searchQuery" @keyup.enter="handleSearch" type="text" :placeholder="t('topnav.search_placeholder')" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-none rounded-lg pl-10 pr-4 py-2 text-xs md:text-sm focus:ring-0 outline-none" />
         </div>
       </div>
@@ -105,7 +107,7 @@ onBeforeUnmount(() => {
       <div class="ml-2 md:ml-4 flex items-center gap-2 md:gap-4 shrink-0">
         <!-- Notifications -->
         <div class="relative">
-          <button @click="showDropdown = !showDropdown" class="text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 hover:text-[#387b41] dark:hover:text-[#88d982] transition-colors relative p-2 rounded-full w-10 h-10 hover:bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:hover:bg-[#202020]">
+          <button @click="showDropdown = !showDropdown" class="text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 hover:text-[#387b41] dark:hover:text-[#88d982] transition-colors relative p-2 w-12 h-12 rounded-full">
             <span class="material-symbols-outlined">notifications</span>
             <span v-if="unreadCount > 0" class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[8px] flex items-center justify-center rounded-full font-bold border-2 border-white">
               {{ unreadCount }}
@@ -179,12 +181,23 @@ onBeforeUnmount(() => {
                   <span>{{ isDark ? 'Light Mode' : 'Dark Mode' }}</span>
                 </div>
               </button>
+
+              <RouterLink to="/statistics" @click="showProfileDropdown = false"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] transition-all text-sm font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">
+                <span class="material-symbols-outlined text-xl text-[#40493d] dark:text-[#9ca3af]">leaderboard</span>
+                <span>{{ t('nav.statistics') }}</span>
+              </RouterLink>
+
+              <RouterLink to="/rating" @click="showProfileDropdown = false"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] transition-all text-sm font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">
+                <span class="material-symbols-outlined text-xl text-[#40493d] dark:text-[#9ca3af]">star</span>
+                <span>Rate App</span>
+              </RouterLink>
             </div>
           </div>
         </div>
       </div>
     </div>
     <!-- Running Text / Marquee -->
-    <Marquee />
   </header>
 </template>

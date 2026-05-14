@@ -4,6 +4,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { API_URL } from '@/config/api';
+import { useToast } from '../composables/useToast';
 
 const router = useRouter();
 const status = ref('Ready to scan');
@@ -11,6 +12,7 @@ const statusType = ref('info');
 const resultData = ref<any>(null);
 const lastScan = ref('');
 let html5QrCode: Html5Qrcode | null = null;
+const toast = useToast();
 const loginMode = ref<'qr' | 'email'>('qr');
 const emailForm = ref({ email: '', password: '', nama: '' });
 const isEmailMode = ref<'login' | 'register'>('login');
@@ -122,21 +124,21 @@ onUnmounted(() => stopCamera());
           <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Full Name</label>
           <div class="relative">
             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">person</span>
-            <input v-model="emailForm.nama" type="text" placeholder="Your full name" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+            <input v-model="emailForm.nama" type="text" placeholder="Your full name" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Email</label>
           <div class="relative">
             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">mail</span>
-            <input v-model="emailForm.email" type="email" placeholder="student@school.edu" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+            <input v-model="emailForm.email" type="email" placeholder="student@school.edu" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Password</label>
           <div class="relative">
             <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">lock</span>
-            <input v-model="emailForm.password" type="password" placeholder="Min. 6 characters" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+            <input v-model="emailForm.password" type="password" placeholder="Min. 6 characters" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <button type="submit" :disabled="isSubmitting" class="w-full py-4 bg-[#387b41] text-white rounded-xl font-bold text-sm hover:bg-[#2d6334] transition-all shadow-md active:scale-95 disabled:opacity-50">

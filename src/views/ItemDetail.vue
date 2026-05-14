@@ -6,6 +6,8 @@ import "leaflet/dist/leaflet.css";
 import * as L from 'leaflet';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
+import { useI18n } from '../i18n';
+import { useToast } from '../composables/useToast';
 
 import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL } from '@/config/api';
@@ -22,6 +24,8 @@ const mapInstance = ref<L.Map | null>(null);
 const newMessage = ref('');
 const isSending = ref(false);
 const currentUser = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
+const { t } = useI18n();
+const toast = useToast();
 let socket: any = null;
 
 const getAuthHeaders = () => {
@@ -53,9 +57,11 @@ const fetchItem = async () => {
 
 onMounted(() => {
   fetchItem();
+  const token = localStorage.getItem('token');
   socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
-    withCredentials: true
+    withCredentials: true,
+    auth: { token }
   });
   
   socket.on('connect', () => {
@@ -87,7 +93,7 @@ const startClaim = async () => {
     await axios.post(`${API_URL}/api/items/${itemId}/start-claim`, {}, { headers: getAuthHeaders() });
     await fetchItem();
   } catch (error: any) {
-    alert(error.response?.data?.message || 'Failed to start claim');
+    toast.show(error.response?.data?.message || 'Failed to start claim', 'error');
   }
 };
 
@@ -100,21 +106,21 @@ const sendMessage = async () => {
     newMessage.value = '';
     scrollToBottom();
   } catch (error: any) {
-    alert(error.response?.data?.message || 'Failed to send message');
+    toast.show(error.response?.data?.message || 'Failed to send message', 'error');
   } finally {
     isSending.value = false;
   }
 };
 
 const fileComplaint = async () => {
-  const reason = prompt('Please describe why you are filing a complaint:');
+  const reason = prompt(t('detail.complaint_prompt'));
   if (!reason) return;
   try {
     await axios.post(`${API_URL}/api/items/${itemId}/complaint`, { reason }, { headers: getAuthHeaders() });
-    alert('Complaint filed successfully');
+    toast.show(t('detail.complaint_success'), 'success');
     await fetchItem();
   } catch (error: any) {
-    alert(error.response?.data?.message || 'Failed to file complaint');
+    toast.show(error.response?.data?.message || t('detail.complaint_success'), error.response?.data?.message ? 'error' : 'success');
   }
 };
 
@@ -127,15 +133,16 @@ const scrollToBottom = () => {
 
 const isFounder = () => item.value?.reporter?._id === currentUser.value?._id;
 const isClaimer = () => item.value?.claimer === currentUser.value?._id || item.value?.claimer?._id === currentUser.value?._id;
+const hasComplained = () => item.value?.complaints?.some((c: any) => c.user?._id === currentUser.value?._id);
 
-const resolveClaim = async (userId: string) => {
-  if (!confirm('Are you sure you want to resolve this claim to this student?')) return;
+const assignClaimer = async (userId: string) => {
+  if (!confirm('Are you sure you want to set this student as the claimer?')) return;
   try {
     await axios.post(`${API_URL}/api/items/${itemId}/resolve`, { userId }, { headers: getAuthHeaders() });
-    alert('Claim resolved successfully');
+    toast.show(t('detail.claimer_reassigned'), 'success');
     await fetchItem();
   } catch (error: any) {
-    alert(error.response?.data?.message || 'Failed to resolve claim');
+    toast.show(error.response?.data?.message || 'Failed to assign claimer', 'error');
   }
 };
 
@@ -191,7 +198,7 @@ const formatDate = (date: string) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex font-sans pb-20 pt-12">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex font-sans pb-20">
     <SideNav />
     <TopNav />
 
@@ -201,7 +208,7 @@ const formatDate = (date: string) => {
         <div class="flex items-center justify-between">
         <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] font-bold text-sm transition-all group">
           <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
-          Back
+          {{ t('detail.back') }}
         </button>
         <div class="flex gap-2">
           <span :class="['text-[10px] px-3 py-1 rounded-full font-bold uppercase tracking-wider', 
@@ -232,15 +239,15 @@ const formatDate = (date: string) => {
             </div>
             <div class="p-8">
               <h1 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-4">{{ item.name }}</h1>
-              <p class="text-[#40493d] dark:text-[#9ca3af] leading-relaxed mb-6">{{ item.description || 'No description provided.' }}</p>
+              <p class="text-[#40493d] dark:text-[#9ca3af] leading-relaxed mb-6">{{ item.description || t('detail.no_description') }}</p>
               
               <div class="grid grid-cols-2 gap-4">
                 <div class="p-4 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
-                  <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider mb-1">Category</p>
+                  <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider mb-1">{{ t('detail.category') }}</p>
                   <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.category }}</p>
                 </div>
                 <div class="p-4 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
-                  <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider mb-1">Reported At</p>
+                  <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider mb-1">{{ t('detail.reported_at') }}</p>
                   <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ formatDate(item.reportedAt) }}</p>
                 </div>
               </div>
@@ -254,16 +261,16 @@ const formatDate = (date: string) => {
                 <span class="text-[#387b41] font-bold text-xl">{{ (item.reporter?.nama || 'S').charAt(0) }}</span>
               </div>
               <div>
-                <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider">Reported By</p>
+                <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider">{{ t('detail.reported_by') }}</p>
                 <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.reporter?.nama || 'Anonymous' }}</p>
               </div>
             </div>
             <div v-if="item.status === 'Returned' && item.claimer" class="text-right">
-              <p class="text-[10px] font-bold text-[#387b41] uppercase tracking-wider ">Claimed By</p>
+              <p class="text-[10px] font-bold text-[#387b41] uppercase tracking-wider ">{{ t('detail.claimed_by') }}</p>
               <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.claimer.nama }}</p>
             </div>
             <div v-else-if="item.status === 'On Progress' && item.claimer" class="text-right">
-              <p class="text-[10px] font-bold text-[#f57f17] uppercase tracking-wider">Being Claimed By</p>
+              <p class="text-[10px] font-bold text-[#f57f17] uppercase tracking-wider">{{ t('detail.being_claimed_by') }}</p>
               <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ typeof item.claimer === 'object' ? item.claimer.nama : 'Another Student' }}</p>
             </div>
           </div>
@@ -273,7 +280,7 @@ const formatDate = (date: string) => {
             class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm overflow-hidden flex flex-col h-[300px] md:h-[400px]">
             <div class="p-4 border-b border-[#e0e4df] dark:border-[#374151] bg-[#f8faf7] dark:bg-[#121212] flex items-center gap-2">
               <span class="material-symbols-outlined text-[#387b41]">forum</span>
-              <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">Chat with {{ isFounder() ? 'Claimer' : 'Founder' }}</h3>
+              <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('detail.chat_with') }} {{ isFounder() ? t('detail.claimer_label') : 'Founder' }}</h3>
             </div>
             
             <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
@@ -286,13 +293,13 @@ const formatDate = (date: string) => {
                 <span class="text-[8px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ formatDate(msg.timestamp) }}</span>
               </div>
               <div v-if="!item.messages?.length" class="h-full flex items-center justify-center text-[#40493d] dark:text-[#9ca3af]/40 text-xs italic">
-                No messages yet. Start the conversation!
+                {{ t('detail.no_messages') }}
               </div>
             </div>
 
             <form @submit.prevent="sendMessage" class="p-4 border-t border-[#e0e4df] dark:border-[#374151] flex gap-2">
-              <input v-model="newMessage" type="text" placeholder="Type a message..." 
-                class="flex-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[#387b41] outline-none" />
+              <input v-model="newMessage" type="text" :placeholder="t('detail.chat_placeholder')" 
+                class="flex-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-none rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-[#387b41] outline-none" />
               <button type="submit" :disabled="isSending" 
                 class="w-10 h-10 bg-[#387b41] text-white rounded-xl flex items-center justify-center hover:bg-[#2d6334] transition-all disabled:opacity-50">
                 <span class="material-symbols-outlined">{{ isSending ? 'sync' : 'send' }}</span>
@@ -300,42 +307,51 @@ const formatDate = (date: string) => {
             </form>
           </div>
 
-          <!-- Resolution System (Only for Founder) -->
-          <div v-if="isFounder() && (item.status === 'On Progress' || (item.status === 'Returned' && item.complaints?.length > 0))" 
+          <!-- Assign Claimer System (Only for Founder) — Only reassigns, no permanent Returned -->
+          <div v-if="isFounder() && (item.status === 'On Progress')" 
             class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm p-4 md:p-8 space-y-6">
-            <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">Finalize Ownership</h3>
-            <p class="text-xs text-[#40493d] dark:text-[#9ca3af] mb-4">Choose the correct owner for this item. This will permanently mark the item as returned to this student.</p>
+            <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('detail.assign_claimer') }}</h3>
+            <p class="text-xs text-[#40493d] dark:text-[#9ca3af] mb-4">{{ t('detail.assign_claimer_desc') }}</p>
             
+            <div class="p-3 bg-[#ffecb3] rounded-2xl flex items-start gap-3 mb-4">
+              <span class="material-symbols-outlined text-[#f57f17] text-sm shrink-0">info</span>
+              <p class="text-[10px] text-[#5f4339] font-medium leading-relaxed">{{ t('detail.meet_scan_notice') }}</p>
+            </div>
+
             <div class="space-y-4">
               <!-- Original Claimer -->
               <div v-if="item.claimer" class="p-4 bg-[#f0fdf4] rounded-2xl flex items-center justify-between border border-[#387b41]/20">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-[#387b41] text-white flex items-center justify-center text-xs font-bold">C</div>
                   <div>
-                    <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ typeof item.claimer === 'object' ? item.claimer.nama : 'Original Claimer' }}</p>
-                    <p class="text-[10px] text-[#387b41]">Claimer</p>
+                    <p class="text-xs font-bold text-[#1c1b1b]">{{ typeof item.claimer === 'object' ? item.claimer.nama : t('detail.original_claimer') }}</p>
+                    <p class="text-[10px] text-[#387b41]">{{ t('detail.claimer_label') }}</p>
                   </div>
                 </div>
-                <button @click="resolveClaim(typeof item.claimer === 'object' ? item.claimer._id : item.claimer)" 
-                  class="px-4 py-2 bg-[#387b41] text-white rounded-lg text-xs font-bold hover:bg-[#2d6334] transition-all">
-                  Confirm
-                </button>
+                <span class="px-4 py-2 bg-[#387b41]/10 text-[#387b41] rounded-lg text-xs font-bold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-sm">check_circle</span>
+                  {{ t('detail.original_claimer') }}
+                </span>
               </div>
 
               <!-- Complainers -->
               <div v-for="complaint in item.complaints" :key="complaint._id" 
-                class="p-4 bg-red-50 rounded-2xl flex items-center justify-between border border-red-100">
+                class="p-4 bg-red-50 dark:bg-red-950/20 rounded-2xl flex items-center justify-between border border-red-100 dark:border-red-900/30">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold">P</div>
                   <div>
                     <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ complaint.user?.nama || 'Another Student' }}</p>
-                    <p class="text-[10px] text-red-600">Complained: "{{ complaint.reason }}"</p>
+                    <p class="text-[10px] text-red-600 dark:text-red-400">{{ t('detail.complained_label') }} "{{ complaint.reason }}"</p>
                   </div>
                 </div>
-                <button @click="resolveClaim(complaint.user?._id || complaint.user)" 
-                  class="px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-all">
-                  Confirm
+                <button @click="assignClaimer(complaint.user?._id || complaint.user)" 
+                  class="px-4 py-2 bg-[#387b41] text-white rounded-lg text-xs font-bold hover:bg-[#2d6334] transition-all">
+                  {{ t('detail.set_claimer') }}
                 </button>
+              </div>
+
+              <div v-if="!item.complaints?.length" class="text-center py-4 text-[#40493d] dark:text-[#9ca3af] text-xs italic">
+                No complaints filed yet.
               </div>
             </div>
           </div>
@@ -347,7 +363,7 @@ const formatDate = (date: string) => {
             <div class="p-6 md:p-8 border-b border-[#e0e4df] dark:border-[#374151]">
               <h2 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2">
                 <span class="material-symbols-outlined text-[#387b41]">location_on</span>
-                Location Details
+                {{ t('detail.location_details') }}
               </h2>
               <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mt-1">{{ item.location }}</p>
             </div>
@@ -359,9 +375,9 @@ const formatDate = (date: string) => {
             </div>
 
             <div class="p-6 md:p-8 bg-[#fcf9f8] dark:bg-[#1e1e1e] border-t border-[#e0e4df] dark:border-[#374151] space-y-4">
-              <h3 class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2">How to collect?</h3>
+              <h3 class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2">{{ t('detail.how_to_collect') }}</h3>
               <p class="text-xs text-[#40493d] dark:text-[#9ca3af] leading-relaxed">
-                If you are the owner of this item, please visit the location mentioned above or contact the school concierge with the claim QR code found in your profile.
+                {{ t('detail.how_to_collect_desc') }}
               </p>
               
               <!-- Claim Button for Available items -->
@@ -369,12 +385,26 @@ const formatDate = (date: string) => {
                 @click="startClaim"
                 class="w-full py-4 bg-[#387b41] text-white rounded-2xl font-bold text-base shadow-lg hover:bg-[#2d6334] active:scale-95 transition-all flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">pan_tool</span>
-                Claim This Item
+                {{ t('detail.claim_this_item') }}
               </button>
               <div v-else-if="item.status === 'On Progress'" class="p-4 bg-[#ffecb3] rounded-2xl flex items-start gap-3">
                 <span class="material-symbols-outlined text-[#f57f17]">info</span>
                 <p class="text-xs text-[#5f4339] font-medium leading-relaxed">
-                  This item is currently being claimed. The founder and claimer are communicating.
+                  {{ t('detail.in_progress_notice') }}
+                </p>
+              </div>
+
+              <button v-if="item.status === 'On Progress' && !isFounder() && !isClaimer() && !hasComplained()"
+                @click="fileComplaint"
+                class="w-full py-4 bg-[#ba1a1a] text-white rounded-2xl font-bold text-base shadow-lg hover:bg-[#991515] active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">report</span>
+                {{ t('detail.file_complaint') }}
+              </button>
+              <div v-else-if="item.status === 'On Progress' && !isFounder() && !isClaimer() && hasComplained()"
+                class="p-4 bg-[#fef2f2] rounded-2xl flex items-start gap-3 border border-red-100">
+                <span class="material-symbols-outlined text-[#ba1a1a] text-sm shrink-0">check_circle</span>
+                <p class="text-xs text-[#ba1a1a] font-medium leading-relaxed">
+                  {{ t('detail.complaint_already') }}
                 </p>
               </div>
             </div>
