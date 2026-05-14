@@ -29,11 +29,12 @@ const imagePreview = ref<string | null>(null);
 
 const isCameraOpen = ref(false);
 const videoElement = ref<HTMLVideoElement | null>(null);
+const facingMode = ref<'user' | 'environment'>('environment');
 let stream: MediaStream | null = null;
 
 const startCamera = async () => {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode.value } });
     if (videoElement.value) {
       videoElement.value.srcObject = stream;
     }
@@ -71,6 +72,16 @@ const retakePhoto = () => {
   imagePreview.value = null;
   form.value.imageUrl = '';
   startCamera();
+};
+
+const switchCamera = async () => {
+  const prevFacing = facingMode.value;
+  facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
+  stopCamera();
+  await startCamera();
+  if (!isCameraOpen.value) {
+    facingMode.value = prevFacing;
+  }
 };
 
 const getAuthHeaders = () => {
@@ -232,6 +243,9 @@ const submitReport = async () => {
                   <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover"></video>
                   <button @click.prevent="takePhoto" type="button" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white dark:bg-[#1e1e1e] rounded-full border-4 border-[#387b41] shadow-lg flex items-center justify-center hover:scale-105 transition-transform">
                     <div class="w-12 h-12 rounded-full border-2 border-[#e0e4df] dark:border-[#374151]"></div>
+                  </button>
+                  <button @click.prevent="switchCamera" type="button" class="absolute top-4 left-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
+                    <span class="material-symbols-outlined text-sm">flip_camera_android</span>
                   </button>
                   <button @click.prevent="stopCamera" type="button" class="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
                     <span class="material-symbols-outlined text-sm">close</span>

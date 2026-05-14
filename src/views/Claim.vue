@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { API_URL } from '@/config/api';
@@ -15,6 +15,11 @@ const isLoading = ref(true);
 const isSubmitting = ref(false);
 const imagePreview = ref<string | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
+
+const isCameraOpen = ref(false);
+const videoElement = ref<HTMLVideoElement | null>(null);
+const facingMode = ref<'user' | 'environment'>('user');
+let stream: MediaStream | null = null;
 
 const form = ref({
   claimNotes: '',
@@ -39,6 +44,58 @@ const fetchItemDetails = async () => {
   }
 };
 
+const startCamera = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode.value } });
+    if (videoElement.value) {
+      videoElement.value.srcObject = stream;
+    }
+    isCameraOpen.value = true;
+    imagePreview.value = null;
+  } catch (error) {
+    console.error('Error accessing camera:', error);
+    toast.show('Unable to access camera. Please allow camera permissions.', 'error');
+  }
+};
+
+const stopCamera = () => {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+  isCameraOpen.value = false;
+};
+
+const takePhoto = () => {
+  if (!videoElement.value) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = videoElement.value.videoWidth;
+  canvas.height = videoElement.value.videoHeight;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.drawImage(videoElement.value, 0, 0, canvas.width, canvas.height);
+    imagePreview.value = canvas.toDataURL('image/jpeg', 0.8);
+    form.value.claimPhoto = imagePreview.value;
+    stopCamera();
+  }
+};
+
+const retakePhoto = () => {
+  imagePreview.value = null;
+  form.value.claimPhoto = '';
+  startCamera();
+};
+
+const switchCamera = async () => {
+  const prevFacing = facingMode.value;
+  facingMode.value = facingMode.value === 'user' ? 'environment' : 'user';
+  stopCamera();
+  await startCamera();
+  if (!isCameraOpen.value) {
+    facingMode.value = prevFacing;
+  }
+};
+
 const handleFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
@@ -47,6 +104,7 @@ const handleFileUpload = (event: Event) => {
     reader.onload = (e) => {
       imagePreview.value = e.target?.result as string;
       form.value.claimPhoto = imagePreview.value;
+      stopCamera();
     };
     reader.readAsDataURL(file);
   }
@@ -76,6 +134,10 @@ const submitClaim = async () => {
 };
 
 onMounted(fetchItemDetails);
+
+onBeforeUnmount(() => {
+  stopCamera();
+});
 </script>
 
 <template>
@@ -115,19 +177,53 @@ onMounted(fetchItemDetails);
             <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">
               Verification Photo (Owner with Item) *
             </label>
-            <div @click="fileInput?.click()" class="relative group cursor-pointer">
-              <div v-if="!imagePreview" class="w-full h-48 border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-3xl bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center gap-2 group-hover:bg-[#f3f5f2] dark:bg-[#2a2a2a] group-hover:border-[#387b41]/30 transition-all">
-                <span class="material-symbols-outlined text-4xl text-[#40493d] dark:text-[#9ca3af]/40">photo_camera</span>
-                <p class="text-xs font-bold text-[#40493d] dark:text-[#9ca3af]">Take Photo with the Item</p>
-                <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af]/50">Required for verification</p>
-              </div>
-              <div v-else class="w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151]">
-                <img :src="imagePreview" class="w-full h-full object-cover" />
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <p class="text-white font-bold text-sm">Retake Photo</p>
-                </div>
-              </div>
-              <input ref="fileInput" type="file" accept="image/*" capture="user" class="hidden" @change="handleFileUpload" />
+            <!-- Idle: no photo, no camera -->
+            <div v-if="!imagePreview && !isCameraOpen" @click="startCamera"
+              class="w-full h-48 border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-3xl bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center gap-2 hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] hover:border-[#387b41]/30 transition-all cursor-pointer">
+              <span class="material-symbols-outlined text-4xl text-[#40493d] dark:text-[#9ca3af]/40">photo_camera</span>
+              <p class="text-xs font-bold text-[#40493d] dark:text-[#9ca3af]">Open Camera</p>
+              <p class="text-[10px] text-[#387b41] font-bold">REQUIRED FOR VERIFICATION</p>
+            </div>
+
+            <!-- Camera live preview -->
+            <div v-show="isCameraOpen && !imagePreview" class="relative w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151] bg-black">
+              <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover"></video>
+
+              <!-- Capture button -->
+              <button @click.prevent="takePhoto" type="button"
+                class="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white dark:bg-[#1e1e1e] rounded-full border-4 border-[#387b41] shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-10">
+                <div class="w-12 h-12 rounded-full border-2 border-[#e0e4df] dark:border-[#374151]"></div>
+              </button>
+
+              <!-- Switch camera -->
+              <button @click.prevent="switchCamera" type="button"
+                class="absolute top-4 left-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70 z-10">
+                <span class="material-symbols-outlined text-sm">flip_camera_android</span>
+              </button>
+
+              <!-- Close -->
+              <button @click.prevent="stopCamera" type="button"
+                class="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70 z-10">
+                <span class="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+
+            <!-- Preview -->
+            <div v-if="imagePreview" class="relative w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151]">
+              <img :src="imagePreview" class="w-full h-full object-cover" />
+              <button @click.prevent="retakePhoto" type="button"
+                class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2 hover:bg-white dark:bg-[#1e1e1e] transition-all z-10">
+                <span class="material-symbols-outlined text-lg">refresh</span> Retake Photo
+              </button>
+            </div>
+
+            <!-- Fallback file upload link -->
+            <div v-if="!imagePreview && !isCameraOpen" class="text-center mt-2">
+              <button @click="fileInput?.click()" type="button"
+                class="text-[10px] text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] underline transition-colors">
+                or upload from gallery
+              </button>
+              <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileUpload" />
             </div>
           </div>
 

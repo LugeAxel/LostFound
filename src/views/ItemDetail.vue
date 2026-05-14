@@ -18,6 +18,7 @@ const itemId = route.params.id as string;
 
 const item = ref<any>(null);
 const isLoading = ref(true);
+const errorMessage = ref<string | null>(null);
 const mapContainer = ref<HTMLElement | null>(null);
 const mapInstance = ref<L.Map | null>(null);
 
@@ -49,8 +50,13 @@ const fetchItem = async () => {
     }
     
     scrollToBottom();
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching item:', error);
+    if (error.response?.status === 404) {
+      errorMessage.value = 'not_found';
+    } else {
+      errorMessage.value = 'error';
+    }
     isLoading.value = false;
   }
 };
@@ -227,6 +233,20 @@ const formatDate = (date: string) => {
       <div class="flex-1 max-w-[1200px] w-full mx-auto p-4 md:p-6 md:p-10 space-y-10 overflow-y-auto">
       <div v-if="isLoading" class="flex justify-center py-20">
         <div class="w-10 h-10 border-4 border-[#387b41]/20 border-t-[#387b41] rounded-full animate-spin"></div>
+      </div>
+
+      <div v-else-if="errorMessage" class="flex flex-col items-center justify-center py-24 text-center px-4">
+        <div class="w-24 h-24 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-full flex items-center justify-center mb-6">
+          <span class="material-symbols-outlined text-5xl text-[#40493d] dark:text-[#9ca3af]">inventory_2</span>
+        </div>
+        <h3 class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-3">Item Not Found</h3>
+        <p class="text-[#40493d] dark:text-[#9ca3af] max-w-md text-sm mb-8 leading-relaxed">
+          This item may have been returned and removed, or it no longer exists in the system.
+        </p>
+        <button @click="router.push('/dashboard')"
+          class="px-8 py-3 bg-[#387b41] text-white rounded-xl font-bold hover:bg-[#2d6334] transition-all active:scale-95 shadow-sm">
+          Back to Dashboard
+        </button>
       </div>
 
       <div v-else-if="item" class="grid grid-cols-1 lg:grid-cols-2 gap-10">

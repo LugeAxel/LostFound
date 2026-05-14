@@ -47,6 +47,7 @@ const allowedOrigins = [
         'http://localhost:5173',
         'http://localhost:5174',
         'http://localhost:4173',
+        process.env.FRONTEND_URL,
     ]),
     process.env.FRONTEND_URL
 ].filter(Boolean);
@@ -1238,12 +1239,17 @@ io.on('connection', (socket) => {
 // 11. CRON JOBS (Auto Cleanup)
 // ─────────────────────────────────────────────
 // Run every hour
-cron.schedule('0 * * * *', async () => {
+const runCleanupJob = async () => {
     console.log('🧹 Running Auto-Cleanup Job...');
+
     try {
-        const now = new Date();
-        const tenDaysAgo = new Date(new Date().setDate(new Date().getDate() - 10));
-        const twoDaysAgo = new Date(new Date().setDate(new Date().getDate() - 2));
+        const tenDaysAgo = new Date(
+            new Date().setDate(new Date().getDate() - 10)
+        );
+
+        const twoDaysAgo = new Date(
+            new Date().setDate(new Date().getDate() - 2)
+        );
 
         // 1. Delete items not returned and older than 10 days
         const expiredUnclaimed = await Item.find({
@@ -1251,51 +1257,72 @@ cron.schedule('0 * * * *', async () => {
             reportedAt: { $lte: tenDaysAgo }
         });
 
-        // 2. Delete items returned and resolved older than 2 days
+        // 2. Delete items returned older than 2 days
         const expiredReturned = await Item.find({
             status: 'Returned',
-            resolvedAt: { $lte: twoDaysAgo }
+            claimedAt: { $lte: twoDaysAgo }
         });
 
-        const itemsToDelete = [...expiredUnclaimed, ...expiredReturned];
+        const itemsToDelete = [
+            ...expiredUnclaimed,
+            ...expiredReturned
+        ];
 
-        if (itemsToDelete.length > 0) {
-            console.log(`🗑️ Found ${itemsToDelete.length} items to auto-delete.`);
-            
-            for (const item of itemsToDelete) {
-                // Delete image from Cloudinary
-                if (item.imageUrl && item.imageUrl.includes('cloudinary')) {
-                    try {
-                        const urlParts = item.imageUrl.split('/');
-                        const fileWithExt = urlParts[urlParts.length - 1];
-                        const publicId = `lost-found-items/${fileWithExt.split('.')[0]}`;
-                        await cloudinary.uploader.destroy(publicId);
-                    } catch (cloudinaryErr) {
-                        console.error('Failed to delete Cloudinary image:', cloudinaryErr.message);
-                    }
-                }
+        console.log(`🗑️ Found ${itemsToDelete.length} items.`);
 
-                // Notify reporter
-                const notif = await Notification.create({
-                    user: item.reporter,
-                    type: 'system',
-                    item: null,
-                    text: `Pemberitahuan Sistem: Laporan "${item.name}" Anda telah dihapus otomatis sesuai kebijakan retensi (10 hari belum kembali / 2 hari setelah dikembalikan).`
-                });
+        for (const item of itemsToDelete) {
 
+            // Delete Cloudinary image
+            if (
+                item.image?.publicId
+            ) {
                 try {
-                    io.to(`user-${item.reporter}`).emit('notification', notif);
-                } catch (emitErr) {
-                    console.error('Failed to emit notification:', emitErr.message);
-                }
+                    await cloudinary.uploader.destroy(
+                        item.image.publicId
+                    );
 
-                await Item.findByIdAndDelete(item._id);
+                    console.log(
+                        `☁️ Deleted image: ${item.image.publicId}`
+                    );
+
+                } catch (cloudinaryErr) {
+                    console.error(
+                        'Cloudinary delete failed:',
+                        cloudinaryErr.message
+                    );
+                }
             }
-            console.log(`✅ Successfully deleted ${itemsToDelete.length} items.`);
+
+            // Create notification
+            const notif = await Notification.create({
+                user: item.reporter,
+                type: 'system',
+                item: null,
+                text: `Laporan "${item.name}" telah dihapus otomatis.`
+            });
+
+            io.to(`user-${item.reporter}`).emit(
+                'notification',
+                notif
+            );
+
+            await Item.findByIdAndDelete(item._id);
+
+            console.log(`🗑️ Deleted item: ${item.name}`);
         }
+
+        console.log('✅ Cleanup complete');
+
     } catch (error) {
-        console.error('❌ Auto-Cleanup Job failed:', error.message);
+        console.error(
+            '❌ Cleanup failed:',
+            error.message
+        );
     }
+};
+
+cron.schedule('0 * * * *', async () => {
+    await runCleanupJob();
 });
 
 server.listen(PORT, '0.0.0.0', () => {
