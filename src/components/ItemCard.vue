@@ -85,8 +85,10 @@ const translateStatus = (status: string) => {
           <span class="material-symbols-outlined text-sm sm:text-base shrink-0">location_on</span>
           {{ item.location }}
         </p>
-        <p v-if="item.coordinates" class="text-[8px] sm:text-[9px] text-[#387b41] font-bold flex items-center gap-1 ml-1">
-          <span class="material-symbols-outlined text-[10px] sm:text-xs">gps_fixed</span> {{ t('card.gps_verified') }}
+        <p class="text-[8px] sm:text-[9px] font-bold flex items-center gap-1 ml-1"
+          :class="item.coordinates ? 'text-[#387b41]' : 'text-[#ba1a1a]'">
+          <span class="material-symbols-outlined text-[10px] sm:text-xs">{{ item.coordinates ? 'gps_fixed' : 'gps_off' }}</span>
+          {{ item.coordinates ? t('card.gps_verified') : t('card.no_gps') }}
         </p>
       </div>
       <div class="flex items-center justify-between">

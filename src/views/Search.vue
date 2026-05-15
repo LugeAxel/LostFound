@@ -20,6 +20,8 @@ const totalPages = ref(1);
 const totalItems = ref(0);
 const searchInput = ref((route.query.q as string) || '');
 const filterType = ref<string>((route.query.type as string) || 'all');
+const filterCategory = ref<string>((route.query.category as string) || 'all');
+const categories = ['Electronics', 'Daily Use', 'Clothing', 'Books/Stationery', 'Others'];
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -32,6 +34,9 @@ const fetchItems = async () => {
     const params: any = { page: currentPage.value, limit: 12 };
     if (searchInput.value.trim()) {
       params.q = searchInput.value.trim();
+    }
+    if (filterCategory.value !== 'all') {
+      params.category = filterCategory.value;
     }
     const res = await axios.get(`${API_URL}/api/items`, { headers: getAuthHeaders(), params });
     items.value = res.data.items || [];
@@ -106,7 +111,7 @@ watch(() => route.query, (newQuery) => {
 </script>
 
 <template>
-  <div class="min-h-screen  bg-[#f8faf7] dark:bg-[#121212] flex pt-10">
+  <div class="min-h-screen  bg-[#f8faf7] dark:bg-[#121212] flex pb-10">
     <SideNav />
     <TopNav />
 
@@ -149,6 +154,17 @@ watch(() => route.query, (newQuery) => {
         <span v-if="!isLoading" class="text-xs text-[#40493d] dark:text-[#9ca3af] font-medium">
           {{ t('search.result_count') }} {{ filteredItems.length }} {{ t('search.results') }}
         </span>
+      </div>
+
+      <div class="flex gap-2 mb-6 flex-wrap">
+        <button @click="filterCategory = 'all'; handleSearch()"
+          :class="['px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all', filterCategory === 'all' ? 'bg-[#387b41] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#387b41]']">
+          {{ t('search.all_categories') }}
+        </button>
+        <button v-for="cat in categories" :key="cat" @click="filterCategory = cat; handleSearch()"
+          :class="['px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all', filterCategory === cat ? 'bg-[#387b41] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#387b41]']">
+          {{ t(`card.category.${cat}`) }}
+        </button>
       </div>
 
       <div v-if="isLoading" class="flex justify-center py-20">

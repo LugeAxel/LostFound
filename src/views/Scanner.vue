@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import { useI18n } from '../i18n';
+import { useToast } from '../composables/useToast';
 import { DotLottieVue } from '@lottiefiles/dotlottie-vue';
 
 const router = useRouter();
 const { t } = useI18n();
+const toast = useToast();
 
 let scanner: Html5Qrcode | null = null;
 let scanLocked = false;
@@ -22,6 +24,7 @@ const manualId = ref('');
 const cameras = ref<{ id: string; label: string }[]>([]);
 const selectedCameraIndex = ref(0);
 const isMounted = ref(true);
+const isDecodingImage = ref(false);
 
 async function initCamera() {
   if (!isMounted.value) return;
@@ -63,10 +66,17 @@ async function startCamera(cameraId: string) {
     try { await scanner.stop(); } catch { /* ignore */ }
   }
 
-  scanner = new Html5Qrcode('qr-reader');
+  scanner = new Html5Qrcode('qr-reader', {
+    verbose: false,
+    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+  });
   await scanner.start(
     cameraId,
-    { fps: 10, qrbox: { width: 220, height: 220 } },
+    {
+      fps: 5,
+      qrbox: { width: 280, height: 280 },
+      aspectRatio: 1
+    },
     onScanSuccess,
     () => { /* ignore scan errors */ }
   );
@@ -157,6 +167,39 @@ function retry() {
   initCamera();
 }
 
+const fileInput = ref<HTMLInputElement | null>(null);
+
+async function decodeQrFromImage(file: File) {
+  if (!file) return;
+  isDecodingImage.value = true;
+  try {
+    const codeScanner = new Html5Qrcode('qr-decoder');
+    const result = await codeScanner.scanFile(file, true);
+    codeScanner.clear();
+    if (result && !scanLocked) {
+      scanLocked = true;
+      scanSuccess.value = true;
+      setTimeout(() => {
+        if (isMounted.value) navigateToClaim(result);
+      }, 800);
+    }
+  } catch (e) {
+    toast.show('Could not detect a QR code in this image. Try a clearer photo.', 'error');
+  } finally {
+    isDecodingImage.value = false;
+    if (fileInput.value) fileInput.value.value = '';
+  }
+}
+
+function triggerFileUpload() {
+  if (fileInput.value) fileInput.value.click();
+}
+
+function onFileSelected() {
+  const file = fileInput.value?.files?.[0];
+  if (file) decodeQrFromImage(file);
+}
+
 onMounted(initCamera);
 
 onUnmounted(() => {
@@ -169,7 +212,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex pt-10 pb-10">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex pb-20">
     <SideNav />
     <TopNav />
 
@@ -256,10 +299,25 @@ onUnmounted(() => {
               </div>
             </div>
 
+            <!-- QR from Image Upload -->
+            <div class="bg-[#f8faf7] dark:bg-[#121212] rounded-xl p-5 border border-[#e0e4df] dark:border-[#374151]">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="h-px flex-1 bg-[#e0e4df] dark:bg-[#374151]"></div>
+                <span class="text-xs text-[#40493d] dark:text-[#9ca3af] font-medium uppercase tracking-wider">{{ t('scanner.or_image') }}</span>
+                <div class="h-px flex-1 bg-[#e0e4df] dark:bg-[#374151]"></div>
+              </div>
+              <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileSelected" />
+              <button @click="triggerFileUpload" :disabled="isDecodingImage"
+                class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#f3f5f2] dark:bg-[#2a2a2a] border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-xl text-xs font-bold text-[#40493d] dark:text-[#9ca3af] hover:border-[#387b41] hover:text-[#387b41] transition-all disabled:opacity-50">
+                <span class="material-symbols-outlined text-base">{{ isDecodingImage ? 'sync' : 'image' }}</span>
+                {{ isDecodingImage ? t('scanner.decoding') : t('scanner.upload_qr') }}
+              </button>
+            </div>
+
             <!-- How To -->
             <div class="bg-[#f8faf7] dark:bg-[#121212] rounded-xl p-5 border border-[#e0e4df] dark:border-[#374151]">
               
-              <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6] mb-4 flex items-center gap-2">
+              <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2">
                 <span class="material-symbols-outlined text-base text-[#387b41]">help</span>
                 {{ t('scanner.how_title') }}
               </h3>
@@ -282,10 +340,16 @@ onUnmounted(() => {
 <style scoped>
 #qr-reader {
   border: none !important;
+  background: #ffffff !important;
 }
 
 #qr-reader video {
   border-radius: 1rem !important;
+  background: #ffffff !important;
+}
+
+#qr-reader img {
+  background: #ffffff !important;
 }
 
 @keyframes scan-line {

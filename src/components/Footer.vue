@@ -5,7 +5,7 @@
       <a href="#" class="hover:text-[#387b41] font-bold transition-colors">Contact</a>
       <a href="#" class="hover:text-[#387b41] font-bold transition-colors">Other</a>
     </div>
-    <p>&copy; 2026 LostFound SMKN 2 Depok. All rights reserved.</p>
+    <p>&copy; 2026 QReturn SMKN 2 Depok. All rights reserved.</p>
   </footer>
 </template>
 

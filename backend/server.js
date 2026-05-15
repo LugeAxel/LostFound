@@ -537,7 +537,12 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
         const limit = parseInt(req.query.limit) || 20;
         const skip = (page - 1) * limit;
 
-        const items = await Item.find()
+        const filter = {};
+        if (req.query.category && req.query.category !== 'all') {
+            filter.category = req.query.category;
+        }
+
+        const items = await Item.find(filter)
             .select('-messages -complaints -claimPhoto -claimNotes')
             .populate('reporter', 'nama nisn jurusan')
             .populate('claimer', 'nama')
@@ -545,7 +550,7 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
             .skip(skip)
             .limit(limit);
 
-        const total = await Item.countDocuments();
+        const total = await Item.countDocuments(filter);
 
         res.json({
             items,
@@ -999,39 +1004,36 @@ app.get('/api/ratings/mine', authMiddleware, async (req, res) => {
 app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300), async (req, res) => {
     try {
         // Items per day (last 14 days)
-        const fourteenDaysAgo = new Date();
-        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+        const WIB_OFFSET = 7 * 60 * 60 * 1000;
+        const nowWIB = new Date(Date.now() + WIB_OFFSET);
+        const fourteenDaysAgoWIB = new Date(nowWIB);
+        fourteenDaysAgoWIB.setDate(fourteenDaysAgoWIB.getDate() - 14);
+        fourteenDaysAgoWIB.setHours(0, 0, 0, 0);
 
-        const itemsSince = await Item.find({ reportedAt: { $gte: fourteenDaysAgo } }).sort({ reportedAt: 1 });
-
-        // Fetch daily returned counters (survives item deletion)
-        const dateStrings = [];
-        for (let i = 0; i < 14; i++) {
-            const d = new Date(fourteenDaysAgo);
-            d.setDate(d.getDate() + i);
-            dateStrings.push(d.toISOString().split('T')[0]);
-        }
-        const dailyCounters = await DailyCounter.find({ date: { $in: dateStrings } });
-        const returnedByDate = {};
-        dailyCounters.forEach(dc => { returnedByDate[dc.date] = dc.returned; });
+        const fourteenDaysAgoUTC = new Date(fourteenDaysAgoWIB.getTime() - WIB_OFFSET);
+        const itemsSince = await Item.find({ reportedAt: { $gte: fourteenDaysAgoUTC } }).sort({ reportedAt: 1 });
 
         const itemsPerDay = [];
         for (let i = 0; i < 14; i++) {
-            const day = new Date(fourteenDaysAgo);
-            day.setDate(day.getDate() + i);
-            const dayStart = new Date(day.setHours(0, 0, 0, 0));
-            const dayEnd = new Date(day.setHours(23, 59, 59, 999));
+            const dayStartWIB = new Date(fourteenDaysAgoWIB.getTime() + i * 24 * 60 * 60 * 1000);
+            const dayEndWIB = new Date(dayStartWIB.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+            const dateStr = dayStartWIB.toISOString().split('T')[0];
+
+            const dayStartUTC = new Date(dayStartWIB.getTime() - WIB_OFFSET);
+            const dayEndUTC = new Date(dayEndWIB.getTime() - WIB_OFFSET);
 
             const dayItems = itemsSince.filter(item =>
-                item.reportedAt >= dayStart && item.reportedAt <= dayEnd
+                item.reportedAt >= dayStartUTC && item.reportedAt <= dayEndUTC
             );
 
-            const dateStr = dayStart.toISOString().split('T')[0];
+            // Fetch daily returned counter for this WIB date
+            const dc = await DailyCounter.findOne({ date: dateStr });
             itemsPerDay.push({
                 date: dateStr,
                 lost: dayItems.filter(i => i.type === 'lost').length,
                 found: dayItems.filter(i => i.type === 'found').length,
-                returned: returnedByDate[dateStr] || 0
+                returned: dc?.returned || 0
             });
         }
 

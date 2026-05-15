@@ -1,14 +1,14 @@
-# AGENTS.md — LostFound
+# AGENTS.md — QReturn
 
 **School lost & found system — SMKN 2 Depok.** Vue 3 + Vite 8 + Tailwind v4 (CSS-based config) + TypeScript 6 frontend, Express 5 + Mongoose 9 + Socket.IO 4 + JWT backend, MongoDB Atlas.
 
 ## Developer Commands
 
-| Command | What |
-|---|---|
-| `npm run dev` | Runs Vite frontend (`:5173`) + Express backend (`:5005`) via `concurrently` |
+| Command              | What                                                                        |
+| -------------------- | --------------------------------------------------------------------------- |
+| `npm run dev`        | Runs Vite frontend (`:5173`) + Express backend (`:5005`) via `concurrently` |
 | `npm run type-check` | `vue-tsc --build` (only type-check; no linter or test framework configured) |
-| `npm run build` | `run-p type-check "build-only"` — always type-check before building |
+| `npm run build`      | `run-p type-check "build-only"` — always type-check before building         |
 
 ## Architecture
 

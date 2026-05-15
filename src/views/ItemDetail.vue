@@ -209,6 +209,16 @@ const formatDate = (date: string) => {
   });
 };
 
+const copyGps = async (lat: number, lng: number) => {
+  const text = `${lat},${lng}`;
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.show('GPS coordinates copied', 'success');
+  } catch {
+    toast.show('Failed to copy', 'error');
+  }
+};
+
 
 </script>
 
@@ -395,6 +405,17 @@ const formatDate = (date: string) => {
                 {{ t('detail.location_details') }}
               </h2>
               <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mt-1">{{ item.location }}</p>
+              <div v-if="item.coordinates?.latitude != null" class="mt-2 flex items-center gap-2">
+                <span class="text-[10px] text-[#387b41] font-bold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">gps_fixed</span>
+                  {{ item.coordinates.latitude.toFixed(4) }}, {{ item.coordinates.longitude.toFixed(4) }}
+                </span>
+                <button @click="copyGps(item.coordinates.latitude, item.coordinates.longitude)"
+                  class="text-[10px] text-[#387b41] hover:text-[#2d6334] font-bold flex items-center gap-0.5 transition-colors"
+                  title="Copy GPS coordinates">
+                  <span class="material-symbols-outlined text-xs">content_copy</span>
+                </button>
+              </div>
             </div>
             
             <div v-if="item.coordinates?.latitude != null && item.coordinates?.longitude != null" ref="mapContainer" class="flex-1 w-full min-h-[250px] md:min-h-[300px]"></div>

@@ -91,7 +91,15 @@ onUnmounted(() => stopCamera());
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center p-4 md:p-6 font-sans">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center p-4 font-sans">
+    <div class="m-4 text-center items-center">
+      <div class="flex items-center justify-center gap-2 mb-2">
+        <div class="mb-2 p-2 w-12 h-12 bg-[#387b41]/10 rounded-lg flex items-center justify-center">
+            <img src="/logo.png" alt="" class="w-full h-full object-cover">
+          </div>
+        <p class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">QReturn</p>
+      </div>
+    </div>
     <div class="w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-2xl p-10 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
       <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-5 rounded-full"></div>
       <div class="flex flex-col items-center mb-4 relative z-10">
@@ -172,13 +180,7 @@ onUnmounted(() => stopCamera());
         </div>
       </div>
     </div>
-    <div class="mt-10 text-center">
-      <div class="flex items-center justify-center gap-2 mb-2">
-        <div class="w-6 h-6 bg-[#387b41] rounded flex items-center justify-center"><span class="material-symbols-outlined text-white text-[14px]">school</span></div>
-        <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">LostFound</p>
-      </div>
-      <p class="text-[11px] text-[#40493d] dark:text-[#9ca3af] font-medium uppercase tracking-[0.2em]">SMKN 2 Depok Digital Concierge</p>
-    </div>
+    <p class="mt-8 justify-center text-[11px] text-[#40493d] dark:text-[#9ca3af] font-medium uppercase tracking-[0.2em]">SMK Negeri 2 Depok Digital Service</p>
   </div>
 </template>
 

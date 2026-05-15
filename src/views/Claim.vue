@@ -21,6 +21,14 @@ const videoElement = ref<HTMLVideoElement | null>(null);
 const facingMode = ref<'user' | 'environment'>('user');
 let stream: MediaStream | null = null;
 
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/dashboard')
+  }
+}
+
 const form = ref({
   claimNotes: '',
   claimPhoto: ''
@@ -143,7 +151,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] p-3 sm:p-4 md:p-8 font-sans">
     <div class="max-w-2xl mx-auto">
-      <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
+      <button @click="goBack" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
         <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
         Cancel Claim
       </button>

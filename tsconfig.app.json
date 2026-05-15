@@ -4,6 +4,7 @@
   "exclude": ["src/**/__tests__/*"],
   "compilerOptions": {
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
 
     // Extra safety for array and object lookups, but may have false positives.
     "noUncheckedIndexedAccess": true,

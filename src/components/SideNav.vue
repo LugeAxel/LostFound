@@ -16,9 +16,9 @@ const handleLogout = () => {
 <template>
   <aside class="h-screen w-64 fixed left-0 top-0 bg-white dark:bg-[#1e1e1e] border-r border-[#e0e4df] dark:border-[#374151] shadow-sm z-50 overflow-y-auto hidden md:block">
     <div class="flex flex-col h-full py-8">
-      <div class="mb-10 px-6 flex items-center justify-center flex-col">
+      <div class="mb-8 px-6 flex items-center justify-center flex-col">
         <div class="mb-2 p-2 w-15 h-15 bg-[#387b41]/10 rounded-lg flex items-center justify-center">
-            <img src="/public/logo.png" alt="" class="w-full h-full object-cover">
+            <img src="/logo.png" alt="" class="w-full h-full object-cover">
           </div>
         <div class="flex items-center gap-2 text-center">
           <div>
@@ -70,7 +70,7 @@ const handleLogout = () => {
           <span class="text-sm">{{ t('nav.statistics') }}</span>
         </RouterLink>
         <RouterLink to="/scan" 
-          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
+          :class="['flex items-center gap-3 mb-8 px-4 py-3 transition-all duration-200',
             route.path === '/scan'
               ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
               : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">

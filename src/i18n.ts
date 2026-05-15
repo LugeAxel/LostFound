@@ -64,6 +64,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'search.all': 'All',
     'search.lost': 'Lost',
     'search.found': 'Found',
+    'search.all_categories': 'All Categories',
 
     // === Scanner ===
     'scanner.title': 'Scan QR Code',
@@ -86,6 +87,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'scanner.how_step2': 'Point your camera at the QR code on their phone or printed card',
     'scanner.how_step3': 'Wait for the automatic scan — it only takes a second',
     'scanner.how_step4': 'No camera? Enter the code manually from the profile',
+    'scanner.or_image': 'or scan from image',
+    'scanner.upload_qr': 'Upload QR code image',
+    'scanner.decoding': 'Decoding QR...',
 
     // === Tutorial ===
     'tutorial.title': 'How It Works',
@@ -144,6 +148,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.found_item': 'Found Item',
     'card.returned': 'RETURNED',
     'card.gps_verified': 'GPS Verified',
+    'card.no_gps': 'No GPS',
     'card.claimed_by': 'Claimed by:',
     'card.just_now': 'Just now',
     'card.hours_ago': 'hours ago',
@@ -157,6 +162,23 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.category.Books/Stationery': 'Books/Stationery',
     'card.category.Others': 'Others',
     'marquee.retention_policy': 'Retention Policy: Unclaimed items deleted after 10 days. Returned items deleted after 2 days.',
+
+    // === Developer ===
+    'developer.back': 'Back',
+    'developer.title': 'Our Developers',
+    'developer.subtitle': 'Meet the dedicated team that built the QReturn platform for SMKN 2 Depok. We are passionate about making the school environment better.',
+    'developer.dev1_name': 'Developer 1',
+    'developer.dev1_role': 'Frontend Engineer',
+    'developer.dev1_desc': 'Specializes in Vue.js and Tailwind CSS interfaces.',
+    'developer.dev2_name': 'Ahmad Lutfi Al Muzakir',
+    'developer.dev2_role': 'Backend Engineer',
+    'developer.dev2_desc': 'Architects the Express.js and MongoDB database.',
+    'developer.dev3_name': 'Developer 3',
+    'developer.dev3_role': 'UI/UX Designer',
+    'developer.dev3_desc': 'Creates the user flow and modern aesthetics.',
+    'developer.dev4_name': 'Developer 4',
+    'developer.dev4_role': 'QA & Testing',
+    'developer.dev4_desc': 'Ensures everything works perfectly on all devices.',
 
     // === ItemDetail ===
     'detail.back': 'Back',
@@ -288,6 +310,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'search.all': 'Semua',
     'search.lost': 'Hilang',
     'search.found': 'Ditemukan',
+    'search.all_categories': 'Semua Kategori',
 
     // === Scanner ===
     'scanner.title': 'Scan QR Code',
@@ -310,6 +333,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'scanner.how_step2': 'Arahkan kamera ke kode QR di ponsel atau kartu mereka',
     'scanner.how_step3': 'Tunggu scan otomatis — hanya butuh sedetik',
     'scanner.how_step4': 'Tidak punya kamera? Masukkan kode manual dari profil pelapor',
+    'scanner.or_image': 'atau scan dari gambar',
+    'scanner.upload_qr': 'Unggah gambar QR code',
+    'scanner.decoding': 'Mendekode QR...',
 
     // === Tutorial ===
     'tutorial.title': 'Cara Kerja',
@@ -368,6 +394,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.found_item': 'Barang Temuan',
     'card.returned': 'DIKEMBALIKAN',
     'card.gps_verified': 'GPS Terverifikasi',
+    'card.no_gps': 'Tidak Ada GPS',
     'card.claimed_by': 'Diklaim oleh:',
     'card.just_now': 'Baru saja',
     'card.hours_ago': 'jam lalu',
@@ -381,6 +408,23 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.category.Books/Stationery': 'Buku/Alat Tulis',
     'card.category.Others': 'Lainnya',
     'marquee.retention_policy': 'Kebijakan Retensi: Barang tidak diklaim dihapus setelah 10 hari. Barang kembali dihapus setelah 2 hari.',
+
+    // === Developer ===
+    'developer.back': 'Kembali',
+    'developer.title': 'Pengembang Kami',
+    'developer.subtitle': 'Kenali tim yang berdedikasi membangun platform QReturn untuk SMKN 2 Depok. Kami bersemangat membuat lingkungan sekolah lebih baik.',
+    'developer.dev1_name': 'Developer 1',
+    'developer.dev1_role': 'Frontend Engineer',
+    'developer.dev1_desc': 'Mengkhususkan diri dalam antarmuka Vue.js dan Tailwind CSS.',
+    'developer.dev2_name': 'Ahmad Lutfi Al Muzakir',
+    'developer.dev2_role': 'Backend Engineer',
+    'developer.dev2_desc': 'Merancang database Express.js dan MongoDB.',
+    'developer.dev3_name': 'Developer 3',
+    'developer.dev3_role': 'UI/UX Designer',
+    'developer.dev3_desc': 'Menciptakan alur pengguna dan estetika modern.',
+    'developer.dev4_name': 'Developer 4',
+    'developer.dev4_role': 'QA & Testing',
+    'developer.dev4_desc': 'Memastikan semuanya berfungsi sempurna di semua perangkat.',
 
     // === ItemDetail (ID) ===
     'detail.back': 'Kembali',

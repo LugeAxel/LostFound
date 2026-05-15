@@ -6,8 +6,10 @@ import QrcodeVue from 'qrcode.vue';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import { API_URL } from '@/config/api';
+import { useToast } from '../composables/useToast';
 
 const router = useRouter();
+const toast = useToast();
 const items = ref<any[]>([]);
 const isLoading = ref(true);
 
@@ -41,6 +43,15 @@ const getClaimUrl = (id: string) => {
 
 const formatDate = (date: string) => {
   return new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
+const copyText = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.show('Copied to clipboard', 'success');
+  } catch {
+    toast.show('Failed to copy', 'error');
+  }
 };
 </script>
 
@@ -98,8 +109,16 @@ const formatDate = (date: string) => {
                 <p class="text-sm text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1"><span class="material-symbols-outlined text-lg">calendar_today</span> {{ formatDate(item.reportedAt) }}</p>
                 <p class="text-sm text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1"><span class="material-symbols-outlined text-lg">category</span> {{ item.category }}</p>
               </div>
-              <div v-if="item.coordinates" class="mt-2 text-[10px] text-[#387b41] font-bold flex items-center gap-1">
-                <span class="material-symbols-outlined text-xs">gps_fixed</span> Precise Location Captured
+              <div v-if="item.coordinates" class="mt-2 flex items-center gap-2">
+                <span class="text-[10px] text-[#387b41] font-bold flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">gps_fixed</span>
+                  {{ item.coordinates.latitude.toFixed(4) }}, {{ item.coordinates.longitude.toFixed(4) }}
+                </span>
+                <button @click="copyText(`${item.coordinates.latitude},${item.coordinates.longitude}`)"
+                  class="text-[10px] text-[#387b41] hover:text-[#2d6334] font-bold flex items-center gap-0.5 transition-colors"
+                  title="Copy GPS coordinates">
+                  <span class="material-symbols-outlined text-xs">content_copy</span>
+                </button>
               </div>
               <p class="mt-4 text-sm text-[#40493d] dark:text-[#9ca3af] italic leading-relaxed" v-if="item.description">"{{ item.description }}"</p>
             </div>
@@ -119,8 +138,16 @@ const formatDate = (date: string) => {
 
           <div v-if="item.status !== 'Returned'" class="flex flex-col items-center justify-center p-4 md:p-6 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl border border-[#e0e4df] dark:border-[#374151] min-w-[200px]">
             <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] mb-4 uppercase tracking-[0.2em]">Claim QR Code</p>
-            <div class="p-3 bg-white dark:bg-[#1e1e1e] rounded-xl shadow-inner mb-4">
-              <qrcode-vue :value="getClaimUrl(item._id)" :size="100" level="H" foreground="#1c1b1b" />
+            <div class="p-3 bg-white rounded-xl shadow-inner mb-4">
+              <qrcode-vue :value="getClaimUrl(item._id)" :size="100" level="H" foreground="#1c1b1b" class=""/>
+            </div>
+            <div class="mb-2 flex items-center gap-1 bg-[#e0e4df] dark:bg-[#374151] px-3 py-1.5 rounded-lg">
+              <span class="text-[9px] font-mono text-[#40493d] dark:text-[#9ca3af] truncate max-w-[120px]">{{ item._id }}</span>
+              <button @click="copyText(item._id)"
+                class="text-[#387b41] hover:text-[#2d6334] transition-colors shrink-0"
+                title="Copy item ID">
+                <span class="material-symbols-outlined text-sm">content_copy</span>
+              </button>
             </div>
             <p v-if="item.status === 'On Progress'" class="text-[9px] text-[#f57f17] text-center font-bold max-w-[140px] mb-2">CLAIM IN PROGRESS</p>
             <p class="text-[9px] text-[#40493d] dark:text-[#9ca3af] text-center font-medium max-w-[140px]">Owner can scan this QR to confirm receipt.</p>
