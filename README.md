@@ -1,103 +1,201 @@
-# 🕵️‍♂️ QReturn - SMKN 2 Depok Edition
+<p align="center">
+  <img src="public/logo.png" alt="QReturn Logo" width="96" />
+</p>
 
-![QReturn Hero](/absolute/path/to/QReturn_hero_image_1778603999274.png)
+<h1 align="center">QReturn</h1>
 
-### **Reconnecting students with their belongings, one QR scan at a time.**
+<p align="center">
+  <strong>Lost & Found System for SMKN 2 Depok</strong><br>
+  Reconnecting students with their belongings, one QR scan at a time.
+</p>
 
-**QReturn** is a modern, real-time lost and found platform specifically designed for the **SMKN 2 Depok** community. Built with a focus on usability and security, it bridges the gap between those who find lost items and those who are looking for them.
-
----
-
-## 🌟 Key Features
-
-### 📱 **QR-First Experience**
-
-No more tedious login forms. Simply scan your **Student Card QR** to instantly log in and start reporting or claiming items.
-
-### 📍 **GPS Location Pinpointing**
-
-Finders can drop a precise pin on our **Interactive Leaflet Map**. Owners can see exactly where their item was last spotted, making recovery easier than ever.
-
-### 💬 **Real-time Secure Chat**
-
-Powered by **Socket.io**, our built-in chat system allows founders and claimers to communicate instantly without sharing personal phone numbers.
-
-### 🔔 **Smart Notification System**
-
-Get alerted the moment someone claims your reported item or sends you a message. Our notification badge keeps you updated in real-time.
-
-### 🛡️ **Verified Claim Workflow**
-
-Items are protected by a **Semi-manual Verification** system. Founders review claims and finalize ownership only after seeing the "Claim QR Code" provided by the owner.
+<p align="center">
+  <img src="https://img.shields.io/badge/Vue_3-4FC08D?style=flat-square&logo=vue.js&logoColor=white" />
+  <img src="https://img.shields.io/badge/Express_5-000000?style=flat-square&logo=express&logoColor=white" />
+  <img src="https://img.shields.io/badge/MongoDB_Atlas-47A248?style=flat-square&logo=mongodb&logoColor=white" />
+  <img src="https://img.shields.io/badge/Socket.IO-010101?style=flat-square&logo=socket.io&logoColor=white" />
+  <img src="https://img.shields.io/badge/TypeScript_6-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS_v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/JWT-000000?style=flat-square&logo=jsonwebtokens&logoColor=white" />
+</p>
 
 ---
 
-## 🛠️ Technology Stack
+## Features
 
-| Frontend                    | Backend               | Database           | Real-time        |
-| :-------------------------- | :-------------------- | :----------------- | :--------------- |
-| **Vue 3** (Composition API) | **Node.js** (Express) | **MongoDB Atlas**  | **Socket.io**    |
-| **Vite** (Build Tool)       | **JWT** (Auth)        | **Mongoose** (ODM) | **Vercel/Local** |
-| **Tailwind CSS** (Styling)  | **Express Validator** | **Managed Cloud**  | **WebSockets**   |
+| Feature | Description |
+|---------|-------------|
+| **QR Authentication** | Login via student card QR scan (NISN-based) — no passwords required |
+| **Email/Password Auth** | Fallback authentication method |
+| **Item Reporting** | Report lost or found items with photos, location, and category |
+| **Live GPS Location** | Pinpoint item location using device GPS with interactive Leaflet map |
+| **Real-time Chat** | Built-in chat via Socket.IO for founders and claimers to coordinate |
+| **QR Claim System** | Each found item generates a unique QR code; owners scan to verify |
+| **Smart Notifications** | Real-time alerts for claims, messages, and status changes |
+| **Verification Workflow** | Semi-manual verification — founder reviews and finalizes ownership |
+| **Search & Filter** | Browse items by text, type (lost/found), and category |
+| **Statistics Dashboard** | Visual charts for items per day, categories, and fun facts |
+| **Dark Mode** | Full dark mode support with system-aware toggling |
+| **i18n** | Indonesian and English language support |
+| **Retention Policy** | Unclaimed items auto-deleted after 10 days; returned items after 2 |
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | Vue 3 (Composition API, `<script setup>`), Vite 8, TypeScript 6 |
+| **Styling** | Tailwind CSS v4 (CSS-based config, no PostCSS) |
+| **Backend** | Node.js, Express 5, CommonJS |
+| **Database** | MongoDB Atlas via Mongoose 9 |
+| **Real-time** | Socket.IO 4 (JWT handshake, rate-limited) |
+| **Auth** | JWT (24h expiry) |
+| **QR** | `html5-qrcode` (scanner), `qrcode.vue` (generator) |
+| **Maps** | Leaflet + OpenStreetMap tiles |
+| **Uploads** | Cloudinary via multer-storage-cloudinary (5MB limit) |
+| **Animations** | LottieFiles (`@lottiefiles/dotlottie-vue`) |
+
+---
+
+## 📁 Project Structure
+
+```
+QReturn/
+├── src/                    # Frontend (Vue 3)
+│   ├── views/              # Page components (12 routes)
+│   ├── components/         # Reusable components
+│   ├── router/index.ts     # Route definitions + auth guard
+│   ├── config/http.ts      # Axios instance (15s timeout, retry)
+│   └── i18n.ts             # Custom i18n (EN/ID)
+├── backend/                # Backend (Express 5)
+│   ├── server.js           # API routes, Socket.IO, cron jobs
+│   ├── middleware/          # Auth, cache, upload middleware
+│   └── config/             # Cloudinary config
+├── public/                 # Static assets
+├── .env                    # Environment variables
+├── vite.config.ts
+├── package.json
+└── tsconfig*.json
+```
 
 ---
 
 ## 🚀 Getting Started
 
-### 1️⃣ Clone the Repository
+### Prerequisites
+
+- **Node.js** >= 20.19 or >= 22.12
+- **npm** >= 10
+- **MongoDB Atlas** account (or local MongoDB instance)
+- **Cloudinary** account (for image uploads)
+
+### Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/your-username/QReturn.git
 cd QReturn
+
+# Install all dependencies (root + backend)
+npm install
+cd backend && npm install && cd ..
 ```
 
-### 2️⃣ Install Dependencies
-
-```bash
-# Install frontend dependencies
-npm install
-
-# Install backend dependencies
-cd backend
-npm install
-cd ..
-```
-
-### 3️⃣ Configure Environment Variables
+### Configuration
 
 Create a `.env` file in the root directory:
 
 ```env
 PORT=5005
-MONGODB_URI=your_mongodb_atlas_uri
-VITE_API_URL=http://localhost:5005
-JWT_SECRET=your_secret_key
+MONGODB_URI=mongodb+srv://<user>:<pass>@cluster0.xxxxx.mongodb.net/lostfound?retryWrites=true&w=majority
+JWT_SECRET=your_super_secret_key_change_this
 JWT_EXPIRES_IN=24h
+VITE_API_URL=http://localhost:5005
+
+# Cloudinary (optional — falls back to no image otherwise)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
-### 4️⃣ Launch the Application
+### Development
 
 ```bash
-# Run both frontend and backend concurrently
+# Runs frontend (:5173) + backend (:5005) concurrently
 npm run dev
 ```
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Type-Check
+
+```bash
+npm run type-check
+```
+
+---
+
+## 🧭 Routes
+
+| Path | Page | Auth |
+|------|------|------|
+| `/` | Login | Guest only |
+| `/dashboard` | Dashboard | Required |
+| `/report` | Report Item | Required |
+| `/my-reports` | My Reports | Required |
+| `/search` | Search Items | Required |
+| `/statistics` | Statistics | Required |
+| `/scan` | QR Scanner | Required |
+| `/claim/:id` | Claim Item | Required |
+| `/item/:id` | Item Detail | Required |
+| `/tutorial` | Tutorial | Required |
+| `/developer` | Developer Page | Required |
+| `/rating` | Rate App | Required |
+
+---
+
+## 🔐 API Overview
+
+All endpoints (except auth) require a `Bearer` token in the `Authorization` header.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/login` | Email/password login |
+| `POST` | `/api/auth/qr-login` | NISN-based QR login |
+| `GET` | `/api/auth/me` | Verify token & get profile |
+| `GET` | `/api/items` | List items (paginated, filterable) |
+| `GET` | `/api/items/mine` | Current user's reports |
+| `GET` | `/api/items/:id` | Single item details |
+| `POST` | `/api/items` | Create a report |
+| `POST` | `/api/items/:id/start-claim` | Initiate a claim |
+| `POST` | `/api/items/:id/claim` | Submit verified claim |
+| `POST` | `/api/items/:id/chat` | Send chat message |
+| `POST` | `/api/items/:id/complaint` | File complaint |
+| `GET` | `/api/stats` | Dashboard stats |
+| `GET` | `/api/stats/detailed` | Detailed statistics |
+| `POST` | `/api/ratings` | Submit rating |
 
 ---
 
 ## 📸 Preview
 
-<div align="center">
-  <img src="https://img.shields.io/badge/Status-Live-success?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Security-JWT%20Protected-blue?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/UI/UX-Premium%20Design-orange?style=for-the-badge" />
-</div>
+<p align="center">
+  <img src="screen.png" alt="QReturn Screenshot" width="720" />
+</p>
 
 ---
 
-## 📜 Development Philosophy
+## 📄 License
 
-This project was built to prioritize **Usability**, **Student Identity**, and **Safety**. It’s not just a database; it’s a tool for community cooperation within SMKN 2 Depok.
+This project is developed for **SMKN 2 Depok** educational purposes.
 
 ---
 
-Developed with ❤️ for **SMKN 2 Depok Students**.
+<p align="center">
+  Built with ❤️ for the SMKN 2 Depok community
+</p>
