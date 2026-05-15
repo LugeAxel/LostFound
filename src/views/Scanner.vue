@@ -5,6 +5,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import { useI18n } from '../i18n';
+import { DotLottieVue } from '@lottiefiles/dotlottie-vue';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -168,7 +169,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex pt-10">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex pt-10 pb-10">
     <SideNav />
     <TopNav />
 
@@ -257,10 +258,12 @@ onUnmounted(() => {
 
             <!-- How To -->
             <div class="bg-[#f8faf7] dark:bg-[#121212] rounded-xl p-5 border border-[#e0e4df] dark:border-[#374151]">
+              
               <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6] mb-4 flex items-center gap-2">
                 <span class="material-symbols-outlined text-base text-[#387b41]">help</span>
                 {{ t('scanner.how_title') }}
               </h3>
+              <DotLottieVue src="/animations/qranimation.json" :autoplay="true" :loop="true" style="width:150px;height:150px" class="" />
               <ol class="space-y-3">
                 <li v-for="(step, i) in [t('scanner.how_step1'), t('scanner.how_step2'), t('scanner.how_step3'), t('scanner.how_step4')]" :key="i"
                   class="flex gap-3 text-xs text-[#40493d] dark:text-[#9ca3af] leading-relaxed">

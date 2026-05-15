@@ -33,7 +33,7 @@ const fetchStats = async () => {
     funFacts.value = res.data.funFacts;
 
     maxDayCount.value = Math.max(
-      ...res.data.itemsPerDay.map((d: any) => Math.max(d.lost, d.found, d.returned)),
+      ...res.data.itemsPerDay.map((d: any) => d.lost + d.found + d.returned),
       1
     );
     maxCategoryCount.value = Math.max(
@@ -137,29 +137,26 @@ onMounted(fetchStats);
             </div>
 
             <!-- Chart -->
-            <div class="space-y-2">
-              <div v-for="day in itemsPerDay" :key="day.date" class="flex items-center gap-3">
-                <span class="text-[10px] text-[#40493d] dark:text-[#9ca3af] font-medium w-20 shrink-0 truncate">{{ day.date.slice(5) }}</span>
-                <div class="flex-1 flex items-end gap-0.5 h-8">
-                  <div class="relative flex-1 flex items-end gap-px h-full">
-                    <div class="relative h-full flex items-end rounded-sm transition-all duration-500"
-                      :style="{ width: (day.lost / maxDayCount) * 100 + '%' }">
-                      <div class="w-full bg-[#ef4444] rounded-t-sm"
-                        :style="{ height: (day.lost / Math.max(day.lost, day.found, day.returned, 1)) * 100 + '%' }"></div>
-                    </div>
-                    <div class="relative h-full flex items-end rounded-sm transition-all duration-500"
-                      :style="{ width: (day.found / maxDayCount) * 100 + '%' }">
-                      <div class="w-full bg-[#387b41] rounded-t-sm"
-                        :style="{ height: (day.found / Math.max(day.lost, day.found, day.returned, 1)) * 100 + '%' }"></div>
-                    </div>
-                    <div class="relative h-full flex items-end rounded-sm transition-all duration-500"
-                      :style="{ width: (day.returned / maxDayCount) * 100 + '%' }">
-                      <div class="w-full bg-[#0ea5e9] rounded-t-sm"
-                        :style="{ height: (day.returned / Math.max(day.lost, day.found, day.returned, 1)) * 100 + '%' }"></div>
-                    </div>
+            <div class="flex items-end gap-1 sm:gap-2" style="min-height: 200px">
+              <div v-for="day in itemsPerDay" :key="day.date" class="flex-1 flex flex-col items-center gap-1">
+                <div class="flex items-stretch gap-px w-full" style="height: 180px">
+                  <div class="flex-1 flex flex-col items-center justify-end">
+                    <div class="w-full min-h-[3px] bg-[#ef4444] rounded-t-sm transition-all duration-500" 
+                      :style="{ height: maxDayCount > 0 ? (day.lost / maxDayCount) * 100 + '%' : '0%' }" 
+                      :title="'Lost: ' + day.lost"></div>
                   </div>
-                  <span class="text-[9px] text-[#40493d] dark:text-[#9ca3af] font-medium w-6 text-right">{{ day.lost + day.found + day.returned }}</span>
+                  <div class="flex-1 flex flex-col items-center justify-end">
+                    <div class="w-full min-h-[3px] bg-[#387b41] rounded-t-sm transition-all duration-500" 
+                      :style="{ height: maxDayCount > 0 ? (day.found / maxDayCount) * 100 + '%' : '0%' }"
+                      :title="'Found: ' + day.found"></div>
+                  </div>
+                  <div class="flex-1 flex flex-col items-center justify-end">
+                    <div class="w-full min-h-[3px] bg-[#0ea5e9] rounded-t-sm transition-all duration-500" 
+                      :style="{ height: maxDayCount > 0 ? (day.returned / maxDayCount) * 100 + '%' : '0%' }"
+                      :title="'Returned: ' + day.returned"></div>
+                  </div>
                 </div>
+                <span class="text-[9px] sm:text-[10px] text-[#40493d] dark:text-[#9ca3af] font-medium truncate w-full text-center">{{ day.date.slice(5) }}</span>
               </div>
             </div>
           </div>

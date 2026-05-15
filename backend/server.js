@@ -164,6 +164,18 @@ const NotificationSchema = new mongoose.Schema({
 });
 const Notification = mongoose.model('Notification', NotificationSchema);
 
+const CounterSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    value: { type: Number, default: 0 }
+});
+const Counter = mongoose.model('Counter', CounterSchema);
+
+const DailyCounterSchema = new mongoose.Schema({
+    date: { type: String, required: true, unique: true },
+    returned: { type: Number, default: 0 }
+});
+const DailyCounter = mongoose.model('DailyCounter', DailyCounterSchema);
+
 const ItemSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true, maxlength: 200 },
     location: { type: String, required: true, trim: true, maxlength: 200 },
@@ -526,7 +538,7 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
         const skip = (page - 1) * limit;
 
         const items = await Item.find()
-            .select('-messages -complaints -claimPhoto -claimNotes -coordinates')
+            .select('-messages -complaints -claimPhoto -claimNotes')
             .populate('reporter', 'nama nisn jurusan')
             .populate('claimer', 'nama')
             .sort({ reportedAt: -1 })
@@ -864,6 +876,21 @@ app.post('/api/items/:id/claim',
 
             await item.save();
 
+            // Increment all-time returned counter
+            await Counter.findOneAndUpdate(
+                { name: 'returnedAllTime' },
+                { $inc: { value: 1 } },
+                { upsert: true }
+            );
+
+            // Increment daily returned counter (survives item deletion)
+            const today = new Date().toISOString().split('T')[0];
+            await DailyCounter.findOneAndUpdate(
+                { date: today },
+                { $inc: { returned: 1 } },
+                { upsert: true }
+            );
+
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
 
@@ -892,7 +919,8 @@ app.get('/api/stats', authMiddleware, cache(60), async (req, res) => {
             type: 'found',
             reportedAt: { $gte: new Date().setHours(0, 0, 0, 0) }
         });
-        const returnedAllTime = await Item.countDocuments({ status: 'Returned' });
+        const counter = await Counter.findOne({ name: 'returnedAllTime' });
+        const returnedAllTime = counter?.value || 0;
 
         res.json({ currentlyLost, foundToday, returnedAllTime });
     } catch (error) {
@@ -946,7 +974,8 @@ app.get('/api/ratings', authMiddleware, cache(300), async (req, res) => {
             ratings: ratings.map(r => ({
                 rating: r.rating,
                 comment: r.comment,
-                createdAt: r.createdAt
+                createdAt: r.createdAt,
+                user: { nama: r.user?.nama || 'Anonymous' }
             }))
         });
     } catch (error) {
@@ -975,6 +1004,17 @@ app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300),
 
         const itemsSince = await Item.find({ reportedAt: { $gte: fourteenDaysAgo } }).sort({ reportedAt: 1 });
 
+        // Fetch daily returned counters (survives item deletion)
+        const dateStrings = [];
+        for (let i = 0; i < 14; i++) {
+            const d = new Date(fourteenDaysAgo);
+            d.setDate(d.getDate() + i);
+            dateStrings.push(d.toISOString().split('T')[0]);
+        }
+        const dailyCounters = await DailyCounter.find({ date: { $in: dateStrings } });
+        const returnedByDate = {};
+        dailyCounters.forEach(dc => { returnedByDate[dc.date] = dc.returned; });
+
         const itemsPerDay = [];
         for (let i = 0; i < 14; i++) {
             const day = new Date(fourteenDaysAgo);
@@ -986,11 +1026,12 @@ app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300),
                 item.reportedAt >= dayStart && item.reportedAt <= dayEnd
             );
 
+            const dateStr = dayStart.toISOString().split('T')[0];
             itemsPerDay.push({
-                date: dayStart.toISOString().split('T')[0],
+                date: dateStr,
                 lost: dayItems.filter(i => i.type === 'lost').length,
                 found: dayItems.filter(i => i.type === 'found').length,
-                returned: dayItems.filter(i => i.status === 'Returned').length
+                returned: returnedByDate[dateStr] || 0
             });
         }
 
@@ -1021,7 +1062,8 @@ app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300),
 
         // Fun facts
         const totalItems = allItems.length;
-        const totalReturned = allItems.filter(i => i.status === 'Returned').length;
+        const counterDoc = await Counter.findOne({ name: 'returnedAllTime' });
+        const totalReturned = counterDoc?.value || 0;
         const returnRate = totalItems > 0 ? Math.round((totalReturned / totalItems) * 100) : 0;
 
         // Most common location

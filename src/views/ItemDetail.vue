@@ -118,12 +118,21 @@ const sendMessage = async () => {
   }
 };
 
-const fileComplaint = async () => {
-  const reason = prompt(t('detail.complaint_prompt'));
-  if (!reason) return;
+const showComplaintModal = ref(false);
+const complaintReason = ref('');
+
+const fileComplaint = () => {
+  complaintReason.value = '';
+  showComplaintModal.value = true;
+};
+
+const submitComplaint = async () => {
+  if (!complaintReason.value.trim()) return;
   try {
-    await axios.post(`${API_URL}/api/items/${itemId}/complaint`, { reason }, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId}/complaint`, { reason: complaintReason.value }, { headers: getAuthHeaders() });
     toast.show(t('detail.complaint_success'), 'success');
+    showComplaintModal.value = false;
+    complaintReason.value = '';
     await fetchItem();
   } catch (error: any) {
     toast.show(error.response?.data?.message || t('detail.complaint_success'), error.response?.data?.message ? 'error' : 'success');
@@ -379,7 +388,7 @@ const formatDate = (date: string) => {
 
         <!-- Right: Map and Location Details -->
         <div class="space-y-8">
-          <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm flex flex-col h-full min-h-[350px] md:min-h-[500px]">
+          <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm flex flex-col h-180 min-h-[350px] md:min-h-[500px]">
             <div class="p-6 md:p-8 border-b border-[#e0e4df] dark:border-[#374151]">
               <h2 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2">
                 <span class="material-symbols-outlined text-[#387b41]">location_on</span>
@@ -427,6 +436,36 @@ const formatDate = (date: string) => {
                   {{ t('detail.complaint_already') }}
                 </p>
               </div>
+
+              <!-- Complaint Modal -->
+              <Teleport to="body">
+                <div v-if="showComplaintModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="showComplaintModal = false">
+                  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+                  <div class="relative bg-white dark:bg-[#1e1e1e] rounded-[2rem] p-6 sm:p-8 w-full max-w-md border border-[#e0e4df] dark:border-[#374151] shadow-2xl animate-fade-in">
+                    <div class="flex items-center gap-3 mb-6">
+                      <div class="w-10 h-10 bg-[#fef2f2] rounded-xl flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[#ba1a1a]">report</span>
+                      </div>
+                      <div>
+                        <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('detail.complaint_modal_title') }}</h3>
+                        <p class="text-xs text-[#40493d] dark:text-[#9ca3af]">{{ t('detail.complaint_modal_reason') }}</p>
+                      </div>
+                    </div>
+                    <textarea v-model="complaintReason" :placeholder="t('detail.complaint_modal_placeholder')" rows="4" maxlength="500"
+                      class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-4 py-3 text-sm focus:border-[#ba1a1a] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all resize-none mb-4" />
+                    <div class="flex gap-3">
+                      <button @click="showComplaintModal = false"
+                        class="flex-1 py-3 bg-[#f3f5f2] dark:bg-[#2a2a2a] text-[#40493d] dark:text-[#9ca3af] rounded-xl font-bold text-sm hover:bg-[#e0e4df] dark:hover:bg-[#374151] transition-all">
+                        {{ t('detail.complaint_modal_cancel') }}
+                      </button>
+                      <button @click="submitComplaint" :disabled="!complaintReason.trim()"
+                        class="flex-1 py-3 bg-[#ba1a1a] text-white rounded-xl font-bold text-sm hover:bg-[#991515] transition-all disabled:opacity-50">
+                        {{ t('detail.complaint_modal_submit') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </Teleport>
             </div>
           </div>
         </div>
@@ -446,5 +485,13 @@ const formatDate = (date: string) => {
 :deep(.custom-marker-icon) {
   background: none !important;
   border: none !important;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
 }
 </style>

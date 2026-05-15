@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
             <div class="max-h-96 overflow-y-auto">
               <div v-for="notif in notifications" :key="notif._id" 
                 @click="markAsRead(notif._id); router.push(`/item/${notif.item}`); showDropdown = false"
-                :class="['p-4 border-b border-[#f3f5f2] cursor-pointer hover:bg-[#f8faf7] dark:bg-[#121212] transition-all flex gap-3', !notif.isRead && 'bg-[#f0fdf4]']">
+                :class="['p-4 border-b border-[#f3f5f2] cursor-pointer hover:bg-[#f8faf7] dark:bg-[#121212] dark:hover:bg-[#353535] transition-all flex gap-3', !notif.isRead && 'bg-[#f0fdf4]']">
                 <div :class="['w-10 h-10 rounded-full flex items-center justify-center shrink-0', 
                   notif.type === 'message' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600']">
                   <span class="material-symbols-outlined text-xl">{{ notif.type === 'message' ? 'chat' : 'notifications' }}</span>

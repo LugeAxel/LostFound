@@ -16,11 +16,11 @@ const handleLogout = () => {
 <template>
   <aside class="h-screen w-64 fixed left-0 top-0 bg-white dark:bg-[#1e1e1e] border-r border-[#e0e4df] dark:border-[#374151] shadow-sm z-50 overflow-y-auto hidden md:block">
     <div class="flex flex-col h-full py-8">
-      <div class="mb-10 px-6">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-[#387b41]/10 rounded-lg flex items-center justify-center">
-            <span class="material-symbols-outlined text-[#387b41]">domain</span>
+      <div class="mb-10 px-6 flex items-center justify-center flex-col">
+        <div class="mb-2 p-2 w-15 h-15 bg-[#387b41]/10 rounded-lg flex items-center justify-center">
+            <img src="/public/logo.png" alt="" class="w-full h-full object-cover">
           </div>
+        <div class="flex items-center gap-2 text-center">
           <div>
             <h1 class="text-lg font-bold text-[#387b41] leading-tight">{{ t('nav.brand') }}</h1>
             <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af] font-medium uppercase tracking-wider">{{ t('nav.brand_sub') }}</p>
@@ -69,13 +69,13 @@ const handleLogout = () => {
           <span class="material-symbols-outlined">leaderboard</span>
           <span class="text-sm">{{ t('nav.statistics') }}</span>
         </RouterLink>
-        <RouterLink to="/rating" 
+        <RouterLink to="/scan" 
           :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
-            route.path === '/rating'
+            route.path === '/scan'
               ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
               : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">star</span>
-          <span class="text-sm">Rating</span>
+          <span class="material-symbols-outlined">qr_code</span>
+          <span class="text-sm">Scan</span>
         </RouterLink>
       </nav>
       

@@ -160,15 +160,21 @@ onMounted(fetchRatings);
         <div v-else class="space-y-4">
           <div v-for="(r, idx) in ratings" :key="idx"
             class="flex items-start gap-4 p-4 bg-[#f8faf7] dark:bg-[#121212] rounded-2xl border border-[#e0e4df] dark:border-[#374151]">
-            <div class="flex gap-0.5 shrink-0">
-              <span v-for="s in 5" :key="s"
-                class="material-symbols-outlined text-base"
-                :class="s <= r.rating ? 'text-[#f59e0b]' : 'text-[#e0e4df] dark:text-[#374151]'"
-                :style="s <= r.rating ? 'font-variation-settings: \'FILL\' 1;' : ''">star</span>
+            <div class="w-9 h-9 rounded-full bg-[#387b41]/10 flex items-center justify-center text-[#387b41] font-bold text-sm shrink-0">
+              {{ (r.user?.nama || 'A').charAt(0) }}
             </div>
             <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1 flex-wrap">
+                <span class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ r.user?.nama || 'Anonymous' }}</span>
+                <div class="flex gap-0.5">
+                  <span v-for="s in 5" :key="s"
+                    class="material-symbols-outlined text-sm"
+                    :class="s <= r.rating ? 'text-[#f59e0b]' : 'text-[#e0e4df] dark:text-[#374151]'"
+                    :style="s <= r.rating ? 'font-variation-settings: \'FILL\' 1;' : ''">star</span>
+                </div>
+              </div>
               <p v-if="r.comment" class="text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">{{ r.comment }}</p>
-              <p v-else class="text-sm text-[#40493d] dark:text-[#9ca3af] italic">No comment</p>
+              <p v-else class="text-sm text-[#40493d] dark:text-[#9ca3af] italic">{{ t('detail.no_description') }}</p>
               <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ new Date(r.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) }}</p>
             </div>
           </div>

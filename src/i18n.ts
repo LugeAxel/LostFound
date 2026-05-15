@@ -7,8 +7,8 @@ const I18N_KEY = Symbol('i18n');
 const translations: Record<Locale, Record<string, string>> = {
   en: {
     // === SideNav ===
-    'nav.brand': 'Lost & Found',
-    'nav.brand_sub': 'Digital Concierge',
+    'nav.brand': 'QReturn',
+    'nav.brand_sub': 'Digital Service',
     'nav.dashboard': 'Dashboard',
     'nav.my_reports': 'My Reports',
     'nav.report': 'Report',
@@ -26,7 +26,7 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // === Dashboard ===
     'dash.welcome': 'Welcome back,',
-    'dash.welcome_sub': 'Lost something on campus? Our digital concierge helps you find your belongings.',
+    'dash.welcome_sub': 'Lost something on school? Our digital concierge helps you find your belongings.',
     'dash.view_my_items': 'View My Items',
     'dash.how_it_works': 'How it works',
     'dash.currently_lost': 'Currently Lost',
@@ -189,6 +189,11 @@ const translations: Record<Locale, Record<string, string>> = {
     'detail.set_claimer': 'Set as Claimer',
     'detail.claimer_reassigned': 'Claimer reassigned successfully',
     'detail.meet_scan_notice': 'The claimer must meet you in person and scan the QR code to complete the claim.',
+    'detail.complaint_modal_title': 'File a Complaint',
+    'detail.complaint_modal_reason': 'Reason for complaint',
+    'detail.complaint_modal_cancel': 'Cancel',
+    'detail.complaint_modal_submit': 'Submit Complaint',
+    'detail.complaint_modal_placeholder': 'Describe why you are filing a complaint...',
 
     // === Rating ===
     'rating.title': 'Rate This App',
@@ -226,7 +231,7 @@ const translations: Record<Locale, Record<string, string>> = {
   },
   id: {
     // === SideNav ===
-    'nav.brand': 'Lost & Found',
+    'nav.brand': 'QReturn',
     'nav.brand_sub': 'Layanan Digital',
     'nav.dashboard': 'Beranda',
     'nav.my_reports': 'Laporanku',
@@ -405,9 +410,14 @@ const translations: Record<Locale, Record<string, string>> = {
     'detail.assign_claimer': 'Atur Pengklaim',
     'detail.assign_claimer_desc': 'Pilih siapa yang akan mengklaim barang ini. Siswa yang dipilih harus bertemu dan scan QR code untuk menyelesaikan klaim.',
     'detail.original_claimer': 'Pengklaim Asli',
-    'detail.set_claimer': 'Tetapkan sebagai Pengklaim',
+    'detail.set_claimer': 'Tetapkan pengklaim',
     'detail.claimer_reassigned': 'Pengklaim berhasil diubah',
     'detail.meet_scan_notice': 'Pengklaim harus bertemu langsung dengan Anda dan scan QR code untuk menyelesaikan klaim.',
+    'detail.complaint_modal_title': 'Ajukan Komplain',
+    'detail.complaint_modal_reason': 'Alasan komplain',
+    'detail.complaint_modal_cancel': 'Batal',
+    'detail.complaint_modal_submit': 'Kirim Komplain',
+    'detail.complaint_modal_placeholder': 'Jelaskan alasan Anda mengajukan komplain...',
 
     // === Rating ===
     'rating.title': 'Beri Nilai Aplikasi',

@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { API_URL } from '@/config/api';
 import { useToast } from '../composables/useToast';
+import { DotLottieVue } from '@lottiefiles/dotlottie-vue'
 
 const router = useRouter();
 const status = ref('Ready to scan');
@@ -93,18 +94,18 @@ onUnmounted(() => stopCamera());
   <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center p-4 md:p-6 font-sans">
     <div class="w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-2xl p-10 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
       <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-5 rounded-full"></div>
-      <div class="flex flex-col items-center mb-8 relative z-10">
-        <div class="w-20 h-20 bg-[#f0fdf4] rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+      <div class="flex flex-col items-center mb-4 relative z-10">
+        <div class="w-10 h-10 bg-[#f0fdf4] rounded-2xl flex items-center justify-center mb-6 shadow-sm">
           <span class="material-symbols-outlined text-4xl text-[#387b41]">{{ loginMode === 'qr' ? 'qr_code_scanner' : 'mail' }}</span>
         </div>
-        <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">Student Login</h2>
-        <p class="text-sm text-[#40493d] dark:text-[#9ca3af] text-center mt-3 leading-relaxed px-4">
+        <h2 class="text-8xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">Student Login</h2>
+        <p class="text-sm text-[#40493d] dark:text-[#9ca3af] text-center mt-1 leading-relaxed px-4">
           {{ loginMode === 'qr' ? "Scan your Student ID QR code below." : isEmailMode === 'login' ? "Sign in with email." : "Create a new account." }}
         </p>
       </div>
 
       <!-- Mode Switcher -->
-      <div class="grid grid-cols-2 gap-2 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl mb-8">
+      <div class="grid grid-cols-2 gap-2 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl mb-2">
         <button @click="switchMode('qr')" :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', loginMode === 'qr' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af]']">
           <span class="material-symbols-outlined text-xl">qr_code_scanner</span> QR Code
         </button>
@@ -115,7 +116,10 @@ onUnmounted(() => stopCamera());
 
       <!-- QR Mode -->
       <div v-if="loginMode === 'qr'" class="relative mb-8">
-        <div id="reader" class="qr-reader overflow-hidden rounded-3xl border-2 border-[#e0e4df] dark:border-[#374151] bg-[#1c1b1b] aspect-square w-full max-w-[280px] mx-auto shadow-inner -rotate-y-180"></div>
+        <div class="flex justify-center">
+          <DotLottieVue src="/animations/qranimation.json" :autoplay="true" :loop="true" style="width:120px;height:120px" />
+        </div>
+        <div id="reader" class="qr-reader overflow-hidden rounded-3xl border-2 border-[#e0e4df] dark:border-[#374151] bg-[#1c1b1b] aspect-square w-full max-w-[280px] mx-auto shadow-inner"></div>
       </div>
 
       <!-- Email Mode -->

@@ -2,6 +2,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  --font-sans: 'Inter', sans-serif;
+
   /* Fluid Typography */
   --text-xs: clamp(0.65rem, 0.8vw + 0.5rem, 0.75rem);
   --text-sm: clamp(0.75rem, 1vw + 0.55rem, 0.875rem);

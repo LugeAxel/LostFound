@@ -54,6 +54,10 @@ onMounted(() => { fetchStats(); fetchItems(); });
       <section class="mb-10 mt-10">
         <div class="relative overflow-hidden rounded-[2rem] bg-[#387b41] p-10 text-white flex justify-between items-center shadow-lg">
           <div class="relative z-10 max-w-xl">
+            <div
+              class="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] font-bold uppercase tracking-wider mb-4">
+              <span class="material-symbols-outlined text-sm">school</span> SMKN 2 Depok
+            </div>
             <h2 class="text-4xl font-bold mb-4 tracking-tight">{{ t('dash.welcome') }} {{ user.nama ? user.nama.split(' ')[0] : 'Student' }}!</h2>
             <p class="text-lg opacity-90 mb-8 leading-relaxed">{{ t('dash.welcome_sub') }}</p>
             <div class="flex gap-4">
@@ -62,7 +66,7 @@ onMounted(() => { fetchStats(); fetchItems(); });
             </div>
           </div>
           <div class="absolute right-10 top-1/2 -translate-y-1/2 h-4/5 w-1/4 opacity-20 flex items-center justify-center pointer-events-none">
-            <span class="material-symbols-outlined text-[180px] scale-150">inventory_2</span>
+            <span class="material-symbols-outlined text-[180px] scale-650">inventory_2</span>
           </div>
         </div>
       </section>
