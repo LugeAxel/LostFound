@@ -98,6 +98,7 @@ const startClaim = async () => {
   try {
     await axios.post(`${API_URL}/api/items/${itemId}/start-claim`, {}, { headers: await getAuthHeaders() });
     await fetchItem();
+    toast.show('Claim started! Contact the reporter to arrange a meeting.', 'success');
   } catch (error: any) {
     toast.show(error.response?.data?.message || 'Failed to start claim', 'error');
   }

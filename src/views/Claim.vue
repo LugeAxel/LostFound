@@ -9,7 +9,7 @@ import { getAuthHeaders } from '../composables/useAuth';
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
-const itemId = route.params.id as string;
+const claimCode = route.params.claimCode as string;
 
 const item = ref<any>(null);
 const isLoading = ref(true);
@@ -37,7 +37,7 @@ const form = ref({
 
 const fetchItemDetails = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/items/${itemId}`, { headers: await getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items/claim-code/${claimCode}`, { headers: await getAuthHeaders() });
     item.value = res.data;
   } catch (error: any) {
     console.error('Error fetching item:', error);
@@ -122,7 +122,7 @@ const submitClaim = async () => {
 
   isSubmitting.value = true;
   try {
-    await axios.post(`${API_URL}/api/items/${itemId}/claim`, {
+    await axios.post(`${API_URL}/api/items/${item.value.id}/claim`, {
       claim_notes: form.value.claimNotes,
       claim_photo: form.value.claimPhoto
     }, { headers: await getAuthHeaders() });

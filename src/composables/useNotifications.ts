@@ -1,5 +1,8 @@
 import { ref, onUnmounted } from 'vue'
+import axios from 'axios'
 import { supabase } from '../lib/supabase'
+import { API_URL } from '@/config/api'
+import { getAuthHeaders } from './useAuth'
 
 export function useNotifications() {
   const notifications = ref<any[]>([])
@@ -55,23 +58,36 @@ export function useNotifications() {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${userId}`
+        },
+        (payload) => {
+          const index = notifications.value.findIndex((n: any) => n.id === payload.old.id)
+          if (index !== -1) {
+            notifications.value.splice(index, 1)
+            unreadCount.value = notifications.value.filter((n: any) => !n.is_read).length
+          }
+        }
+      )
       .subscribe()
   }
 
-  const markAsRead = async (notificationId: string) => {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', notificationId)
-
-    if (error) {
-      console.error('Error marking notification as read:', error.message)
+  const deleteNotification = async (notificationId: string) => {
+    try {
+      await axios.delete(`${API_URL}/api/notifications/${notificationId}`, { headers: await getAuthHeaders() })
+    } catch (error: any) {
+      console.error('Error deleting notification:', error.response?.data?.message || error.message)
       return
     }
 
     const index = notifications.value.findIndex((n: any) => n.id === notificationId)
     if (index !== -1) {
-      notifications.value[index].is_read = true
+      notifications.value.splice(index, 1)
       unreadCount.value = notifications.value.filter((n: any) => !n.is_read).length
     }
   }
@@ -92,7 +108,7 @@ export function useNotifications() {
     unreadCount,
     fetchNotifications,
     subscribeToNotifications,
-    markAsRead,
+    deleteNotification,
     unsubscribe
   }
 }

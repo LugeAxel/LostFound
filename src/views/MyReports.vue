@@ -37,8 +37,8 @@ const fetchMyReports = async () => {
 
 onMounted(fetchMyReports);
 
-const getClaimUrl = (id: string) => {
-  return `${window.location.origin}/claim/${id}`;
+const getClaimUrl = (code: string) => {
+  return `${window.location.origin}/claim/${code}`;
 };
 
 const formatDate = (date: string) => {
@@ -139,11 +139,11 @@ const copyText = async (text: string) => {
           <div v-if="item.status !== 'Returned'" class="flex flex-col items-center justify-center p-4 md:p-6 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl border border-[#e0e4df] dark:border-[#374151] min-w-[200px]">
             <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] mb-4 uppercase tracking-[0.2em]">Claim QR Code</p>
             <div class="p-3 bg-white rounded-xl shadow-inner mb-4">
-              <qrcode-vue :value="getClaimUrl(item.id)" :size="100" level="H" foreground="#1c1b1b" class=""/>
+              <qrcode-vue :value="getClaimUrl(item.claim_code)" :size="100" level="H" foreground="#1c1b1b" class=""/>
             </div>
             <div class="mb-2 flex items-center gap-1 bg-[#e0e4df] dark:bg-[#374151] px-3 py-1.5 rounded-lg">
-              <span class="text-[9px] font-mono text-[#40493d] dark:text-[#9ca3af] truncate max-w-[120px]">{{ item.id }}</span>
-              <button @click="copyText(item.id)"
+              <span class="text-[9px] font-mono text-[#40493d] dark:text-[#9ca3af] truncate max-w-[120px]">{{ item.claim_code }}</span>
+              <button @click="copyText(item.claim_code)"
                 class="text-[#387b41] hover:text-[#2d6334] transition-colors shrink-0"
                 title="Copy item ID">
                 <span class="material-symbols-outlined text-sm">content_copy</span>

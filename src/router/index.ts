@@ -53,7 +53,7 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/claim/:id',
+      path: '/claim/:claimCode',
       name: 'claim',
       component: Claim,
       meta: { requiresAuth: true }

@@ -11,6 +11,7 @@ const { cache, invalidateCache } = require('./middleware/cache');
 const http = require('http');
 const { Server } = require('socket.io');
 const { supabase } = require('./lib/supabase');
+const crypto = require('crypto');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -486,6 +487,31 @@ app.get('/api/items/mine', authMiddleware, async (req, res) => {
     }
 });
 
+// Get item by claim code (used by Claim.vue after QR scan)
+app.get('/api/items/claim-code/:code', authMiddleware, async (req, res) => {
+    try {
+        const { data: item, error } = await supabase
+            .from('items')
+            .select(`
+                *,
+                reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
+                claimer:profiles!items_claimer_fkey(id, nama),
+                complaints(*, user:profiles!complaints_user_id_fkey(nama, id))
+            `)
+            .eq('claim_code', req.params.code)
+            .single();
+
+        if (error || !item) {
+            return res.status(404).json({ success: false, message: 'Item not found' });
+        }
+
+        res.json(item);
+    } catch (error) {
+        console.error('Error fetching item by claim code:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch item.' });
+    }
+});
+
 // Get single item
 app.get('/api/items/:id', authMiddleware, async (req, res) => {
     try {
@@ -553,6 +579,13 @@ app.post('/api/items',
 
             const imageUrl = req.file ? req.file.path : null;
 
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            const bytes = crypto.randomBytes(8);
+            let claimCode = '';
+            for (let i = 0; i < 8; i++) {
+                claimCode += chars[bytes[i] % chars.length];
+            }
+
             const newItemData = {
                 name,
                 location,
@@ -561,6 +594,7 @@ app.post('/api/items',
                 description,
                 image_url: imageUrl,
                 reporter: req.user.id,
+                claim_code: claimCode,
             };
 
             if (coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number') {
@@ -597,7 +631,7 @@ app.post('/api/items/:id/start-claim',
         try {
             console.log('[claim] userId:', req.user.id, 'itemId:', req.params.id);
 
-            const { data: item, error } = await supabase
+            const { data: updated, error } = await supabase
                 .from('items')
                 .update({
                     status: 'On Progress',
@@ -606,19 +640,16 @@ app.post('/api/items/:id/start-claim',
                 .eq('id', req.params.id)
                 .eq('status', 'Available')
                 .neq('reporter', req.user.id)
-                .select()
-                .single();
+                .select();
 
-            if (error || !item) {
-                console.log('[claim] update failed — error:', error?.message, 'item:', item);
+            if (error) throw error;
+
+            if (!updated || updated.length === 0) {
                 const { data: existing } = await supabase
                     .from('items')
                     .select('reporter, status')
                     .eq('id', req.params.id)
                     .single();
-
-                console.log('[claim] existing item — reporter:', existing?.reporter, 'status:', existing?.status);
-                console.log('[claim] reporter === userId?', existing?.reporter === req.user.id);
 
                 if (!existing) return res.status(404).json({ success: false, message: 'Item not found' });
                 if (existing.reporter === req.user.id) {
@@ -626,6 +657,8 @@ app.post('/api/items/:id/start-claim',
                 }
                 return res.status(400).json({ success: false, message: 'Item is already being claimed or returned' });
             }
+
+            const item = updated[0];
 
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
@@ -1160,7 +1193,7 @@ app.post('/api/items/:id/resolve',
                 .from('notifications')
                 .insert({
                     user_id: req.body.userId,
-                    type: 'claim_assigned',
+                    type: 'resolved',
                     item_id: req.params.id,
                     text: `You have been assigned as the claimer for: ${item.name}`
                 });
@@ -1191,6 +1224,23 @@ app.get('/api/notifications', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Fetch notifications error:', error.message);
         res.status(500).json({ success: false, message: 'Failed to fetch notifications.' });
+    }
+});
+
+app.delete('/api/notifications/:id', authMiddleware, async (req, res) => {
+    try {
+        const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('id', req.params.id)
+            .eq('user_id', req.user.id);
+
+        if (error) throw error;
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete notification error:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to delete notification.' });
     }
 });
 
@@ -1371,6 +1421,11 @@ const runCleanupJob = async () => {
                     item_id: null,
                     text: `Laporan "${item.name}" telah dihapus otomatis.`
                 });
+
+            await supabase
+                .from('notifications')
+                .delete()
+                .eq('item_id', item.id);
 
             await supabase
                 .from('items')

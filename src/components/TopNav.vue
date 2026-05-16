@@ -19,7 +19,7 @@ const showProfileDropdown = ref(false);
 const searchQuery = ref((route.query.q as string) || '');
 let socket: any = null;
 
-const { notifications, unreadCount, fetchNotifications: fetchNotifs, subscribeToNotifications, markAsRead: markNotifRead, unsubscribe } = useNotifications();
+const { notifications, unreadCount, fetchNotifications: fetchNotifs, subscribeToNotifications, deleteNotification: deleteNotif, unsubscribe } = useNotifications();
 
 const isDark = ref(localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
@@ -57,12 +57,12 @@ const fetchNotifications = async () => {
   }
 };
 
-const markAsRead = async (id: string) => {
+const onNotificationClick = async (id: string, itemId: string | null) => {
   try {
-    await markNotifRead(id);
-    fetchNotifications();
+    await deleteNotif(id);
+    if (itemId) router.push(`/item/${itemId}`);
   } catch (error) {
-    console.error('Error marking as read:', error);
+    console.error('Error handling notification:', error);
   }
 };
 
@@ -124,7 +124,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="max-h-96 overflow-y-auto">
               <div v-for="notif in notifications" :key="notif.id" 
-                @click="markAsRead(notif.id); router.push(`/item/${notif.item_id}`); showDropdown = false"
+                @click="onNotificationClick(notif.id, notif.item_id); showDropdown = false"
                 :class="['p-4 border-b border-[#f3f5f2] cursor-pointer hover:bg-[#f8faf7] dark:bg-[#121212] dark:hover:bg-[#353535] transition-all flex gap-3', !notif.is_read && 'bg-[#f0fdf4]']">
                 <div :class="['w-10 h-10 rounded-full flex items-center justify-center shrink-0', 
                   notif.type === 'message' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600']">

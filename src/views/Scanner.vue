@@ -108,8 +108,6 @@ function navigateToClaim(decodedText: string) {
       let path = decodedText;
       try { path = new URL(decodedText).pathname; } catch { /* not a full URL */ }
       router.push(path);
-    } else if (/^[a-fA-F0-9]{24}$/.test(decodedText.trim())) {
-      router.push(`/claim/${decodedText.trim()}`);
     } else {
       router.push(`/claim/${decodedText.trim()}`);
     }
