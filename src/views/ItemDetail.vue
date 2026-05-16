@@ -8,6 +8,8 @@ import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import { useI18n } from '../i18n';
 import { useToast } from '../composables/useToast';
+import { getAuthHeaders, getCurrentUser } from '../composables/useAuth';
+import { supabase } from '../lib/supabase';
 
 import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL } from '@/config/api';
@@ -24,19 +26,14 @@ const mapInstance = ref<L.Map | null>(null);
 
 const newMessage = ref('');
 const isSending = ref(false);
-const currentUser = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
+const currentUser = ref<any>({});
 const { t } = useI18n();
 const toast = useToast();
 let socket: any = null;
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const fetchItem = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/items/${itemId}`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items/${itemId}`, { headers: await getAuthHeaders() });
     item.value = res.data;
     
     // Set loading to false so the v-else-if="item" block (with map container) renders
@@ -45,7 +42,7 @@ const fetchItem = async () => {
     // Wait for Vue to render the map container
     await nextTick();
     
-    if (item.value && item.value.coordinates?.latitude != null && item.value.coordinates?.longitude != null) {
+    if (item.value && item.value.coordinates_lat != null && item.value.coordinates_lng != null) {
       initMap();
     }
     
@@ -61,13 +58,16 @@ const fetchItem = async () => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  const user = await getCurrentUser();
+  if (user) currentUser.value = user;
+  
   fetchItem();
-  const token = localStorage.getItem('token');
+  const { data: { session } } = await supabase.auth.getSession();
   socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
     withCredentials: true,
-    auth: { token }
+    auth: { token: session?.access_token }
   });
   
   socket.on('connect', () => {
@@ -77,7 +77,7 @@ onMounted(() => {
   socket.on('new-message', (data: any) => {
     if (data.itemId === itemId && item.value) {
       // Avoid duplicates if we just sent it
-      const exists = item.value.messages.some((m: any) => m._id === data.message._id);
+      const exists = item.value.messages.some((m: any) => m.id === data.message.id);
       if (!exists) {
         item.value.messages.push(data.message);
         scrollToBottom();
@@ -96,7 +96,7 @@ onBeforeUnmount(() => {
 
 const startClaim = async () => {
   try {
-    await axios.post(`${API_URL}/api/items/${itemId}/start-claim`, {}, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId}/start-claim`, {}, { headers: await getAuthHeaders() });
     await fetchItem();
   } catch (error: any) {
     toast.show(error.response?.data?.message || 'Failed to start claim', 'error');
@@ -107,7 +107,7 @@ const sendMessage = async () => {
   if (!newMessage.value.trim()) return;
   isSending.value = true;
   try {
-    const res = await axios.post(`${API_URL}/api/items/${itemId}/chat`, { text: newMessage.value }, { headers: getAuthHeaders() });
+    const res = await axios.post(`${API_URL}/api/items/${itemId}/chat`, { text: newMessage.value }, { headers: await getAuthHeaders() });
     item.value.messages = res.data.messages;
     newMessage.value = '';
     scrollToBottom();
@@ -129,7 +129,7 @@ const fileComplaint = () => {
 const submitComplaint = async () => {
   if (!complaintReason.value.trim()) return;
   try {
-    await axios.post(`${API_URL}/api/items/${itemId}/complaint`, { reason: complaintReason.value }, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId}/complaint`, { reason: complaintReason.value }, { headers: await getAuthHeaders() });
     toast.show(t('detail.complaint_success'), 'success');
     showComplaintModal.value = false;
     complaintReason.value = '';
@@ -146,14 +146,14 @@ const scrollToBottom = () => {
   });
 };
 
-const isFounder = () => item.value?.reporter?._id === currentUser.value?._id;
-const isClaimer = () => item.value?.claimer === currentUser.value?._id || item.value?.claimer?._id === currentUser.value?._id;
-const hasComplained = () => item.value?.complaints?.some((c: any) => c.user?._id === currentUser.value?._id);
+const isFounder = () => item.value?.reporter?.id === currentUser.value?.id;
+const isClaimer = () => item.value?.claimer?.id === currentUser.value?.id;
+const hasComplained = () => item.value?.complaints?.some((c: any) => c.user?.id === currentUser.value?.id);
 
 const assignClaimer = async (userId: string) => {
   if (!confirm('Are you sure you want to set this student as the claimer?')) return;
   try {
-    await axios.post(`${API_URL}/api/items/${itemId}/resolve`, { userId }, { headers: getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId}/resolve`, { userId }, { headers: await getAuthHeaders() });
     toast.show(t('detail.claimer_reassigned'), 'success');
     await fetchItem();
   } catch (error: any) {
@@ -162,16 +162,16 @@ const assignClaimer = async (userId: string) => {
 };
 
 const initMap = async () => {
-  if (!item.value?.coordinates || !mapContainer.value) return;
+  if (item.value?.coordinates_lat == null || item.value?.coordinates_lng == null || !mapContainer.value) return;
   
-  // Guard against double-init by removing any existing instance first
   if (mapInstance.value) {
     mapInstance.value.remove();
     mapInstance.value = null;
   }
 
-  const { latitude, longitude } = item.value.coordinates;
-  const map = L.map(mapContainer.value).setView([latitude, longitude], 16);
+  const lat = item.value.coordinates_lat;
+  const lng = item.value.coordinates_lng;
+  const map = L.map(mapContainer.value).setView([lat, lng], 16);
   mapInstance.value = map;
   
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -186,15 +186,13 @@ const initMap = async () => {
     popupAnchor: [0, -32]
   });
 
-  L.marker([latitude, longitude], { icon: customIcon }).addTo(map)
+  L.marker([lat, lng], { icon: customIcon }).addTo(map)
     .bindPopup(item.value.name)
     .openPopup();
 
-  // Ensure map tiles are sized correctly after first paint
   await nextTick();
   map.invalidateSize();
   
-  // Robustness: additional invalidations for slow flex layouts
   setTimeout(() => map.invalidateSize(), 100);
   setTimeout(() => map.invalidateSize(), 400);
 };
@@ -273,7 +271,7 @@ const copyGps = async (lat: number, lng: number) => {
         <div class="space-y-8">
           <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm">
             <div class="aspect-video relative bg-[#f3f5f2] dark:bg-[#2a2a2a] flex items-center justify-center">
-              <img v-if="item.imageUrl" :src="item.imageUrl" class="w-full h-full object-cover" />
+              <img v-if="item.image_url" :src="item.image_url" class="w-full h-full object-cover" />
               <span v-else class="material-symbols-outlined text-7xl text-[#40493d] dark:text-[#9ca3af]/20">{{ item.type === 'lost' ? 'search' : 'inventory_2' }}</span>
             </div>
             <div class="p-8">
@@ -287,7 +285,7 @@ const copyGps = async (lat: number, lng: number) => {
                 </div>
                 <div class="p-4 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
                   <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] uppercase tracking-wider mb-1">{{ t('detail.reported_at') }}</p>
-                  <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ formatDate(item.reportedAt) }}</p>
+                  <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ formatDate(item.reported_at) }}</p>
                 </div>
               </div>
             </div>
@@ -310,12 +308,33 @@ const copyGps = async (lat: number, lng: number) => {
             </div>
             <div v-else-if="item.status === 'On Progress' && item.claimer" class="text-right">
               <p class="text-[10px] font-bold text-[#f57f17] uppercase tracking-wider">{{ t('detail.being_claimed_by') }}</p>
-              <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ typeof item.claimer === 'object' ? item.claimer.nama : 'Another Student' }}</p>
+              <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.claimer?.nama || 'Another Student' }}</p>
+            </div>
+          </div>
+
+          <!-- Proof of Return -->
+          <div v-if="item.status === 'Returned' && item.claim_photo"
+            class="bg-white dark:bg-[#1e1e1e] rounded-3xl p-4 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm">
+            <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6] mb-4 flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#387b41]">verified</span>
+              {{ t('detail.proof_of_return') }}
+            </h3>
+            <div class="space-y-4">
+              <div class="rounded-2xl overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a]">
+                <img :src="item.claim_photo" class="w-full object-cover" />
+              </div>
+              <div v-if="item.claim_notes" class="p-3 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-xl">
+                <p class="text-xs text-[#40493d] dark:text-[#9ca3af] italic">"{{ item.claim_notes }}"</p>
+              </div>
+              <div class="flex items-center gap-2 text-sm text-[#40493d] dark:text-[#9ca3af]">
+                <span class="material-symbols-outlined text-base">person</span>
+                {{ t('detail.returned_by') }} {{ item.claimer?.nama || 'Claimer' }}
+              </div>
             </div>
           </div>
 
           <!-- Chat System (Only for Founder and Claimer) -->
-          <div v-if="(item.status === 'On Progress' || item.status === 'Returned') && (isFounder() || isClaimer())" 
+          <div v-if="item.status === 'On Progress' && (isFounder() || isClaimer())" 
             class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm overflow-hidden flex flex-col h-[300px] md:h-[400px]">
             <div class="p-4 border-b border-[#e0e4df] dark:border-[#374151] bg-[#f8faf7] dark:bg-[#121212] flex items-center gap-2">
               <span class="material-symbols-outlined text-[#387b41]">forum</span>
@@ -323,13 +342,13 @@ const copyGps = async (lat: number, lng: number) => {
             </div>
             
             <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
-              <div v-for="msg in item.messages" :key="msg._id" 
-                :class="['flex flex-col max-w-[80%]', msg.sender === currentUser._id ? 'ml-auto items-end' : 'mr-auto items-start']">
+              <div v-for="msg in item.messages" :key="msg.id" 
+                :class="['flex flex-col max-w-[80%]', msg.sender === currentUser.id ? 'ml-auto items-end' : 'mr-auto items-start']">
                 <div :class="['px-4 py-2 rounded-2xl text-sm font-medium shadow-sm', 
-                  msg.sender === currentUser._id ? 'bg-[#387b41] text-white rounded-tr-none' : 'bg-[#f3f5f2] dark:bg-[#2a2a2a] text-[#1c1b1b] dark:text-[#f3f4f6] rounded-tl-none']">
+                  msg.sender === currentUser.id ? 'bg-[#387b41] text-white rounded-tr-none' : 'bg-[#f3f5f2] dark:bg-[#2a2a2a] text-[#1c1b1b] dark:text-[#f3f4f6] rounded-tl-none']">
                   {{ msg.text }}
                 </div>
-                <span class="text-[8px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ formatDate(msg.timestamp) }}</span>
+                <span class="text-[8px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ formatDate(msg.created_at) }}</span>
               </div>
               <div v-if="!item.messages?.length" class="h-full flex items-center justify-center text-[#40493d] dark:text-[#9ca3af]/40 text-xs italic">
                 {{ t('detail.no_messages') }}
@@ -363,7 +382,7 @@ const copyGps = async (lat: number, lng: number) => {
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-[#387b41] text-white flex items-center justify-center text-xs font-bold">C</div>
                   <div>
-                    <p class="text-xs font-bold text-[#1c1b1b]">{{ typeof item.claimer === 'object' ? item.claimer.nama : t('detail.original_claimer') }}</p>
+                    <p class="text-xs font-bold text-[#1c1b1b]">{{ item.claimer?.nama || t('detail.original_claimer') }}</p>
                     <p class="text-[10px] text-[#387b41]">{{ t('detail.claimer_label') }}</p>
                   </div>
                 </div>
@@ -374,7 +393,7 @@ const copyGps = async (lat: number, lng: number) => {
               </div>
 
               <!-- Complainers -->
-              <div v-for="complaint in item.complaints" :key="complaint._id" 
+              <div v-for="complaint in item.complaints" :key="complaint.id" 
                 class="p-4 bg-red-50 dark:bg-red-950/20 rounded-2xl flex items-center justify-between border border-red-100 dark:border-red-900/30">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-bold">P</div>
@@ -383,7 +402,7 @@ const copyGps = async (lat: number, lng: number) => {
                     <p class="text-[10px] text-red-600 dark:text-red-400">{{ t('detail.complained_label') }} "{{ complaint.reason }}"</p>
                   </div>
                 </div>
-                <button @click="assignClaimer(complaint.user?._id || complaint.user)" 
+                <button @click="assignClaimer(complaint.user?.id)" 
                   class="px-4 py-2 bg-[#387b41] text-white rounded-lg text-xs font-bold hover:bg-[#2d6334] transition-all">
                   {{ t('detail.set_claimer') }}
                 </button>
@@ -398,19 +417,19 @@ const copyGps = async (lat: number, lng: number) => {
 
         <!-- Right: Map and Location Details -->
         <div class="space-y-8">
-          <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm flex flex-col h-180 min-h-[350px] md:min-h-[500px]">
+          <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm flex flex-col h-full min-h-[350px] md:min-h-[500px] max-h-[800px]">
             <div class="p-6 md:p-8 border-b border-[#e0e4df] dark:border-[#374151]">
               <h2 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2">
                 <span class="material-symbols-outlined text-[#387b41]">location_on</span>
                 {{ t('detail.location_details') }}
               </h2>
-              <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mt-1">{{ item.location }}</p>
-              <div v-if="item.coordinates?.latitude != null" class="mt-2 flex items-center gap-2">
+              <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mt-1">{{ item.type === 'lost' ? t('detail.last_seen') + ' ' + item.location : t('detail.found_at') + ' ' + item.location }}</p>
+              <div v-if="item.coordinates_lat != null" class="mt-2 flex items-center gap-2">
                 <span class="text-[10px] text-[#387b41] font-bold flex items-center gap-1">
                   <span class="material-symbols-outlined text-xs">gps_fixed</span>
-                  {{ item.coordinates.latitude.toFixed(4) }}, {{ item.coordinates.longitude.toFixed(4) }}
+                  {{ item.coordinates_lat.toFixed(4) }}, {{ item.coordinates_lng.toFixed(4) }}
                 </span>
-                <button @click="copyGps(item.coordinates.latitude, item.coordinates.longitude)"
+                <button @click="copyGps(item.coordinates_lat, item.coordinates_lng)"
                   class="text-[10px] text-[#387b41] hover:text-[#2d6334] font-bold flex items-center gap-0.5 transition-colors"
                   title="Copy GPS coordinates">
                   <span class="material-symbols-outlined text-xs">content_copy</span>
@@ -418,7 +437,7 @@ const copyGps = async (lat: number, lng: number) => {
               </div>
             </div>
             
-            <div v-if="item.coordinates?.latitude != null && item.coordinates?.longitude != null" ref="mapContainer" class="flex-1 w-full min-h-[250px] md:min-h-[300px]"></div>
+            <div v-if="item.coordinates_lat != null && item.coordinates_lng != null" ref="mapContainer" class="flex-1 w-full min-h-[250px] md:min-h-[300px]"></div>
             <div v-else class="flex-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] flex flex-col items-center justify-center text-center p-6 md:p-10 space-y-4">
               <span class="material-symbols-outlined text-5xl text-[#40493d] dark:text-[#9ca3af]/20">map</span>
               <p class="text-sm text-[#40493d] dark:text-[#9ca3af] max-w-[200px]">No precise GPS coordinates available for this item.</p>

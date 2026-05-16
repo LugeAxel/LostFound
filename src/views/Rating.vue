@@ -7,6 +7,7 @@ import TopNav from '../components/TopNav.vue';
 import { useI18n } from '../i18n';
 import { API_URL } from '@/config/api';
 import { useToast } from '../composables/useToast';
+import { getAuthHeaders } from '../composables/useAuth';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -23,16 +24,11 @@ const selectedStars = ref(0);
 const comment = ref('');
 const hoveredStar = ref(0);
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const fetchRatings = async () => {
   try {
     const [allRes, mineRes] = await Promise.all([
-      axios.get(`${API_URL}/api/ratings`, { headers: getAuthHeaders() }),
-      axios.get(`${API_URL}/api/ratings/mine`, { headers: getAuthHeaders() })
+      axios.get(`${API_URL}/api/ratings`, { headers: await getAuthHeaders() }),
+      axios.get(`${API_URL}/api/ratings/mine`, { headers: await getAuthHeaders() })
     ]);
     averageRating.value = allRes.data.averageRating;
     totalRatings.value = allRes.data.totalRatings;
@@ -56,7 +52,7 @@ const submitRating = async () => {
     const res = await axios.post(`${API_URL}/api/ratings`, {
       rating: selectedStars.value,
       comment: comment.value
-    }, { headers: getAuthHeaders() });
+    }, { headers: await getAuthHeaders() });
     myRating.value = res.data.rating;
     toast.show(t('rating.thank_you'), 'success');
     await fetchRatings();
@@ -175,7 +171,7 @@ onMounted(fetchRatings);
               </div>
               <p v-if="r.comment" class="text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">{{ r.comment }}</p>
               <p v-else class="text-sm text-[#40493d] dark:text-[#9ca3af] italic">{{ t('detail.no_description') }}</p>
-              <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ new Date(r.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) }}</p>
+              <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) }}</p>
             </div>
           </div>
         </div>

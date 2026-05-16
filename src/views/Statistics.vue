@@ -6,6 +6,7 @@ import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import { useI18n } from '../i18n';
 import { API_URL } from '@/config/api';
+import { getAuthHeaders } from '../composables/useAuth';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -19,14 +20,9 @@ const isLoading = ref(true);
 const maxDayCount = ref(0);
 const maxCategoryCount = ref(0);
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const fetchStats = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/stats/detailed`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/stats/detailed`, { headers: await getAuthHeaders() });
     itemsPerDay.value = res.data.itemsPerDay;
     topLocations.value = res.data.topLocations;
     topCategories.value = res.data.topCategories;

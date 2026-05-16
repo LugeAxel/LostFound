@@ -8,6 +8,8 @@ import SideNav from '../components/SideNav.vue';
 import Footer from '../components/Footer.vue';
 import { API_URL } from '@/config/api';
 import { useToast } from '../composables/useToast';
+import { getAuthHeaders } from '../composables/useAuth';
+import { supabase } from '../lib/supabase';
 
 const router = useRouter();
 const toast = useToast();
@@ -82,11 +84,6 @@ const switchCamera = async () => {
   if (!isCameraOpen.value) {
     facingMode.value = prevFacing;
   }
-};
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 const getLiveLocation = () => {
@@ -173,13 +170,15 @@ const submitReport = async () => {
       }
     }
 
+    const authHeaders = await getAuthHeaders();
     await axios.post(`${API_URL}/api/items`, formData, { 
-      headers: { ...getAuthHeaders(), 'Content-Type': 'multipart/form-data' } 
+      headers: { ...authHeaders, 'Content-Type': 'multipart/form-data' } 
     });
     toast.show('Report submitted successfully! You can find the claim QR code in "My Reports".', 'success');
     router.push('/my-reports');
   } catch (error: any) {
     if (error.response?.status === 401) {
+      await supabase.auth.signOut();
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       router.push('/');

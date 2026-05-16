@@ -4,7 +4,9 @@ import { useRouter, useRoute } from 'vue-router';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL } from '@/config/api';
+import { supabase } from '@/lib/supabase';
 import { useI18n } from '../i18n';
+import { useNotifications } from '../composables/useNotifications';
 import Marquee from './Marquee.vue';
 import schoolLogo from '../assets/school-logo.png';
 
@@ -12,12 +14,12 @@ const router = useRouter();
 const route = useRoute();
 const { t, locale, toggleLocale } = useI18n();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
-const notifications = ref<any[]>([]);
-const unreadCount = ref(0);
 const showDropdown = ref(false);
 const showProfileDropdown = ref(false);
 const searchQuery = ref((route.query.q as string) || '');
 let socket: any = null;
+
+const { notifications, unreadCount, fetchNotifications: fetchNotifs, subscribeToNotifications, markAsRead: markNotifRead, unsubscribe } = useNotifications();
 
 const isDark = ref(localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
@@ -40,16 +42,16 @@ const handleSearch = () => {
   }
 };
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+const getAuthHeaders = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
 };
 
 const fetchNotifications = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/notifications`, { headers: getAuthHeaders() });
-    notifications.value = res.data;
-    unreadCount.value = notifications.value.filter(n => !n.isRead).length;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    await fetchNotifs(session.user.id);
   } catch (error) {
     console.error('Error fetching notifications:', error);
   }
@@ -57,40 +59,40 @@ const fetchNotifications = async () => {
 
 const markAsRead = async (id: string) => {
   try {
-    await axios.post(`${API_URL}/api/notifications/${id}/read`, {}, { headers: getAuthHeaders() });
+    await markNotifRead(id);
     fetchNotifications();
   } catch (error) {
     console.error('Error marking as read:', error);
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   if (isDark.value) {
     document.documentElement.classList.add('dark');
   } else {
     document.documentElement.classList.remove('dark');
   }
 
-  fetchNotifications();
-  const token = localStorage.getItem('token');
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    fetchNotifications();
+    subscribeToNotifications(session.user.id);
+  }
+
   socket = io(SOCKET_URL, {
     transports: ['websocket', 'polling'],
     withCredentials: true,
-    auth: { token }
+    auth: { token: session?.access_token }
   });
   
   socket.on('connect', () => {
-    socket.emit('join-user', user.value._id);
-  });
-
-  socket.on('notification', (notif: any) => {
-    notifications.value.unshift(notif);
-    unreadCount.value++;
+    socket.emit('join-user', user.value.id);
   });
 });
 
 onBeforeUnmount(() => {
   if (socket) socket.disconnect();
+  unsubscribe();
 });
 </script>
 
@@ -121,16 +123,16 @@ onBeforeUnmount(() => {
               <span class="text-[10px] text-[#40493d] dark:text-[#9ca3af] font-bold uppercase tracking-wider">{{ unreadCount }} {{ t('topnav.new') }}</span>
             </div>
             <div class="max-h-96 overflow-y-auto">
-              <div v-for="notif in notifications" :key="notif._id" 
-                @click="markAsRead(notif._id); router.push(`/item/${notif.item}`); showDropdown = false"
-                :class="['p-4 border-b border-[#f3f5f2] cursor-pointer hover:bg-[#f8faf7] dark:bg-[#121212] dark:hover:bg-[#353535] transition-all flex gap-3', !notif.isRead && 'bg-[#f0fdf4]']">
+              <div v-for="notif in notifications" :key="notif.id" 
+                @click="markAsRead(notif.id); router.push(`/item/${notif.item_id}`); showDropdown = false"
+                :class="['p-4 border-b border-[#f3f5f2] cursor-pointer hover:bg-[#f8faf7] dark:bg-[#121212] dark:hover:bg-[#353535] transition-all flex gap-3', !notif.is_read && 'bg-[#f0fdf4]']">
                 <div :class="['w-10 h-10 rounded-full flex items-center justify-center shrink-0', 
                   notif.type === 'message' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600']">
                   <span class="material-symbols-outlined text-xl">{{ notif.type === 'message' ? 'chat' : 'notifications' }}</span>
                 </div>
                 <div>
                   <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1">{{ notif.text }}</p>
-                  <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af]">{{ new Date(notif.createdAt).toLocaleTimeString() }}</p>
+                  <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af]">{{ new Date(notif.created_at).toLocaleTimeString() }}</p>
                 </div>
               </div>
               <div v-if="notifications.length === 0" class="p-8 text-center text-[#40493d] dark:text-[#9ca3af] text-xs italic">

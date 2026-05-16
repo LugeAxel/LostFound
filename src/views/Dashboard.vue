@@ -8,6 +8,8 @@ import ItemCard from '../components/ItemCard.vue';
 import Footer from '../components/Footer.vue';
 import { API_URL } from '@/config/api';
 import { useI18n } from '../i18n';
+import { getAuthHeaders } from '../composables/useAuth';
+import { supabase } from '../lib/supabase';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -15,27 +17,22 @@ const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
 const items = ref<any[]>([]);
 const stats = ref({ currentlyLost: 0, foundToday: 0, returnedAllTime: 0 });
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const fetchStats = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/stats`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/stats`, { headers: await getAuthHeaders() });
     stats.value = res.data;
   } catch (error: any) {
-    if (error.response?.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); router.push('/'); }
+    if (error.response?.status === 401) { await supabase.auth.signOut(); localStorage.removeItem('token'); localStorage.removeItem('user'); router.push('/'); }
     console.error('Error fetching stats:', error);
   }
 };
 
 const fetchItems = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/items?limit=6`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items?limit=6`, { headers: await getAuthHeaders() });
     items.value = res.data.items || [];
   } catch (error: any) {
-    if (error.response?.status === 401) { localStorage.removeItem('token'); localStorage.removeItem('user'); router.push('/'); }
+    if (error.response?.status === 401) { await supabase.auth.signOut(); localStorage.removeItem('token'); localStorage.removeItem('user'); router.push('/'); }
     console.error('Error fetching items:', error);
   }
 };
@@ -152,7 +149,7 @@ onMounted(() => { fetchStats(); fetchItems(); });
           <p class="text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('dash.no_items') }}</p>
         </div>
         <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-          <ItemCard v-for="item in items" :key="item._id" :item="item" />
+          <ItemCard v-for="item in items" :key="item.id" :item="item" />
         </div>
       </section>
       

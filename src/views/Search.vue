@@ -8,6 +8,8 @@ import ItemCard from '../components/ItemCard.vue';
 import Footer from '../components/Footer.vue';
 import { API_URL } from '@/config/api';
 import { useI18n } from '../i18n';
+import { getAuthHeaders } from '../composables/useAuth';
+import { supabase } from '../lib/supabase';
 
 const router = useRouter();
 const route = useRoute();
@@ -23,11 +25,6 @@ const filterType = ref<string>((route.query.type as string) || 'all');
 const filterCategory = ref<string>((route.query.category as string) || 'all');
 const categories = ['Electronics', 'Daily Use', 'Clothing', 'Books/Stationery', 'Others'];
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const fetchItems = async () => {
   isLoading.value = true;
   try {
@@ -38,13 +35,14 @@ const fetchItems = async () => {
     if (filterCategory.value !== 'all') {
       params.category = filterCategory.value;
     }
-    const res = await axios.get(`${API_URL}/api/items`, { headers: getAuthHeaders(), params });
+    const res = await axios.get(`${API_URL}/api/items`, { headers: await getAuthHeaders(), params });
     items.value = res.data.items || [];
     currentPage.value = res.data.currentPage || 1;
     totalPages.value = res.data.totalPages || 1;
     totalItems.value = res.data.totalItems || 0;
   } catch (error: any) {
     if (error.response?.status === 401) {
+      await supabase.auth.signOut();
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       router.push('/');
@@ -179,7 +177,7 @@ watch(() => route.query, (newQuery) => {
 
       <div v-else>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 mb-10">
-          <ItemCard v-for="item in filteredItems" :key="item._id" :item="item" />
+          <ItemCard v-for="item in filteredItems" :key="item.id" :item="item" />
         </div>
 
         <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 py-6">

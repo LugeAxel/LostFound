@@ -5,6 +5,7 @@ import axios from 'axios';
 import { useRouter } from 'vue-router';
 import { API_URL } from '@/config/api';
 import { useToast } from '../composables/useToast';
+import { supabase } from '../lib/supabase';
 import { DotLottieVue } from '@lottiefiles/dotlottie-vue'
 
 const router = useRouter();
@@ -33,12 +34,12 @@ const onScanSuccess = async (decodedText: string) => {
   if (decodedText === lastScan.value) return;
   lastScan.value = decodedText;
   try {
-    const isItemId = /^[0-9a-fA-F]{24}$/.test(decodedText.trim());
+    const isItemId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedText.trim());
     if (isItemId) {
-      const token = localStorage.getItem('token');
-      if (!token) { setStatus("Please login first to claim items.", "error"); return; }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setStatus("Please login first to claim items.", "error"); return; }
       setStatus("Claiming item...", "info");
-      const res = await axios.post(`${API_URL}/api/items/${decodedText.trim()}/claim`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await axios.post(`${API_URL}/api/items/${decodedText.trim()}/claim`, {}, { headers: { Authorization: `Bearer ${session.access_token}` } });
       if (res.data.success) { setStatus("Item claimed!", "success"); setTimeout(() => router.push('/dashboard'), 2000); }
       return;
     }
@@ -51,6 +52,10 @@ const onScanSuccess = async (decodedText: string) => {
     setStatus("Student ID verified", "success");
     const res = await axios.post(`${API_URL}/api/login`, data);
     if (res.data.success) {
+      await supabase.auth.setSession({
+        access_token: res.data.token,
+        refresh_token: res.data.refresh_token
+      });
       storeAuth(res.data.token, res.data.user);
       setStatus("Login successful! Redirecting...", "success");
       setTimeout(() => router.push('/dashboard'), 1500);
@@ -64,18 +69,67 @@ const handleEmailSubmit = async () => {
   if (isSubmitting.value) return;
   isSubmitting.value = true;
   try {
-    const url = isEmailMode.value === 'login' ? `${API_URL}/api/auth/login-email` : `${API_URL}/api/auth/register-email`;
-    const payload = isEmailMode.value === 'login' ? { email: emailForm.value.email, password: emailForm.value.password } : { ...emailForm.value };
-    if (isEmailMode.value === 'register' && !emailForm.value.nama.trim()) { setStatus('Name required', 'error'); isSubmitting.value = false; return; }
-    const res = await axios.post(url, payload);
-    if (res.data.success) {
-      storeAuth(res.data.token, res.data.user);
-      setStatus("Login successful! Redirecting...", "success");
-      setTimeout(() => router.push('/dashboard'), 1500);
+    if (isEmailMode.value === 'login') {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailForm.value.email,
+        password: emailForm.value.password
+      });
+
+      if (error) {
+        setStatus(error.message || 'Invalid email or password.', 'error');
+        isSubmitting.value = false;
+        return;
+      }
+
+      const res = await axios.get(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${data.session.access_token}` }
+      });
+
+      if (res.data.success) {
+        storeAuth(data.session.access_token, res.data.user);
+        setStatus("Login successful! Redirecting...", "success");
+        setTimeout(() => router.push('/dashboard'), 1500);
+      }
+    } else {
+      if (!emailForm.value.nama.trim()) { setStatus('Name required', 'error'); isSubmitting.value = false; return; }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: emailForm.value.email,
+        password: emailForm.value.password,
+        options: {
+          data: { nama: emailForm.value.nama }
+        }
+      });
+
+      if (error) {
+        setStatus(error.message || 'Registration failed.', 'error');
+        isSubmitting.value = false;
+        return;
+      }
+
+      if (data.session) {
+        const res = await axios.get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${data.session.access_token}` }
+        });
+
+        storeAuth(data.session.access_token, res.data.user);
+        setStatus("Account created! Redirecting...", "success");
+        setTimeout(() => router.push('/dashboard'), 1500);
+      } else {
+        setStatus("Account created! Check your email to verify.", "success");
+        setTimeout(() => router.push('/verify-email?email=' + encodeURIComponent(emailForm.value.email)), 2000);
+      }
     }
   } catch (err: any) {
     setStatus(err.response?.data?.message || err.response?.data?.errors?.[0] || 'Connection failed.', 'error');
   } finally { isSubmitting.value = false; }
+};
+
+const handleLogout = async () => {
+  await supabase.auth.signOut();
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  router.push({ name: 'login' });
 };
 
 const startCamera = () => {

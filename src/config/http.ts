@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { API_URL } from './api'
 import { useCache } from '../composables/useCache'
+import { supabase } from '../lib/supabase'
 
 const http = axios.create({
   baseURL: API_URL,
@@ -9,10 +10,10 @@ const http = axios.create({
 
 const { get: cacheGet, set: cacheSet, invalidate: cacheInvalidate } = useCache()
 
-http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+http.interceptors.request.use(async (config) => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`
   }
   return config
 })

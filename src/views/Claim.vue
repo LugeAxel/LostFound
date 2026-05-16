@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { API_URL } from '@/config/api';
 import { useToast } from '../composables/useToast';
+import { getAuthHeaders } from '../composables/useAuth';
 
 const route = useRoute();
 const router = useRouter();
@@ -34,14 +35,9 @@ const form = ref({
   claimPhoto: ''
 });
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
 const fetchItemDetails = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/items/${itemId}`, { headers: getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items/${itemId}`, { headers: await getAuthHeaders() });
     item.value = res.data;
   } catch (error: any) {
     console.error('Error fetching item:', error);
@@ -127,9 +123,9 @@ const submitClaim = async () => {
   isSubmitting.value = true;
   try {
     await axios.post(`${API_URL}/api/items/${itemId}/claim`, {
-      claimNotes: form.value.claimNotes,
-      claimPhoto: form.value.claimPhoto
-    }, { headers: getAuthHeaders() });
+      claim_notes: form.value.claimNotes,
+      claim_photo: form.value.claimPhoto
+    }, { headers: await getAuthHeaders() });
     
     toast.show('Claim submitted successfully! The item is now marked as Returned.', 'success');
     router.push('/dashboard');
@@ -172,7 +168,7 @@ onBeforeUnmount(() => {
         </header>
 
         <div class="mb-10 p-4 md:p-6 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-3xl border border-[#e0e4df] dark:border-[#374151] flex gap-4 md:gap-6 items-center">
-          <img :src="item.imageUrl || 'https://placehold.co/400x300/f3f5f2/40493d?text=No+Image'" class="w-24 h-24 rounded-2xl object-cover border border-white shadow-sm" />
+          <img :src="item.image_url || 'https://placehold.co/400x300/f3f5f2/40493d?text=No+Image'" class="w-24 h-24 rounded-2xl object-cover border border-white shadow-sm" />
           <div>
             <h4 class="font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.name }}</h4>
             <p class="text-xs text-[#40493d] dark:text-[#9ca3af] mt-1">{{ item.location }}</p>

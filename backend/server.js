@@ -1,9 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
-const dns = require('dns');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
@@ -12,22 +8,21 @@ const cron = require('node-cron');
 const cloudinary = require('./config/cloudinary');
 const { cache, invalidateCache } = require('./middleware/cache');
 
-// 1. DNS FIX (For Atlas connection issues on restricted networks)
-dns.setServers(['1.1.1.1', '8.8.8.8']);
-
 const http = require('http');
 const { Server } = require('socket.io');
+const { supabase } = require('./lib/supabase');
 
 const app = express();
 app.set('trust proxy', 1);
 const upload = require('./middleware/upload');
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
-if (!JWT_SECRET) {
-    console.error('❌ FATAL: JWT_SECRET is not set in .env');
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('❌ FATAL: SUPABASE_URL or SUPABASE_ANON_KEY is not set in .env');
     process.exit(1);
 }
 
@@ -35,12 +30,10 @@ if (!JWT_SECRET) {
 // 2. SECURITY MIDDLEWARE
 // ─────────────────────────────────────────────
 
-// Security headers
 app.use(helmet({
     crossOriginResourcePolicy: false
 }));
 
-// CORS — restrict to frontend origin in production
 const isProduction = process.env.NODE_ENV === 'production';
 const allowedOrigins = [
     ...(isProduction ? [] : [
@@ -54,48 +47,38 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow Postman/mobile apps/no-origin requests
         if (!origin) {
             return callback(null, true);
         }
-
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
-
         console.warn(`❌ Blocked by CORS: ${origin}`);
-
         return callback(new Error('Not allowed by CORS'));
     },
     credentials: true
 }));
 
-// Socket.io initialization moved to after middleware
-
-// Body parser with size limit (prevents oversized payloads)
 app.use(express.json({ limit: '5mb' }));
 
-// Global rate limiter
 const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Reasonable limit
-    skip: (req) => req.originalUrl.startsWith('/socket.io'), // Skip socket.io polling
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    skip: (req) => req.originalUrl.startsWith('/socket.io'),
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: 'Too many requests, please try again later.' }
 });
 app.use(globalLimiter);
 
-// Strict rate limiter for auth endpoints
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 20, // max 20 login attempts per 15 min
+    max: 20,
     standardHeaders: true,
     legacyHeaders: false,
     message: { success: false, message: 'Too many login attempts, please try again later.' }
 });
 
-// Strict rate limiter for heavy endpoints
 const heavyEndpointLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 30,
@@ -105,141 +88,52 @@ const heavyEndpointLimiter = rateLimit({
 });
 
 // ─────────────────────────────────────────────
-// 3. DATABASE CONNECTION
+// 3. AUTH MIDDLEWARE (Supabase Auth)
 // ─────────────────────────────────────────────
-const connectDB = async () => {
+const authMiddleware = async (req, res, next) => {
     try {
-        console.log('⏳ Connecting to MongoDB Atlas...');
-        mongoose.set('bufferCommands', false);
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Access denied. No token provided.'
+            });
+        }
 
-        await mongoose.connect(process.env.MONGODB_URI, {
-            serverSelectionTimeoutMS: 5000,
+        const token = authHeader.split(' ')[1];
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+
+        if (error || !user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or expired token.'
+            });
+        }
+
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError || !profile) {
+            return res.status(401).json({
+                success: false,
+                message: 'User profile not found.'
+            });
+        }
+
+        req.user = profile;
+        req.supabaseUser = user;
+        next();
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Authentication error.'
         });
-
-        console.log('✅ MongoDB Connected Successfully!');
-    } catch (err) {
-        console.error('❌ MongoDB Connection Failed:', err.message);
     }
 };
 
-connectDB();
-
-// ─────────────────────────────────────────────
-// 4. SCHEMAS & MODELS
-// ─────────────────────────────────────────────
-const UserSchema = new mongoose.Schema({
-    nama: { type: String, required: true, trim: true, maxlength: 100 },
-    nisn: { type: String, trim: true, maxlength: 20 },
-    nis: { type: String, trim: true, maxlength: 20 },
-    jurusan: { type: String, trim: true, maxlength: 100 },
-    ttl: { type: String, trim: true, maxlength: 100 },
-    agama: { type: String, trim: true, maxlength: 50 },
-    gender: { type: String, trim: true, maxlength: 20 },
-    email: { type: String, trim: true, lowercase: true, maxlength: 100 },
-    password: { type: String, select: false }, // hidden by default in queries
-    role: { type: String, default: 'student', enum: ['student', 'admin'] },
-    createdAt: { type: Date, default: Date.now }
-});
-
-// Use partial indexes to allow multiple users to have 'null' or missing values.
-// Only enforces uniqueness if the field is a string.
-UserSchema.index({ nisn: 1 }, {
-    unique: true,
-    partialFilterExpression: { nisn: { $type: "string" } }
-});
-UserSchema.index({ email: 1 }, {
-    unique: true,
-    partialFilterExpression: { email: { $type: "string" } }
-});
-
-const User = mongoose.model('User', UserSchema);
-
-const NotificationSchema = new mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, enum: ['message', 'claim', 'resolved', 'complaint', 'system'], required: true },
-    item: { type: mongoose.Schema.Types.ObjectId, ref: 'Item' },
-    text: { type: String, required: true },
-    isRead: { type: Boolean, default: false },
-    createdAt: { type: Date, default: Date.now }
-});
-const Notification = mongoose.model('Notification', NotificationSchema);
-
-const CounterSchema = new mongoose.Schema({
-    name: { type: String, required: true, unique: true },
-    value: { type: Number, default: 0 }
-});
-const Counter = mongoose.model('Counter', CounterSchema);
-
-const DailyCounterSchema = new mongoose.Schema({
-    date: { type: String, required: true, unique: true },
-    returned: { type: Number, default: 0 }
-});
-const DailyCounter = mongoose.model('DailyCounter', DailyCounterSchema);
-
-const ItemSchema = new mongoose.Schema({
-    name: { type: String, required: true, trim: true, maxlength: 200 },
-    location: { type: String, required: true, trim: true, maxlength: 200 },
-    category: { type: String, trim: true, maxlength: 50, default: 'Others' },
-    status: { type: String, default: 'Available', enum: ['Available', 'On Progress', 'Returned'] },
-    type: { type: String, required: true, enum: ['found', 'lost'], lowercase: true },
-    reportedAt: { type: Date, default: Date.now },
-    imageUrl: { type: String, maxlength: 500 },
-    description: { type: String, trim: true, maxlength: 500 },
-    reporter: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    // Live Location
-    coordinates: {
-        latitude: { type: Number },
-        longitude: { type: Number }
-    },
-    // Claim Data
-    claimer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    claimPhoto: { type: String, maxlength: 3000000 },
-    claimNotes: { type: String, trim: true, maxlength: 500 },
-    claimedAt: { type: Date },
-    // Chat System
-    messages: [{
-        sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        text: { type: String, required: true },
-        timestamp: { type: Date, default: Date.now }
-    }],
-    // Complaint System
-    complaints: [{
-        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        reason: { type: String, required: true },
-        timestamp: { type: Date, default: Date.now }
-    }],
-    resolvedAt: { type: Date }
-});
-
-const Item = mongoose.model('Item', ItemSchema);
-
-ItemSchema.index({ status: 1 });
-ItemSchema.index({ type: 1 });
-ItemSchema.index({ reportedAt: -1 });
-ItemSchema.index({ reporter: 1 });
-ItemSchema.index({ type: 1, status: 1 });
-ItemSchema.index({ type: 1, reportedAt: -1 });
-NotificationSchema.index({ user: 1, createdAt: -1 });
-
-// Sync indexes once connection is open
-mongoose.connection.once('open', async () => {
-    try {
-        await User.syncIndexes();
-        await Item.syncIndexes();
-        console.log('✅ Database indexes synchronized');
-    } catch (err) {
-        console.error('❌ Index synchronization failed:', err.message);
-    }
-});
-
-// ─────────────────────────────────────────────
-// 5. AUTH HELPERS
-// ─────────────────────────────────────────────
-const generateToken = (userId) => {
-    return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-};
-
-// Validation error handler
 const handleValidationErrors = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -253,67 +147,25 @@ const handleValidationErrors = (req, res, next) => {
 };
 
 // ─────────────────────────────────────────────
-// 6. AUTH MIDDLEWARE
-// ─────────────────────────────────────────────
-const authMiddleware = async (req, res, next) => {
-    try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
-                success: false,
-                message: 'Access denied. No token provided.'
-            });
-        }
-
-        const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, JWT_SECRET);
-
-        const user = await User.findById(decoded.id);
-        if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Token is valid but user no longer exists.'
-            });
-        }
-
-        req.user = user;
-        next();
-    } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Token has expired. Please login again.'
-            });
-        }
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid token.'
-            });
-        }
-        return res.status(500).json({
-            success: false,
-            message: 'Authentication error.'
-        });
-    }
-};
-
-// ─────────────────────────────────────────────
-// 7. ROUTES
+// 4. ROUTES
 // ─────────────────────────────────────────────
 
 // Health check (public)
-app.get('/api/health', (req, res) => {
-    const dbConnected = mongoose.connection.readyState === 1;
-    res.json({
-        status: 'online',
-        db: dbConnected ? 'connected' : 'disconnected'
-    });
+app.get('/api/health', async (req, res) => {
+    try {
+        const { error } = await supabase.from('profiles').select('id').limit(1);
+        res.json({
+            status: 'online',
+            db: error ? 'disconnected' : 'connected'
+        });
+    } catch {
+        res.json({ status: 'online', db: 'disconnected' });
+    }
 });
 
 // ── AUTH ROUTES ──────────────────────────────
 
-// QR Code login (existing flow)
+// QR Code login (NISN-based auto-registration via Supabase Auth)
 app.post('/api/login',
     authLimiter,
     [
@@ -334,40 +186,94 @@ app.post('/api/login',
         console.log('📥 QR Login request for NISN:', maskedNisn);
 
         try {
-            if (mongoose.connection.readyState !== 1) {
-                return res.status(503).json({
-                    success: false,
-                    message: 'Database is not connected. Please check your internet or Atlas IP whitelist.'
-                });
-            }
-
             const { nisn, nama, nis, jurusan, ttl, agama, gender } = req.body;
 
-            let user = await User.findOne({ nisn });
+            let { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('nisn', nisn)
+                .single();
 
-            if (!user) {
+            if (!profile) {
                 console.log('✨ New student detected, creating profile...');
-                user = new User({
-                    nama, nisn, nis, jurusan, ttl, agama, gender
+                const email = `nisn_${nisn}@qreturn.local`;
+                const password = `qr_${nisn}_${Date.now()}`;
+
+                const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                    email,
+                    password,
+                    email_confirm: true,
+                    user_metadata: { nama, nisn, nis, jurusan, ttl, agama, gender, qr_password: password }
                 });
-                await user.save();
+
+                if (authError) {
+                    console.error('Auth creation error:', authError.message);
+                    return res.status(500).json({ success: false, message: 'Failed to create user.' });
+                }
+
+                profile = authData.user;
+                profile.qr_password = password;
             } else {
-                console.log('👋 Welcome back,', user.nama);
+                console.log('👋 Welcome back,', profile.nama);
+                const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
+                profile.qr_password = authUser?.user?.user_metadata?.qr_password || `qr_${nisn}_${new Date(profile.created_at).getTime()}`;
             }
 
-            const token = generateToken(user._id);
+            const email = `nisn_${nisn}@qreturn.local`;
+            const password = profile.qr_password;
+
+            const { data: sessionData, error: sessionError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (sessionError) {
+                console.error('Session error, resetting password:', sessionError.message);
+                const newPassword = `qr_${nisn}_${Date.now()}`;
+                await supabase.auth.admin.updateUserById(profile.id, {
+                    password: newPassword,
+                    user_metadata: { qr_password: newPassword }
+                });
+
+                const { data: newSession, error: newSessionError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password: newPassword
+                });
+
+                if (newSessionError) {
+                    console.error('Failed to login after password reset:', newSessionError.message);
+                    return res.status(500).json({ success: false, message: 'Failed to authenticate user.' });
+                }
+
+                res.json({
+                    success: true,
+                    token: newSession.session.access_token,
+                    refresh_token: newSession.session.refresh_token,
+                    user: {
+                        id: profile.id,
+                        nama: profile.nama,
+                        nisn: profile.nisn,
+                        nis: profile.nis,
+                        jurusan: profile.jurusan,
+                        role: profile.role,
+                        email: profile.email || null
+                    }
+                });
+                return;
+            }
 
             res.json({
                 success: true,
-                token,
+                token: sessionData.session.access_token,
+                refresh_token: sessionData.session.refresh_token,
                 user: {
-                    _id: user._id,
-                    nama: user.nama,
-                    nisn: user.nisn,
-                    nis: user.nis,
-                    jurusan: user.jurusan,
-                    role: user.role,
-                    email: user.email || null
+                    id: profile.id,
+                    nama: profile.nama,
+                    nisn: profile.nisn,
+                    nis: profile.nis,
+                    jurusan: profile.jurusan,
+                    role: profile.role,
+                    email: profile.email || null
                 }
             });
         } catch (error) {
@@ -377,7 +283,7 @@ app.post('/api/login',
     }
 );
 
-// Email registration (set email + password for existing QR user or new)
+// Email registration
 app.post('/api/auth/register-email',
     authLimiter,
     [
@@ -390,32 +296,35 @@ app.post('/api/auth/register-email',
     handleValidationErrors,
     async (req, res) => {
         try {
-            if (mongoose.connection.readyState !== 1) {
-                return res.status(503).json({ success: false, message: 'Database not connected.' });
-            }
-
             const { email, password, nama } = req.body;
 
-            // Check if email already exists
-            const existingUser = await User.findOne({ email }).select('+password');
-            if (existingUser) {
+            const { data: existingUsers } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', email)
+                .limit(1);
+
+            if (existingUsers && existingUsers.length > 0) {
                 return res.status(409).json({
                     success: false,
                     message: 'An account with this email already exists. Please login instead.'
                 });
             }
 
-            const salt = await bcrypt.genSalt(12);
-            const hashedPassword = await bcrypt.hash(password, salt);
-
-            const user = new User({
-                nama,
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
-                password: hashedPassword
+                password,
+                options: {
+                    data: { nama }
+                }
             });
-            await user.save();
 
-            const token = generateToken(user._id);
+            if (authError) {
+                console.error('🔥 Email Register Error:', authError.message);
+                return res.status(500).json({ success: false, message: 'Server error during registration.' });
+            }
+
+            const token = authData.session?.access_token;
 
             console.log('✨ New email user registered:', email?.split('@')[0] + '@***');
 
@@ -423,20 +332,17 @@ app.post('/api/auth/register-email',
                 success: true,
                 token,
                 user: {
-                    _id: user._id,
-                    nama: user.nama,
-                    nisn: user.nisn || null,
-                    nis: user.nis || null,
-                    jurusan: user.jurusan || null,
-                    role: user.role,
-                    email: user.email
+                    id: authData.user?.id,
+                    nama: authData.user?.user_metadata?.nama || nama,
+                    nisn: authData.user?.user_metadata?.nisn || null,
+                    nis: authData.user?.user_metadata?.nis || null,
+                    jurusan: authData.user?.user_metadata?.jurusan || null,
+                    role: authData.user?.user_metadata?.role || 'student',
+                    email: authData.user?.email
                 }
             });
         } catch (error) {
             console.error('🔥 Email Register Error:', error.message);
-            if (error.code === 11000) {
-                return res.status(409).json({ success: false, message: 'Email already registered.' });
-            }
             res.status(500).json({ success: false, message: 'Server error during registration.' });
         }
     }
@@ -452,49 +358,39 @@ app.post('/api/auth/login-email',
     handleValidationErrors,
     async (req, res) => {
         try {
-            if (mongoose.connection.readyState !== 1) {
-                return res.status(503).json({ success: false, message: 'Database not connected.' });
-            }
-
             const { email, password } = req.body;
 
-            const user = await User.findOne({ email }).select('+password');
-            if (!user) {
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (authError) {
                 return res.status(401).json({
                     success: false,
                     message: 'Invalid email or password.'
                 });
             }
 
-            if (!user.password) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'This account was created via QR scan. Please set a password first or login with QR.'
-                });
-            }
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authData.user.id)
+                .single();
 
-            const isMatch = await bcrypt.compare(password, user.password);
-            if (!isMatch) {
-                return res.status(401).json({
-                    success: false,
-                    message: 'Invalid email or password.'
-                });
-            }
-
-            const token = generateToken(user._id);
             console.log('👋 Email login:', email?.split('@')[0] + '@***');
 
             res.json({
                 success: true,
-                token,
+                token: authData.session.access_token,
                 user: {
-                    _id: user._id,
-                    nama: user.nama,
-                    nisn: user.nisn || null,
-                    nis: user.nis || null,
-                    jurusan: user.jurusan || null,
-                    role: user.role,
-                    email: user.email
+                    id: profile?.id,
+                    nama: profile?.nama,
+                    nisn: profile?.nisn || null,
+                    nis: profile?.nis || null,
+                    jurusan: profile?.jurusan || null,
+                    role: profile?.role,
+                    email: profile?.email
                 }
             });
         } catch (error) {
@@ -504,12 +400,12 @@ app.post('/api/auth/login-email',
     }
 );
 
-// Verify token + get current user (for session persistence check)
-app.get('/api/auth/me', authMiddleware, (req, res) => {
+// Verify token + get current user
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
     res.json({
         success: true,
         user: {
-            _id: req.user._id,
+            id: req.user.id,
             nama: req.user.nama,
             nisn: req.user.nisn || null,
             nis: req.user.nis || null,
@@ -522,8 +418,7 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
 
 // ── ITEM ROUTES (all protected) ──────────────
 
-// Get all items (public feed for dashboard)
-// Only cache page 1 (most commonly requested for dashboard)
+// Get all items
 app.get('/api/items', authMiddleware, (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -535,44 +430,55 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
-        const skip = (page - 1) * limit;
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
 
-        const filter = {};
+        let query = supabase
+            .from('items')
+            .select(`
+                *,
+                reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
+                claimer:profiles!items_claimer_fkey(id, nama)
+            `)
+            .order('reported_at', { ascending: false })
+            .range(from, to);
+
         if (req.query.category && req.query.category !== 'all') {
-            filter.category = req.query.category;
+            query = query.eq('category', req.query.category);
         }
 
-        const items = await Item.find(filter)
-            .select('-messages -complaints -claimPhoto -claimNotes')
-            .populate('reporter', 'nama nisn jurusan')
-            .populate('claimer', 'nama')
-            .sort({ reportedAt: -1 })
-            .skip(skip)
-            .limit(limit);
+        const { data: items, error, count } = await query;
 
-        const total = await Item.countDocuments(filter);
+        if (error) throw error;
 
         res.json({
             items,
             currentPage: page,
-            totalPages: Math.ceil(total / limit),
-            totalItems: total
+            totalPages: Math.ceil((count || 0) / limit),
+            totalItems: count
         });
-
     } catch (error) {
         console.error('Error fetching items:', error.message);
         res.status(500).json({ success: false, message: 'Failed to fetch items.' });
     }
 });
 
-// Get MY reports only (scoped to authenticated user)
+// Get MY reports
 app.get('/api/items/mine', authMiddleware, async (req, res) => {
     try {
-        const items = await Item.find({ reporter: req.user._id })
-            .populate('reporter', 'nama nisn jurusan')
-            .populate('claimer', 'nama')
-            .populate('complaints.user', 'nama nisn jurusan')
-            .sort({ reportedAt: -1 });
+        const { data: items, error } = await supabase
+            .from('items')
+            .select(`
+                *,
+                reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
+                claimer:profiles!items_claimer_fkey(id, nama),
+                complaints(*)
+            `)
+            .eq('reporter', req.user.id)
+            .order('reported_at', { ascending: false });
+
+        if (error) throw error;
+
         res.json(items);
     } catch (error) {
         console.error('Error fetching my items:', error.message);
@@ -581,21 +487,23 @@ app.get('/api/items/mine', authMiddleware, async (req, res) => {
 });
 
 // Get single item
-app.get('/api/items/:id',
-    authMiddleware,
-    [
-        param('id').isMongoId().withMessage('Invalid item ID'),
-    ],
-    handleValidationErrors,
-    async (req, res) => {
+app.get('/api/items/:id', authMiddleware, async (req, res) => {
     try {
-        const item = await Item.findById(req.params.id)
-            .populate('reporter', 'nama nisn jurusan')
-            .populate('claimer', 'nama')
-            .populate('complaints.user', 'nama nisn jurusan');
-        if (!item) {
+        const { data: item, error } = await supabase
+            .from('items')
+            .select(`
+                *,
+                reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
+                claimer:profiles!items_claimer_fkey(id, nama),
+                complaints(*, user:profiles!complaints_user_id_fkey(nama, id))
+            `)
+            .eq('id', req.params.id)
+            .single();
+
+        if (error || !item) {
             return res.status(404).json({ success: false, message: 'Item not found' });
         }
+
         res.json(item);
     } catch (error) {
         console.error('Error fetching item:', error.message);
@@ -603,7 +511,7 @@ app.get('/api/items/:id',
     }
 });
 
-// Create new item (reporter is always the authenticated user)
+// Create new item
 app.post('/api/items',
     authMiddleware,
     upload.single('image'),
@@ -651,20 +559,23 @@ app.post('/api/items',
                 category: category || 'Others',
                 type: type.toLowerCase(),
                 description,
-                imageUrl,
-                reporter: req.user._id, // Always use authenticated user's ID
+                image_url: imageUrl,
+                reporter: req.user.id,
             };
 
-            // Only assign coordinates if both latitude and longitude are valid numbers
             if (coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number') {
-                newItemData.coordinates = {
-                    latitude: coordinates.latitude,
-                    longitude: coordinates.longitude
-                };
+                newItemData.coordinates_lat = coordinates.latitude;
+                newItemData.coordinates_lng = coordinates.longitude;
             }
 
-            const newItem = new Item(newItemData);
-            await newItem.save();
+            const { data: newItem, error } = await supabase
+                .from('items')
+                .insert(newItemData)
+                .select()
+                .single();
+
+            if (error) throw error;
+
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
             res.status(201).json({ success: true, item: newItem });
@@ -675,44 +586,42 @@ app.post('/api/items',
     }
 );
 
-// ── RATING MODEL ──────────────────────────────
-const RatingSchema = new mongoose.Schema({
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-    rating: { type: Number, required: true, min: 1, max: 5 },
-    comment: { type: String, trim: true, maxlength: 500 },
-    createdAt: { type: Date, default: Date.now }
-});
-const Rating = mongoose.model('Rating', RatingSchema);
-
-// Claim an item
-// Start claim (Change status to On Progress)
+// Start claim
 app.post('/api/items/:id/start-claim',
     authMiddleware,
     [
-        param('id').isMongoId().withMessage('Invalid item ID'),
+        param('id').isUUID().withMessage('Invalid item ID'),
     ],
     handleValidationErrors,
     async (req, res) => {
         try {
-            // Atomic claim to prevent race conditions (TOCTOU)
-            const item = await Item.findOneAndUpdate(
-                {
-                    _id: req.params.id,
-                    status: 'Available',
-                    reporter: { $ne: req.user._id }
-                },
-                {
-                    $set: {
-                        status: 'On Progress',
-                        claimer: req.user._id
-                    }
-                },
-                { new: true }
-            );
-            if (!item) {
-                const existing = await Item.findById(req.params.id).select('reporter status');
+            console.log('[claim] userId:', req.user.id, 'itemId:', req.params.id);
+
+            const { data: item, error } = await supabase
+                .from('items')
+                .update({
+                    status: 'On Progress',
+                    claimer: req.user.id
+                })
+                .eq('id', req.params.id)
+                .eq('status', 'Available')
+                .neq('reporter', req.user.id)
+                .select()
+                .single();
+
+            if (error || !item) {
+                console.log('[claim] update failed — error:', error?.message, 'item:', item);
+                const { data: existing } = await supabase
+                    .from('items')
+                    .select('reporter, status')
+                    .eq('id', req.params.id)
+                    .single();
+
+                console.log('[claim] existing item — reporter:', existing?.reporter, 'status:', existing?.status);
+                console.log('[claim] reporter === userId?', existing?.reporter === req.user.id);
+
                 if (!existing) return res.status(404).json({ success: false, message: 'Item not found' });
-                if (existing.reporter.toString() === req.user._id.toString()) {
+                if (existing.reporter === req.user.id) {
                     return res.status(400).json({ success: false, message: 'You cannot claim your own item' });
                 }
                 return res.status(400).json({ success: false, message: 'Item is already being claimed or returned' });
@@ -721,15 +630,16 @@ app.post('/api/items/:id/start-claim',
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
 
-            // Notify reporter
-            const notif = new Notification({
-                user: item.reporter,
-                type: 'claim',
-                item: item._id,
-                text: `Someone wants to claim your item: ${item.name}`
-            });
-            await notif.save();
-            io.to(`user-${item.reporter}`).emit('notification', notif);
+            const { error: notifError } = await supabase
+                .from('notifications')
+                .insert({
+                    user_id: item.reporter,
+                    type: 'claim',
+                    item_id: item.id,
+                    text: `Someone wants to claim your item: ${item.name}`
+                });
+
+            if (notifError) console.error('Notification error:', notifError.message);
 
             res.json({ success: true, item });
         } catch (error) {
@@ -743,13 +653,12 @@ app.post('/api/items/:id/start-claim',
 app.post('/api/items/:id/chat',
     authMiddleware,
     [
-        param('id').isMongoId().withMessage('Invalid item ID'),
+        param('id').isUUID().withMessage('Invalid item ID'),
     ],
     handleValidationErrors,
     async (req, res) => {
         try {
             const text = req.body.text?.trim();
-
             if (!text || text.length > 1000) {
                 return res.status(400).json({
                     success: false,
@@ -757,43 +666,51 @@ app.post('/api/items/:id/chat',
                 });
             }
 
-            const item = await Item.findById(req.params.id);
-            if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+            const { data: item, error: itemError } = await supabase
+                .from('items')
+                .select('*')
+                .eq('id', req.params.id)
+                .single();
 
-            // Only founder (reporter) and claimer can chat
-            const isReporter = item.reporter.toString() === req.user._id.toString();
-            const isClaimer = item.claimer?.toString() === req.user._id.toString();
+            if (itemError || !item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+            const isReporter = item.reporter === req.user.id;
+            const isClaimer = item.claimer === req.user.id;
 
             if (!isReporter && !isClaimer) {
                 return res.status(403).json({ success: false, message: 'Only founder and claimer can chat' });
             }
 
-            item.messages.push({
-                sender: req.user._id,
-                text
-            });
-            await item.save();
+            const { data: message, error: msgError } = await supabase
+                .from('messages')
+                .insert({
+                    item_id: req.params.id,
+                    sender: req.user.id,
+                    text
+                })
+                .select()
+                .single();
 
-            // Notify recipient
+            if (msgError) throw msgError;
+
             const recipientId = isReporter ? item.claimer : item.reporter;
             if (recipientId) {
-                const notif = new Notification({
-                    user: recipientId,
-                    type: 'message',
-                    item: item._id,
-                    text: `New message from ${isReporter ? 'Founder' : 'Claimer'} for item: ${item.name}`
-                });
-                await notif.save();
-                io.to(`user-${recipientId}`).emit('notification', notif);
+                await supabase
+                    .from('notifications')
+                    .insert({
+                        user_id: recipientId,
+                        type: 'message',
+                        item_id: item.id,
+                        text: `New message from ${isReporter ? 'Founder' : 'Claimer'} for item: ${item.name}`
+                    });
             }
 
-            // Emit to chat room
-            io.to(`item-${item._id}`).emit('new-message', {
-                itemId: item._id,
-                message: item.messages[item.messages.length - 1]
+            io.to(`item-${item.id}`).emit('new-message', {
+                itemId: item.id,
+                message
             });
 
-            res.json({ success: true, messages: item.messages });
+            res.json({ success: true, messages: [message] });
         } catch (error) {
             console.error('Chat error:', error.message);
             res.status(500).json({ success: false, message: 'Failed to send message.' });
@@ -805,7 +722,7 @@ app.post('/api/items/:id/chat',
 app.post('/api/items/:id/complaint',
     authMiddleware,
     [
-        param('id').isMongoId().withMessage('Invalid item ID'),
+        param('id').isUUID().withMessage('Invalid item ID'),
         body('reason').trim().notEmpty().withMessage('Reason is required')
             .isLength({ min: 3, max: 500 }).withMessage('Reason must be 3-500 characters'),
     ],
@@ -813,30 +730,46 @@ app.post('/api/items/:id/complaint',
     async (req, res) => {
         try {
             const { reason } = req.body;
-            const item = await Item.findById(req.params.id);
-            if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
 
-            // Check if user already filed a complaint
-            const alreadyComplained = item.complaints.some(c => c.user.toString() === req.user._id.toString());
-            if (alreadyComplained) {
+            const { data: existingComplaint } = await supabase
+                .from('complaints')
+                .select('id')
+                .eq('item_id', req.params.id)
+                .eq('user_id', req.user.id)
+                .single();
+
+            if (existingComplaint) {
                 return res.status(400).json({ success: false, message: 'You have already filed a complaint for this item' });
             }
 
-            item.complaints.push({
-                user: req.user._id,
-                reason
-            });
-            await item.save();
+            const { error: complaintError } = await supabase
+                .from('complaints')
+                .insert({
+                    item_id: req.params.id,
+                    user_id: req.user.id,
+                    reason
+                });
+
+            if (complaintError) throw complaintError;
 
             invalidateCache('/api/items');
 
-            // Notify founder about the complaint
-            await Notification.create({
-                user: item.reporter,
-                type: 'complaint',
-                item: item._id,
-                text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${item.name}".`
-            });
+            const { data: item } = await supabase
+                .from('items')
+                .select('name, reporter')
+                .eq('id', req.params.id)
+                .single();
+
+            if (item) {
+                await supabase
+                    .from('notifications')
+                    .insert({
+                        user_id: item.reporter,
+                        type: 'complaint',
+                        item_id: item.id,
+                        text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${item.name}".`
+                    });
+            }
 
             res.json({ success: true, message: 'Complaint filed' });
         } catch (error) {
@@ -846,55 +779,67 @@ app.post('/api/items/:id/complaint',
     }
 );
 
+// Claim item (final)
 app.post('/api/items/:id/claim',
     authMiddleware,
     [
-        param('id').isMongoId().withMessage('Invalid item ID'),
+        param('id').isUUID().withMessage('Invalid item ID'),
     ],
     handleValidationErrors,
     async (req, res) => {
         try {
-            const { claimPhoto, claimNotes } = req.body;
+            const { claim_photo, claim_notes } = req.body;
             const itemId = req.params.id;
 
-            const item = await Item.findById(itemId);
-            if (!item) {
+            const { data: item, error: itemError } = await supabase
+                .from('items')
+                .select('*')
+                .eq('id', itemId)
+                .single();
+
+            if (itemError || !item) {
                 return res.status(404).json({ success: false, message: 'Item not found' });
             }
 
-            // Status check
             if (item.status !== 'Available' && item.status !== 'On Progress') {
                 return res.status(400).json({ success: false, message: 'Item is not available for claim' });
             }
 
-            // Reporter check - using toString() since reporter is an ObjectId
-            if (item.reporter.toString() === req.user._id.toString()) {
+            if (item.reporter === req.user.id) {
                 return res.status(400).json({ success: false, message: 'You cannot claim your own item' });
             }
 
-            // Update item status and claim details
-            item.status = 'Returned';
-            item.claimer = req.user._id;
-            item.claimPhoto = claimPhoto;
-            item.claimNotes = claimNotes;
-            item.claimedAt = new Date();
+            const { error: updateError } = await supabase
+                .from('items')
+                .update({
+                    status: 'Returned',
+                    claimer: req.user.id,
+                    claim_photo,
+                    claim_notes,
+                    claimed_at: new Date().toISOString()
+                })
+                .eq('id', itemId);
 
-            await item.save();
+            if (updateError) throw updateError;
 
-            // Increment all-time returned counter
-            await Counter.findOneAndUpdate(
-                { name: 'returnedAllTime' },
-                { $inc: { value: 1 } },
-                { upsert: true }
-            );
+            const wibNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+            const y = wibNow.getUTCFullYear();
+            const m = String(wibNow.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(wibNow.getUTCDate()).padStart(2, '0');
+            const today = `${y}-${m}-${d}`;
+            await supabase
+                .from('counters')
+                .upsert({ name: 'returnedAllTime', value: 0 }, { onConflict: 'name' })
+                .then(async () => {
+                    await supabase.rpc('increment_counter', { counter_name: 'returnedAllTime' });
+                });
 
-            // Increment daily returned counter (survives item deletion)
-            const today = new Date().toISOString().split('T')[0];
-            await DailyCounter.findOneAndUpdate(
-                { date: today },
-                { $inc: { returned: 1 } },
-                { upsert: true }
-            );
+            await supabase
+                .from('daily_counters')
+                .upsert({ date: today, returned: 0 }, { onConflict: 'date' })
+                .then(async () => {
+                    await supabase.rpc('increment_daily_counter', { counter_date: today });
+                });
 
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
@@ -913,21 +858,35 @@ app.post('/api/items/:id/claim',
     }
 );
 
-// Stats (protected)
+// Stats
 app.get('/api/stats', authMiddleware, cache(60), async (req, res) => {
     try {
-        const currentlyLost = await Item.countDocuments({
-            type: 'lost',
-            status: 'Available'
-        });
-        const foundToday = await Item.countDocuments({
-            type: 'found',
-            reportedAt: { $gte: new Date().setHours(0, 0, 0, 0) }
-        });
-        const counter = await Counter.findOne({ name: 'returnedAllTime' });
-        const returnedAllTime = counter?.value || 0;
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
 
-        res.json({ currentlyLost, foundToday, returnedAllTime });
+        const { count: currentlyLost } = await supabase
+            .from('items')
+            .select('*', { count: 'exact', head: true })
+            .eq('type', 'lost')
+            .eq('status', 'Available');
+
+        const { count: foundToday } = await supabase
+            .from('items')
+            .select('*', { count: 'exact', head: true })
+            .eq('type', 'found')
+            .gte('reported_at', todayStart.toISOString());
+
+        const { data: counter } = await supabase
+            .from('counters')
+            .select('value')
+            .eq('name', 'returnedAllTime')
+            .single();
+
+        res.json({
+            currentlyLost: currentlyLost || 0,
+            foundToday: foundToday || 0,
+            returnedAllTime: counter?.value || 0
+        });
     } catch (error) {
         console.error('Error fetching stats:', error.message);
         res.status(500).json({ success: false, message: 'Failed to fetch stats.' });
@@ -947,16 +906,35 @@ app.post('/api/ratings',
         try {
             const { rating, comment } = req.body;
 
-            const existing = await Rating.findOne({ user: req.user._id });
+            const { data: existing } = await supabase
+                .from('ratings')
+                .select('*')
+                .eq('user_id', req.user.id)
+                .single();
+
             if (existing) {
-                existing.rating = rating;
-                if (comment !== undefined) existing.comment = comment;
-                await existing.save();
+                const { data: updated, error } = await supabase
+                    .from('ratings')
+                    .update({ rating, comment: comment !== undefined ? comment : existing.comment })
+                    .eq('user_id', req.user.id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
                 invalidateCache('/api/ratings');
-                return res.json({ success: true, message: 'Rating updated', rating: existing });
+                return res.json({ success: true, message: 'Rating updated', rating: updated });
             }
-            const newRating = new Rating({ user: req.user._id, rating, comment });
-            await newRating.save();
+
+            const { data: newRating, error } = await supabase
+                .from('ratings')
+                .insert({ user_id: req.user.id, rating, comment })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            invalidateCache('/api/ratings');
             res.json({ success: true, message: 'Rating submitted', rating: newRating });
         } catch (error) {
             console.error('Submit rating error:', error.message);
@@ -967,21 +945,24 @@ app.post('/api/ratings',
 
 app.get('/api/ratings', authMiddleware, cache(300), async (req, res) => {
     try {
-        const ratings = await Rating.find().populate('user', 'nama').sort({ createdAt: -1 });
+        const { data: ratings, error } = await supabase
+            .from('ratings')
+            .select('*, user:profiles!ratings_user_id_fkey(nama)')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
         const totalRatings = ratings.length;
         const averageRating = totalRatings > 0
             ? (ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings)
             : 0;
 
+        const ratingsWithUsers = (ratings || []).map(r => r);
+
         res.json({
             averageRating: Math.round(averageRating * 10) / 10,
             totalRatings,
-            ratings: ratings.map(r => ({
-                rating: r.rating,
-                comment: r.comment,
-                createdAt: r.createdAt,
-                user: { nama: r.user?.nama || 'Anonymous' }
-            }))
+            ratings: ratingsWithUsers
         });
     } catch (error) {
         console.error('Fetch ratings error:', error.message);
@@ -991,7 +972,12 @@ app.get('/api/ratings', authMiddleware, cache(300), async (req, res) => {
 
 app.get('/api/ratings/mine', authMiddleware, async (req, res) => {
     try {
-        const rating = await Rating.findOne({ user: req.user._id });
+        const { data: rating, error } = await supabase
+            .from('ratings')
+            .select('*')
+            .eq('user_id', req.user.id)
+            .single();
+
         res.json({ rating: rating || null });
     } catch (error) {
         console.error('Fetch my rating error:', error.message);
@@ -1003,32 +989,43 @@ app.get('/api/ratings/mine', authMiddleware, async (req, res) => {
 
 app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300), async (req, res) => {
     try {
-        // Items per day (last 14 days)
-        const WIB_OFFSET = 7 * 60 * 60 * 1000;
-        const nowWIB = new Date(Date.now() + WIB_OFFSET);
-        const fourteenDaysAgoWIB = new Date(nowWIB);
-        fourteenDaysAgoWIB.setDate(fourteenDaysAgoWIB.getDate() - 14);
-        fourteenDaysAgoWIB.setHours(0, 0, 0, 0);
+        const wibOffset = 7 * 60 * 60 * 1000;
+        const now = new Date();
 
-        const fourteenDaysAgoUTC = new Date(fourteenDaysAgoWIB.getTime() - WIB_OFFSET);
-        const itemsSince = await Item.find({ reportedAt: { $gte: fourteenDaysAgoUTC } }).sort({ reportedAt: 1 });
+        const wibNow = new Date(now.getTime() + wibOffset);
+        const todayStartWIB = new Date(Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), wibNow.getUTCDate()) - wibOffset);
+
+        const sevenDaysAgoStart = new Date(todayStartWIB.getTime() - 6 * 24 * 60 * 60 * 1000);
+
+        const { data: itemsSince, error } = await supabase
+            .from('items')
+            .select('*')
+            .gte('reported_at', sevenDaysAgoStart.toISOString())
+            .order('reported_at', { ascending: true });
+
+        if (error) throw error;
 
         const itemsPerDay = [];
-        for (let i = 0; i < 14; i++) {
-            const dayStartWIB = new Date(fourteenDaysAgoWIB.getTime() + i * 24 * 60 * 60 * 1000);
-            const dayEndWIB = new Date(dayStartWIB.getTime() + 24 * 60 * 60 * 1000 - 1);
+        for (let i = 0; i < 7; i++) {
+            const dayStartUTC = new Date(sevenDaysAgoStart.getTime() + i * 24 * 60 * 60 * 1000);
+            const dayEndUTC = new Date(dayStartUTC.getTime() + 24 * 60 * 60 * 1000 - 1);
 
-            const dateStr = dayStartWIB.toISOString().split('T')[0];
-
-            const dayStartUTC = new Date(dayStartWIB.getTime() - WIB_OFFSET);
-            const dayEndUTC = new Date(dayEndWIB.getTime() - WIB_OFFSET);
+            const dayStartWIB = new Date(dayStartUTC.getTime() + wibOffset);
+            const y = dayStartWIB.getUTCFullYear();
+            const m = String(dayStartWIB.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(dayStartWIB.getUTCDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${d}`;
 
             const dayItems = itemsSince.filter(item =>
-                item.reportedAt >= dayStartUTC && item.reportedAt <= dayEndUTC
+                new Date(item.reported_at) >= dayStartUTC && new Date(item.reported_at) <= dayEndUTC
             );
 
-            // Fetch daily returned counter for this WIB date
-            const dc = await DailyCounter.findOne({ date: dateStr });
+            const { data: dc } = await supabase
+                .from('daily_counters')
+                .select('returned')
+                .eq('date', dateStr)
+                .single();
+
             itemsPerDay.push({
                 date: dateStr,
                 lost: dayItems.filter(i => i.type === 'lost').length,
@@ -1037,8 +1034,8 @@ app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300),
             });
         }
 
-        // Top locations
-        const allItems = await Item.find({});
+        const { data: allItems } = await supabase.from('items').select('*');
+
         const locationCount = {};
         allItems.forEach(item => {
             const loc = item.location?.trim();
@@ -1051,7 +1048,6 @@ app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300),
             .slice(0, 5)
             .map(([location, count]) => ({ location, count }));
 
-        // Top categories
         const categoryCount = {};
         allItems.forEach(item => {
             const cat = item.category?.trim() || 'Others';
@@ -1062,36 +1058,34 @@ app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300),
             .slice(0, 5)
             .map(([category, count]) => ({ category, count }));
 
-        // Fun facts
         const totalItems = allItems.length;
-        const counterDoc = await Counter.findOne({ name: 'returnedAllTime' });
+        const { data: counterDoc } = await supabase
+            .from('counters')
+            .select('value')
+            .eq('name', 'returnedAllTime')
+            .single();
         const totalReturned = counterDoc?.value || 0;
         const returnRate = totalItems > 0 ? Math.round((totalReturned / totalItems) * 100) : 0;
 
-        // Most common location
         const mostCommonLocation = topLocations[0]?.location || 'N/A';
-
-        // Most lost category
         const mostLostCategory = topCategories[0]?.category || 'N/A';
 
-        // Busiest day of week
         const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const dayCount = [0, 0, 0, 0, 0, 0, 0];
         allItems.forEach(item => {
-            const day = new Date(item.reportedAt).getDay();
+            const day = new Date(item.reported_at).getDay();
             dayCount[day]++;
         });
         const busiestDayIndex = dayCount.indexOf(Math.max(...dayCount));
         const busiestDay = dayNames[busiestDayIndex];
 
-        // Average time to return
-        const returnedItems = allItems.filter(i => i.status === 'Returned' && i.claimedAt);
+        const returnedItems = allItems.filter(i => i.status === 'Returned' && i.claimed_at);
         let totalHours = 0;
         let avgHours = 0;
         if (returnedItems.length > 0) {
             totalHours = returnedItems.reduce((sum, item) => {
-                const reported = new Date(item.reportedAt).getTime();
-                const claimed = new Date(item.claimedAt).getTime();
+                const reported = new Date(item.reported_at).getTime();
+                const claimed = new Date(item.claimed_at).getTime();
                 return sum + (claimed - reported);
             }, 0);
             avgHours = totalHours / returnedItems.length / (1000 * 60 * 60);
@@ -1118,27 +1112,58 @@ app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300),
     }
 });
 
-// Reassign claimer (Founder decides who claims — no permanent Returned marking)
+// Reassign claimer
 app.post('/api/items/:id/resolve',
     authMiddleware,
     [
-        param('id').isMongoId().withMessage('Invalid item ID'),
-        body('userId').isMongoId().withMessage('Invalid user ID'),
+        param('id').isUUID().withMessage('Invalid item ID'),
+        body('userId').isUUID().withMessage('Invalid user ID'),
     ],
     handleValidationErrors,
     async (req, res) => {
         try {
-            const { userId } = req.body;
-            const item = await Item.findById(req.params.id);
-            if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
+            console.log('[resolve] reporterId:', req.user.id, 'itemId:', req.params.id, 'newClaimer:', req.body.userId);
 
-            if (item.reporter.toString() !== req.user._id.toString()) {
+            const { data: item, error } = await supabase
+                .from('items')
+                .select('*')
+                .eq('id', req.params.id)
+                .single();
+
+            if (error || !item) return res.status(404).json({ success: false, message: 'Item not found' });
+
+            console.log('[resolve] item reporter:', item.reporter, '| current user:', req.user.id);
+            console.log('[resolve] reporter === userId?', item.reporter === req.user.id);
+
+            if (item.reporter !== req.user.id) {
                 return res.status(403).json({ success: false, message: 'Only founder can assign claimer' });
             }
 
-            // Only reassign claimer — keep status as-is (final claim requires QR + photo)
-            item.claimer = userId;
-            await item.save();
+            const { error: updateError } = await supabase
+                .from('items')
+                .update({ claimer: req.body.userId })
+                .eq('id', req.params.id);
+
+            if (updateError) {
+                console.log('[resolve] update error:', updateError.message);
+                throw updateError;
+            }
+            console.log('[resolve] update succeeded');
+
+            await supabase
+                .from('complaints')
+                .delete()
+                .eq('item_id', req.params.id)
+                .eq('user_id', req.body.userId);
+
+            await supabase
+                .from('notifications')
+                .insert({
+                    user_id: req.body.userId,
+                    type: 'claim_assigned',
+                    item_id: req.params.id,
+                    text: `You have been assigned as the claimer for: ${item.name}`
+                });
 
             invalidateCache('/api/items');
 
@@ -1153,7 +1178,15 @@ app.post('/api/items/:id/resolve',
 // Notifications routes
 app.get('/api/notifications', authMiddleware, async (req, res) => {
     try {
-        const notifs = await Notification.find({ user: req.user._id }).sort({ createdAt: -1 }).limit(20);
+        const { data: notifs, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', req.user.id)
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) throw error;
+
         res.json(notifs);
     } catch (error) {
         console.error('Fetch notifications error:', error.message);
@@ -1163,7 +1196,14 @@ app.get('/api/notifications', authMiddleware, async (req, res) => {
 
 app.post('/api/notifications/:id/read', authMiddleware, async (req, res) => {
     try {
-        await Notification.findOneAndUpdate({ _id: req.params.id, user: req.user._id }, { isRead: true });
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', req.params.id)
+            .eq('user_id', req.user.id);
+
+        if (error) throw error;
+
         res.json({ success: true });
     } catch (error) {
         console.error('Mark as read error:', error.message);
@@ -1172,30 +1212,26 @@ app.post('/api/notifications/:id/read', authMiddleware, async (req, res) => {
 });
 
 // ── CATCH-ALL ────────────────────────────────
-// Handle 404 for unknown API routes
 app.use('/api', (req, res) => {
     res.status(404).json({ success: false, message: 'API route not found.' });
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
     console.error('💥 Unhandled Error Stack:', err.stack || err);
     res.status(500).json({ success: false, message: 'Internal server error.' });
 });
 
 // ─────────────────────────────────────────────
-// 10. SOCKET.IO & SERVER START
+// 5. SOCKET.IO & SERVER START
 // ─────────────────────────────────────────────
 
 const io = new Server(server, {
     cors: {
         origin: (origin, callback) => {
             if (!origin) return callback(null, true);
-
             if (allowedOrigins.includes(origin)) {
                 return callback(null, true);
             }
-
             console.warn(`❌ Socket blocked by CORS: ${origin}`);
             return callback(new Error('Socket CORS blocked'));
         },
@@ -1204,24 +1240,25 @@ const io = new Server(server, {
     }
 });
 
-// Socket.IO authentication middleware
-io.use((socket, next) => {
+io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) {
         return next(new Error('Authentication required'));
     }
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        socket.userId = decoded.id;
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error || !user) {
+            return next(new Error('Invalid or expired token'));
+        }
+        socket.userId = user.id;
         next();
     } catch (err) {
-        next(new Error('Invalid or expired token'));
+        next(new Error('Authentication error'));
     }
 });
 
-// Per-socket rate limiting for messages
 const socketRateLimit = new Map();
-const SOCKET_RATE_LIMIT_WINDOW = 10000; // 10 seconds
+const SOCKET_RATE_LIMIT_WINDOW = 10000;
 const SOCKET_RATE_LIMIT_MAX = 20;
 
 const checkSocketRateLimit = (socketId) => {
@@ -1249,17 +1286,21 @@ io.on('connection', (socket) => {
 
     socket.on('join-item', async (itemId) => {
         try {
-            if (!mongoose.isValidObjectId(itemId)) return;
-            const item = await Item.findById(itemId).select('reporter claimer').lean();
+            const { data: item } = await supabase
+                .from('items')
+                .select('reporter, claimer')
+                .eq('id', itemId)
+                .single();
+
             if (!item) return;
             const uid = socket.userId;
-            const isReporter = item.reporter.toString() === uid;
-            const isClaimer = item.claimer && item.claimer.toString() === uid;
+            const isReporter = item.reporter === uid;
+            const isClaimer = item.claimer && item.claimer === uid;
             if (isReporter || isClaimer) {
                 socket.join(`item-${itemId}`);
             }
         } catch (e) {
-            // silently ignore invalid join
+            // silently ignore
         }
     });
 
@@ -1268,8 +1309,6 @@ io.on('connection', (socket) => {
             socket.emit('rate-limited', { message: 'Too many messages. Please slow down.' });
             return;
         }
-        // Forward to the chat HTTP handler can pick it up, or handle directly
-        // For now, this is a safety valve — main chat goes through HTTP POST
         socket.broadcast.to(`item-${data.itemId}`).emit('new-message', data);
     });
 
@@ -1280,9 +1319,8 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────
-// 11. CRON JOBS (Auto Cleanup)
+// 6. CRON JOBS (Auto Cleanup)
 // ─────────────────────────────────────────────
-// Run every hour
 const runCleanupJob = async () => {
     console.log('🧹 Running Auto-Cleanup Job...');
 
@@ -1295,73 +1333,56 @@ const runCleanupJob = async () => {
             new Date().setDate(new Date().getDate() - 2)
         );
 
-        // 1. Delete items not returned and older than 10 days
-        const expiredUnclaimed = await Item.find({
-            status: { $ne: 'Returned' },
-            reportedAt: { $lte: tenDaysAgo }
-        });
+        const { data: expiredUnclaimed } = await supabase
+            .from('items')
+            .select('*')
+            .neq('status', 'Returned')
+            .lte('reported_at', tenDaysAgo.toISOString());
 
-        // 2. Delete items returned older than 2 days
-        const expiredReturned = await Item.find({
-            status: 'Returned',
-            claimedAt: { $lte: twoDaysAgo }
-        });
+        const { data: expiredReturned } = await supabase
+            .from('items')
+            .select('*')
+            .eq('status', 'Returned')
+            .lte('claimed_at', twoDaysAgo.toISOString());
 
         const itemsToDelete = [
-            ...expiredUnclaimed,
-            ...expiredReturned
+            ...(expiredUnclaimed || []),
+            ...(expiredReturned || [])
         ];
 
         console.log(`🗑️ Found ${itemsToDelete.length} items.`);
 
         for (const item of itemsToDelete) {
-
-            // Delete Cloudinary image
-            if (
-                item.image?.publicId
-            ) {
+            if (item.image_url?.includes('cloudinary')) {
                 try {
-                    await cloudinary.uploader.destroy(
-                        item.image.publicId
-                    );
-
-                    console.log(
-                        `☁️ Deleted image: ${item.image.publicId}`
-                    );
-
+                    const publicId = item.image_url.split('/').pop().split('.')[0];
+                    await cloudinary.uploader.destroy(publicId);
+                    console.log(`☁️ Deleted image: ${publicId}`);
                 } catch (cloudinaryErr) {
-                    console.error(
-                        'Cloudinary delete failed:',
-                        cloudinaryErr.message
-                    );
+                    console.error('Cloudinary delete failed:', cloudinaryErr.message);
                 }
             }
 
-            // Create notification
-            const notif = await Notification.create({
-                user: item.reporter,
-                type: 'system',
-                item: null,
-                text: `Laporan "${item.name}" telah dihapus otomatis.`
-            });
+            await supabase
+                .from('notifications')
+                .insert({
+                    user_id: item.reporter,
+                    type: 'system',
+                    item_id: null,
+                    text: `Laporan "${item.name}" telah dihapus otomatis.`
+                });
 
-            io.to(`user-${item.reporter}`).emit(
-                'notification',
-                notif
-            );
-
-            await Item.findByIdAndDelete(item._id);
+            await supabase
+                .from('items')
+                .delete()
+                .eq('id', item.id);
 
             console.log(`🗑️ Deleted item: ${item.name}`);
         }
 
         console.log('✅ Cleanup complete');
-
     } catch (error) {
-        console.error(
-            '❌ Cleanup failed:',
-            error.message
-        );
+        console.error('❌ Cleanup failed:', error.message);
     }
 };
 

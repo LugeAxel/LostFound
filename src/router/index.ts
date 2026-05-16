@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { API_URL } from '@/config/api'
+import { supabase } from '@/lib/supabase'
 import Login from '../views/Login.vue'
+import EmailVerification from '../views/EmailVerification.vue'
 import Dashboard from '../views/Dashboard.vue'
 import Report from '../views/Report.vue'
 import MyReports from '../views/MyReports.vue'
@@ -21,6 +23,16 @@ const router = createRouter({
       name: 'login',
       component: Login,
       meta: { requiresGuest: true }
+    },
+    {
+      path: '/verify-email',
+      name: 'email-verification',
+      component: EmailVerification,
+      // No meta guards — accessible regardless of auth state.
+      // Supabase auto-processes URL hash tokens during client init,
+      // so by the time the router guard runs the hash is already cleared
+      // and a session exists. Removing requiresGuest lets the component
+      // mount and handle all scenarios (auto-verified, manual, pending).
     },
     {
       path: '/dashboard',
@@ -88,7 +100,6 @@ const router = createRouter({
       component: Statistics,
       meta: { requiresAuth: true }
     },
-    // Catch-all: redirect unknown routes to login
     {
       path: '/:pathMatch(.*)*',
       redirect: '/'
@@ -96,41 +107,32 @@ const router = createRouter({
   ],
 })
 
-// Navigation guard: protect routes
 router.beforeEach(async (to, from, next) => {
-  const token = localStorage.getItem('token')
-  const user = localStorage.getItem('user')
-  const isAuthenticated = !!token && !!user
+  const { data: { session } } = await supabase.auth.getSession()
+  const isAuthenticated = !!session
 
   if (to.meta.requiresAuth && !isAuthenticated) {
-    // Not logged in → redirect to login
     return next({ name: 'login' })
   }
 
   if (to.meta.requiresAuth && isAuthenticated) {
-    // Only verify token on full page reload (no previous route)
-    // Skip verification on SPA navigation for performance
     if (!from.name) {
       try {
         const response = await fetch(`${API_URL}/api/auth/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
         })
 
         if (!response.ok) {
-          // Token expired or invalid → clear and redirect
-          localStorage.removeItem('token')
-          localStorage.removeItem('user')
+          await supabase.auth.signOut()
           return next({ name: 'login' })
         }
       } catch {
-        // Network error — allow navigation but token may fail later
-        // Don't block the user if backend is temporarily down
+        // Network error — allow navigation
       }
     }
   }
 
   if (to.meta.requiresGuest && isAuthenticated) {
-    // Already logged in → redirect to dashboard
     return next({ name: 'dashboard' })
   }
 

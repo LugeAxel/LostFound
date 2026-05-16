@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useRouter, RouterLink, useRoute } from 'vue-router';
 import { useI18n } from '../i18n';
+import { supabase } from '../lib/supabase';
 
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  await supabase.auth.signOut();
   localStorage.removeItem('user');
   localStorage.removeItem('token');
   router.push('/');
