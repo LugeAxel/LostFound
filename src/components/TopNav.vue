@@ -19,7 +19,14 @@ const showProfileDropdown = ref(false);
 const searchQuery = ref((route.query.q as string) || '');
 let socket: any = null;
 
-const { notifications, unreadCount, fetchNotifications: fetchNotifs, subscribeToNotifications, deleteNotification: deleteNotif, unsubscribe } = useNotifications();
+const handleLogout = async () => {
+  await supabase.auth.signOut();
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  router.push('/');
+};
+
+const { notifications, unreadCount, fetchNotifications: fetchNotifs, subscribeToNotifications, deleteNotification: deleteNotif, deleteAllNotifications: deleteAllNotifs, unsubscribe } = useNotifications();
 
 const isDark = ref(localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
@@ -86,7 +93,8 @@ onMounted(async () => {
   });
   
   socket.on('connect', () => {
-    socket.emit('join-user', user.value.id);
+    const userId = user.value?.id || session?.user?.id;
+    if (userId) socket.emit('join-user', userId);
   });
 });
 
@@ -121,6 +129,13 @@ onBeforeUnmount(() => {
             <div class="p-4 border-b border-[#e0e4df] dark:border-[#374151] flex justify-between items-center bg-[#f8faf7] dark:bg-[#121212]">
               <h4 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('topnav.notifications') }}</h4>
               <span class="text-[10px] text-[#40493d] dark:text-[#9ca3af] font-bold uppercase tracking-wider">{{ unreadCount }} {{ t('topnav.new') }}</span>
+            </div>
+            <div v-if="notifications.length > 0" class="px-4 py-2 border-b border-[#e0e4df] dark:border-[#374151] bg-[#fcf9f8] dark:bg-[#1a1a1a]">
+              <button @click="deleteAllNotifs(); showDropdown = false"
+                class="text-[#ba1a1a] hover:text-[#991515] text-[10px] font-bold flex items-center gap-1 transition-colors">
+                <span class="material-symbols-outlined text-sm">delete</span>
+                Delete All
+              </button>
             </div>
             <div class="max-h-96 overflow-y-auto">
               <div v-for="notif in notifications" :key="notif.id" 
@@ -199,6 +214,16 @@ onBeforeUnmount(() => {
                 <span class="material-symbols-outlined text-xl text-[#40493d] dark:text-[#9ca3af]">star</span>
                 <span>Rate App</span>
               </RouterLink>
+              <RouterLink to="/tutorial" @click="showProfileDropdown = false"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] transition-all text-sm font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">
+                <span class="material-symbols-outlined text-xl text-[#40493d] dark:text-[#9ca3af]">help</span>
+                <span>{{ t('dash.how_it_works') }}</span>
+              </RouterLink>
+              <button @click="handleLogout()"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] transition-all text-sm font-medium text-[#890404] dark:text-[#ac0000]">
+                <span class="material-symbols-outlined text-xl text-[#890404] dark:text-[#ac0000]">logout</span>
+                <span>Log Out</span>
+              </button>
             </div>
           </div>
         </div>

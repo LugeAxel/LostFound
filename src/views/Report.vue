@@ -220,12 +220,12 @@ const submitReport = async () => {
         <form @submit.prevent="submitReport" class="space-y-5 sm:space-y-6 md:space-y-8 relative z-10">
           <!-- Type Toggle -->
           <div class="grid grid-cols-2 gap-4 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
-            <button type="button" @click="form.type = 'found'; imagePreview = null; form.imageUrl = ''"
+            <button type="button" @click="form.type = 'found'; imagePreview = null; form.imageUrl = ''; stopCamera()"
               :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', 
               form.type === 'found' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41]']">
               <span class="material-symbols-outlined text-xl">add_a_photo</span> Found
             </button>
-            <button type="button" @click="form.type = 'lost'; imagePreview = null; form.imageUrl = ''"
+            <button type="button" @click="form.type = 'lost'; imagePreview = null; form.imageUrl = ''; stopCamera()"
               :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', 
               form.type === 'lost' ? 'bg-white dark:bg-[#1e1e1e] text-[#ba1a1a] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#ba1a1a]']">
               <span class="material-symbols-outlined text-xl">search</span> Lost

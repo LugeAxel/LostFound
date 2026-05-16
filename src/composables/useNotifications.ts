@@ -92,6 +92,17 @@ export function useNotifications() {
     }
   }
 
+  const deleteAllNotifications = async () => {
+    try {
+      await axios.delete(`${API_URL}/api/notifications`, { headers: await getAuthHeaders() })
+    } catch (error: any) {
+      console.error('Error deleting all notifications:', error.response?.data?.message || error.message)
+      return
+    }
+    notifications.value = []
+    unreadCount.value = 0
+  }
+
   const unsubscribe = () => {
     if (subscription) {
       supabase.removeChannel(subscription)
@@ -109,6 +120,7 @@ export function useNotifications() {
     fetchNotifications,
     subscribeToNotifications,
     deleteNotification,
+    deleteAllNotifications,
     unsubscribe
   }
 }

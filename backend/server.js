@@ -526,6 +526,10 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
             query = query.eq('area_category', req.query.area_category);
         }
 
+        if (req.query.type && req.query.type !== 'all') {
+            query = query.eq('type', req.query.type);
+        }
+
         const { data: items, error, count } = await query;
 
         if (error) throw error;
@@ -616,7 +620,7 @@ app.get('/api/items/matches/:id', authMiddleware, async (req, res) => {
             .from('items')
             .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
             .eq('type', 'found')
-            .eq('status', 'Available')
+            .in('status', ['Available', 'On Progress', 'Returned'])
             .eq('category', lostItem.category)
             .neq('id', lostItem.id);
         if (lostItem.area_category) q1 = q1.eq('area_category', lostItem.area_category);
@@ -629,7 +633,7 @@ app.get('/api/items/matches/:id', authMiddleware, async (req, res) => {
                 .from('items')
                 .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
                 .eq('type', 'found')
-                .eq('status', 'Available')
+                .in('status', ['Available', 'On Progress', 'Returned'])
                 .eq('category', lostItem.category)
                 .neq('id', lostItem.id);
             const { data: p2 } = await q2.limit(30);
@@ -646,7 +650,7 @@ app.get('/api/items/matches/:id', authMiddleware, async (req, res) => {
                 .from('items')
                 .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
                 .eq('type', 'found')
-                .eq('status', 'Available')
+                .in('status', ['Available', 'On Progress', 'Returned'])
                 .neq('category', lostItem.category)
                 .neq('id', lostItem.id)
                 .or(orClauses);
@@ -785,7 +789,7 @@ app.post('/api/items',
 
                     // Pass 1: same category + same area_category
                     let q1 = supabase.from('items').select('*')
-                        .eq('type', 'found').eq('status', 'Available')
+                        .eq('type', 'found').in('status', ['Available', 'On Progress', 'Returned'])
                         .eq('category', newItem.category).neq('id', newItem.id);
                     if (newItem.area_category) q1 = q1.eq('area_category', newItem.area_category);
                     const { data: p1 } = await q1.limit(50);
@@ -794,7 +798,7 @@ app.post('/api/items',
                     // Pass 2: same category only
                     if (newItem.area_category) {
                         let q2 = supabase.from('items').select('*')
-                            .eq('type', 'found').eq('status', 'Available')
+                            .eq('type', 'found').in('status', ['Available', 'On Progress', 'Returned'])
                             .eq('category', newItem.category).neq('id', newItem.id);
                         const { data: p2 } = await q2.limit(30);
                         if (p2) for (const fi of p2) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
@@ -807,7 +811,7 @@ app.post('/api/items',
                             `description.ilike.%25${kw}%25`
                         ]).join(',');
                         let q3 = supabase.from('items').select('*')
-                            .eq('type', 'found').eq('status', 'Available')
+                            .eq('type', 'found').in('status', ['Available', 'On Progress', 'Returned'])
                             .neq('category', newItem.category).neq('id', newItem.id)
                             .or(orClauses);
                         const { data: p3 } = await q3.limit(20);
@@ -877,13 +881,16 @@ app.post('/api/items/:id/start-claim',
             if (!updated || updated.length === 0) {
                 const { data: existing } = await supabase
                     .from('items')
-                    .select('reporter, status')
+                    .select('reporter, status, claimer')
                     .eq('id', req.params.id)
                     .single();
 
                 if (!existing) return res.status(404).json({ success: false, message: 'Item not found' });
                 if (existing.reporter === req.user.id) {
                     return res.status(400).json({ success: false, message: 'You cannot claim your own item' });
+                }
+                if (existing.claimer === req.user.id) {
+                    return res.status(400).json({ success: false, message: 'You have already claimed this item' });
                 }
                 return res.status(400).json({ success: false, message: 'Item is already being claimed or returned' });
             }
@@ -994,26 +1001,21 @@ app.post('/api/items/:id/complaint',
         try {
             const { reason } = req.body;
 
-            const { data: existingComplaint } = await supabase
-                .from('complaints')
-                .select('id')
-                .eq('item_id', req.params.id)
-                .eq('user_id', req.user.id)
-                .single();
-
-            if (existingComplaint) {
-                return res.status(400).json({ success: false, message: 'You have already filed a complaint for this item' });
-            }
-
-            const { error: complaintError } = await supabase
+            const { data: inserted, error: complaintError } = await supabase
                 .from('complaints')
                 .insert({
                     item_id: req.params.id,
                     user_id: req.user.id,
                     reason
-                });
+                })
+                .select('id');
 
-            if (complaintError) throw complaintError;
+            if (complaintError) {
+                if (complaintError.code === '23505' || !inserted?.length) {
+                    return res.status(400).json({ success: false, message: 'You have already filed a complaint for this item' });
+                }
+                throw complaintError;
+            }
 
             invalidateCache('/api/items');
 
@@ -1454,6 +1456,22 @@ app.get('/api/notifications', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Fetch notifications error:', error.message);
         res.status(500).json({ success: false, message: 'Failed to fetch notifications.' });
+    }
+});
+
+app.delete('/api/notifications', authMiddleware, async (req, res) => {
+    try {
+        const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('user_id', req.user.id);
+
+        if (error) throw error;
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete all notifications error:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to delete notifications.' });
     }
 });
 

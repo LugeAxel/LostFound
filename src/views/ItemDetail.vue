@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, onMounted, nextTick, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import "leaflet/dist/leaflet.css";
@@ -16,7 +16,7 @@ import { API_URL, SOCKET_URL } from '@/config/api';
 
 const route = useRoute();
 const router = useRouter();
-const itemId = route.params.id as string;
+const itemId = computed(() => route.params.id as string);
 
 const item = ref<any>(null);
 const isLoading = ref(true);
@@ -33,7 +33,7 @@ let socket: any = null;
 
 const fetchItem = async () => {
   try {
-    const res = await axios.get(`${API_URL}/api/items/${itemId}`, { headers: await getAuthHeaders() });
+    const res = await axios.get(`${API_URL}/api/items/${itemId.value}`, { headers: await getAuthHeaders() });
     item.value = res.data;
     
     // Set loading to false so the v-else-if="item" block (with map container) renders
@@ -59,31 +59,48 @@ const fetchItem = async () => {
 };
 
 onMounted(async () => {
-  const user = await getCurrentUser();
+    const user = await getCurrentUser();
   if (user) currentUser.value = user;
   
   fetchItem();
-  const { data: { session } } = await supabase.auth.getSession();
-  socket = io(SOCKET_URL, {
-    transports: ['websocket', 'polling'],
-    withCredentials: true,
-    auth: { token: session?.access_token }
-  });
-  
-  socket.on('connect', () => {
-    socket.emit('join-item', itemId);
-  });
+  initSocket();
+});
 
-  socket.on('new-message', (data: any) => {
-    if (data.itemId === itemId && item.value) {
-      // Avoid duplicates if we just sent it
-      const exists = item.value.messages.some((m: any) => m.id === data.message.id);
-      if (!exists) {
-        item.value.messages.push(data.message);
-        scrollToBottom();
+const initSocket = () => {
+  if (socket) socket.disconnect();
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      auth: { token: session?.access_token }
+    });
+    
+    socket.on('connect', () => {
+      socket.emit('join-item', itemId.value);
+    });
+
+    socket.on('new-message', (data: any) => {
+      if (data.itemId === itemId.value && item.value) {
+        const exists = item.value.messages.some((m: any) => m.id === data.message.id);
+        if (!exists) {
+          item.value.messages.push(data.message);
+          scrollToBottom();
+        }
       }
-    }
+    });
   });
+};
+
+watch(itemId, () => {
+  isLoading.value = true;
+  errorMessage.value = null;
+  item.value = null;
+  if (mapInstance.value) {
+    mapInstance.value.remove();
+    mapInstance.value = null;
+  }
+  fetchItem();
+  initSocket();
 });
 
 onBeforeUnmount(() => {
@@ -96,11 +113,12 @@ onBeforeUnmount(() => {
 
 const startClaim = async () => {
   try {
-    await axios.post(`${API_URL}/api/items/${itemId}/start-claim`, {}, { headers: await getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId.value}/start-claim`, {}, { headers: await getAuthHeaders() });
     await fetchItem();
     toast.show('Claim started! Contact the reporter to arrange a meeting.', 'success');
   } catch (error: any) {
     toast.show(error.response?.data?.message || 'Failed to start claim', 'error');
+    await fetchItem();
   }
 };
 
@@ -108,8 +126,11 @@ const sendMessage = async () => {
   if (!newMessage.value.trim()) return;
   isSending.value = true;
   try {
-    const res = await axios.post(`${API_URL}/api/items/${itemId}/chat`, { text: newMessage.value }, { headers: await getAuthHeaders() });
-    item.value.messages = res.data.messages;
+    const res = await axios.post(`${API_URL}/api/items/${itemId.value}/chat`, { text: newMessage.value }, { headers: await getAuthHeaders() });
+    if (res.data.messages?.[0]) {
+      const exists = item.value.messages.some((m: any) => m.id === res.data.messages[0].id);
+      if (!exists) item.value.messages.push(res.data.messages[0]);
+    }
     newMessage.value = '';
     scrollToBottom();
   } catch (error: any) {
@@ -121,6 +142,7 @@ const sendMessage = async () => {
 
 const showComplaintModal = ref(false);
 const complaintReason = ref('');
+const hasFiledComplaint = ref(false);
 
 const fileComplaint = () => {
   complaintReason.value = '';
@@ -129,14 +151,16 @@ const fileComplaint = () => {
 
 const submitComplaint = async () => {
   if (!complaintReason.value.trim()) return;
+  hasFiledComplaint.value = true;
+  showComplaintModal.value = false;
   try {
-    await axios.post(`${API_URL}/api/items/${itemId}/complaint`, { reason: complaintReason.value }, { headers: await getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId.value}/complaint`, { reason: complaintReason.value }, { headers: await getAuthHeaders() });
     toast.show(t('detail.complaint_success'), 'success');
-    showComplaintModal.value = false;
     complaintReason.value = '';
     await fetchItem();
   } catch (error: any) {
-    toast.show(error.response?.data?.message || t('detail.complaint_success'), error.response?.data?.message ? 'error' : 'success');
+    toast.show(error.response?.data?.message || 'Failed to submit complaint', 'error');
+    await fetchItem();
   }
 };
 
@@ -154,7 +178,7 @@ const hasComplained = () => item.value?.complaints?.some((c: any) => c.user?.id 
 const assignClaimer = async (userId: string) => {
   if (!confirm('Are you sure you want to set this student as the claimer?')) return;
   try {
-    await axios.post(`${API_URL}/api/items/${itemId}/resolve`, { userId }, { headers: await getAuthHeaders() });
+    await axios.post(`${API_URL}/api/items/${itemId.value}/resolve`, { userId }, { headers: await getAuthHeaders() });
     toast.show(t('detail.claimer_reassigned'), 'success');
     await fetchItem();
   } catch (error: any) {
@@ -468,13 +492,13 @@ const copyGps = async (lat: number, lng: number) => {
                 </p>
               </div>
 
-              <button v-if="item.status === 'On Progress' && !isFounder() && !isClaimer() && !hasComplained()"
+              <button v-if="item.status === 'On Progress' && !isFounder() && !isClaimer() && !hasComplained() && !hasFiledComplaint"
                 @click="fileComplaint"
                 class="w-full py-4 bg-[#ba1a1a] text-white rounded-2xl font-bold text-base shadow-lg hover:bg-[#991515] active:scale-95 transition-all flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">report</span>
                 {{ t('detail.file_complaint') }}
               </button>
-              <div v-else-if="item.status === 'On Progress' && !isFounder() && !isClaimer() && hasComplained()"
+              <div v-else-if="item.status === 'On Progress' && !isFounder() && !isClaimer() && (hasComplained() || hasFiledComplaint)"
                 class="p-4 bg-[#fef2f2] rounded-2xl flex items-start gap-3 border border-red-100">
                 <span class="material-symbols-outlined text-[#ba1a1a] text-sm shrink-0">check_circle</span>
                 <p class="text-xs text-[#ba1a1a] font-medium leading-relaxed">

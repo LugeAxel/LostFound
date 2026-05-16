@@ -211,10 +211,10 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4', 'tip5'];
         <div class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] p-10 border border-[#e0e4df] dark:border-[#374151] shadow-sm">
           <span class="material-symbols-outlined text-5xl text-[#22c55e]/100 mb-4">rocket_launch</span>
           <h3 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2">
-            {{ t('tutorial.back') === 'Back to Dashboard' ? 'Ready to get started?' : 'Siap untuk mulai?' }}
+            {{ t('tutorial.cta_title') }}
           </h3>
           <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mb-6">
-            {{ t('tutorial.back') === 'Back to Dashboard' ? 'Head back to the Dashboard and start finding or reporting items.' : 'Kembali ke Beranda dan mulai temukan atau laporkan barang.' }}
+            {{ t('tutorial.cta_desc') }}
           </p>
           <div class="flex justify-center gap-4 flex-wrap">
             <router-link to="/dashboard"

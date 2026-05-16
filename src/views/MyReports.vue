@@ -219,15 +219,18 @@ const copyText = async (text: string) => {
               <div v-for="match in itemMatches[item.id]" :key="match.id" @click="router.push(`/item/${match.id}`)"
                 class="bg-[#f8faf7] dark:bg-[#121212] rounded-xl border border-[#e0e4df] dark:border-[#374151] overflow-hidden hover:shadow-md hover:border-[#387b41]/30 transition-all cursor-pointer group flex gap-4 p-3">
                 <div class="w-20 h-20 rounded-lg bg-[#f3f5f2] dark:bg-[#2a2a2a] overflow-hidden flex-shrink-0">
-                  <img v-if="match.image_url" :src="match.image_url" class="w-full h-full object-cover" />
+                  <img v-if="match.image_url" :src="match.image_url" :class="['w-full h-full object-cover', match.status === 'Returned' && 'grayscale opacity-70']" />
                   <div v-else class="w-full h-full flex items-center justify-center">
                     <span class="material-symbols-outlined text-xl text-[#40493d] dark:text-[#9ca3af]/20">inventory_2</span>
                   </div>
                 </div>
                 <div class="flex-1 min-w-0 flex flex-col justify-center">
-                  <div class="flex items-center gap-1.5 mb-1">
+                  <div class="flex items-center gap-1.5 mb-1 flex-wrap">
                     <span class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] truncate">{{ match.name }}</span>
                     <span class="px-2 py-0.5 bg-[#387b41]/10 text-[#387b41] text-[10px] font-bold rounded-full uppercase shrink-0">{{ t('myreports.suggestions_match') }}</span>
+                    <span v-if="match.status === 'Available'" class="px-2 py-0.5 bg-[#abf4ac] text-[#07521d] text-[10px] ml-1 font-bold rounded-full uppercase shrink-0">{{ t('card.status.Available') }}</span>
+                    <span v-else-if="match.status === 'On Progress'" class="px-2 py-0.5 bg-[#ffecb3] text-[#f57f17] text-[10px] ml-1 font-bold rounded-full uppercase shrink-0">{{ t('card.status.On Progress') }}</span>
+                    <span v-else-if="match.status === 'Returned'" class="px-2 py-0.5 bg-[#dee5d6] text-[#42493e] text-[10px] ml-1 font-bold rounded-full uppercase shrink-0">{{ t('card.status.Returned') }}</span>
                   </div>
                   <p class="text-xs text-[#40493d] dark:text-[#9ca3af] truncate flex items-center gap-1">
                     <span class="material-symbols-outlined text-[10px]">location_on</span>

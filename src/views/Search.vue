@@ -44,6 +44,9 @@ const fetchItems = async () => {
     if (filterAreaCategory.value !== 'all') {
       params.area_category = filterAreaCategory.value;
     }
+    if (filterType.value !== 'all') {
+      params.type = filterType.value;
+    }
     const res = await axios.get(`${API_URL}/api/items`, { headers: await getAuthHeaders(), params });
     items.value = res.data.items || [];
     currentPage.value = res.data.currentPage || 1;
@@ -76,21 +79,13 @@ const handleSearch = () => {
 };
 
 const filteredItems = computed(() => {
-  let result = items.value;
-  if (filterType.value === 'lost') {
-    result = result.filter(item => item.type === 'lost');
-  } else if (filterType.value === 'found') {
-    result = result.filter(item => item.type === 'found');
-  }
   const q = searchInput.value.toLowerCase().trim();
-  if (q) {
-    result = result.filter(item =>
-      item.name.toLowerCase().includes(q) ||
-      (item.description && item.description.toLowerCase().includes(q)) ||
-      (item.location && item.location.toLowerCase().includes(q))
-    );
-  }
-  return result;
+  if (!q) return items.value;
+  return items.value.filter(item =>
+    item.name.toLowerCase().includes(q) ||
+    (item.description && item.description.toLowerCase().includes(q)) ||
+    (item.location && item.location.toLowerCase().includes(q))
+  );
 });
 
 const pageNumbers = computed(() => {

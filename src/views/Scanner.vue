@@ -171,7 +171,7 @@ async function decodeQrFromImage(file: File) {
   if (!file) return;
   isDecodingImage.value = true;
   try {
-    const codeScanner = new Html5Qrcode('qr-decoder');
+    const codeScanner = new Html5Qrcode('qr-decoder-image');
     const result = await codeScanner.scanFile(file, true);
     codeScanner.clear();
     if (result && !scanLocked) {
@@ -227,6 +227,7 @@ onUnmounted(() => {
             <!-- Scanner container - always in DOM so #qr-reader exists -->
             <div class="relative overflow-hidden rounded-2xl bg-black" style="min-height:300px">
               <div id="qr-reader"></div>
+              <div id="qr-decoder-image" class="hidden"></div>
 
               <!-- Scan frame overlay (only when camera active) -->
               <div v-if="!isStarting && !error" class="absolute inset-0 pointer-events-none z-10">

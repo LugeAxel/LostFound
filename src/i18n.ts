@@ -95,6 +95,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'tutorial.title': 'How It Works',
     'tutorial.subtitle': 'A step-by-step guide to using the Lost & Found system at SMKN 2 Depok.',
     'tutorial.back': 'Back to Dashboard',
+    'tutorial.cta_title': 'Ready to get started?',
+    'tutorial.cta_desc': 'Head back to the Dashboard and start finding or reporting items.',
 
     'tutorial.claim_title': 'How to Claim Your Item',
     'tutorial.claim_subtitle': 'Follow these steps when you find your lost item listed on the platform.',
@@ -366,6 +368,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'tutorial.title': 'Cara Kerja',
     'tutorial.subtitle': 'Panduan langkah demi langkah menggunakan sistem Lost & Found SMKN 2 Depok.',
     'tutorial.back': 'Kembali ke Beranda',
+    'tutorial.cta_title': 'Siap untuk mulai?',
+    'tutorial.cta_desc': 'Kembali ke Beranda dan mulai temukan atau laporkan barang.',
 
     'tutorial.claim_title': 'Cara Mengklaim Barangmu',
     'tutorial.claim_subtitle': 'Ikuti langkah-langkah ini ketika kamu menemukan barangmu yang hilang di platform.',
