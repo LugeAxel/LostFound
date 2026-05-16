@@ -26,7 +26,7 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // === Dashboard ===
     'dash.welcome': 'Welcome back,',
-    'dash.welcome_sub': 'Lost something on school? Our digital concierge helps you find your belongings.',
+    'dash.welcome_sub': 'Lost something on school? Our digital service helps you find your belongings.',
     'dash.view_my_items': 'View My Items',
     'dash.how_it_works': 'How it works',
     'dash.currently_lost': 'Currently Lost',
@@ -41,7 +41,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'dash.report_found_desc': 'Found someone\'s property? Log the details here.',
     'dash.log_item': 'Log Item',
     'dash.scan_to_claim': 'Scan to Claim',
-    'dash.scan_to_claim_desc': 'At the concierge desk? Scan the QR code to verify.',
+    'dash.scan_to_claim_desc': 'At the service desk? Scan the QR code to verify.',
     'dash.open_scanner': 'Open Scanner',
     'dash.recent_items': 'Recent Items',
     'dash.recent_items_sub': 'Newly reported items in the school ecosystem',
@@ -135,11 +135,21 @@ const translations: Record<Locale, Record<string, string>> = {
     'tutorial.report_step5_title': 'Submit Your Report',
     'tutorial.report_step5_desc': 'Hit "Submit Report" and you\'re done! A QR code is automatically generated for found items. Check "My Reports" to manage your submissions.',
 
+    'tutorial.smart_title': 'Smart Item Matching',
+    'tutorial.smart_subtitle': 'Our advanced system helps find your item faster.',
+    'tutorial.smart_step1_title': 'Report with Good Details',
+    'tutorial.smart_step1_desc': 'Enter a descriptive name of the item — our system uses your title and description to find matches.',
+    'tutorial.smart_step2_title': 'Smart Analysis',
+    'tutorial.smart_step2_desc': 'Our system scans all found items matching your category, area, and keywords from your item\'s name and description.',
+    'tutorial.smart_step3_title': 'Get Matches',
+    'tutorial.smart_step3_desc': 'You\'ll receive a notification and see suggestions in "My Reports" — showing found items that match your lost item\'s name, description, and location.',
+
     'tutorial.tip_title': 'Quick Tips',
     'tutorial.tip1': 'Always check "My Reports" for claim notifications.',
     'tutorial.tip2': 'Use live GPS location when reporting for more accuracy.',
     'tutorial.tip3': 'Found items require a direct camera photo — screenshots won\'t work.',
-    'tutorial.tip4': 'The QR code for each found item is in "My Reports" — share it at the concierge desk.',
+    'tutorial.tip4': 'The QR code for each found item is in "My Reports" — share it at the service desk.',
+    'tutorial.tip5': 'Use detailed names and descriptions for better matching results.',
 
     // === ItemCard ===
     'card.lost': 'LOST',
@@ -199,7 +209,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'detail.last_seen': 'Last Seen:',
     'detail.found_at': 'Found at:',
     'detail.how_to_collect': 'How to collect?',
-    'detail.how_to_collect_desc': 'If you are the owner of this item, please visit the location mentioned above or contact the school concierge with the claim QR code found in your profile.',
+    'detail.how_to_collect_desc': 'If you are the owner of this item, please visit the location mentioned above or contact the school service with the claim QR code found in your profile.',
     'detail.claim_this_item': 'Claim This Item',
     'detail.in_progress_notice': 'This item is currently being claimed. The founder and claimer are communicating.',
     'detail.file_complaint': 'File a Complaint',
@@ -234,6 +244,17 @@ const translations: Record<Locale, Record<string, string>> = {
     'rating.recent_ratings': 'Recent Ratings',
     'rating.star': 'star',
     'rating.stars': 'stars',
+
+    // === My Reports (suggestions) ===
+    'myreports.suggestions_title': 'This Might Be Your Item',
+    'myreports.suggestions_desc': 'Based on your report, we found items that might match yours.',
+    'myreports.suggestions_match': 'Match',
+    'myreports.suggestions_distance': 'distance',
+    'myreports.suggestions_no_match': 'No matching items found yet.',
+    'myreports.suggestions_check_back': 'Check back later or browse the search page.',
+
+    // === Report (area_category) ===
+    'report.area_category': 'Area Category',
 
     // === Statistics ===
     'stats.title': 'Statistics',
@@ -385,11 +406,21 @@ const translations: Record<Locale, Record<string, string>> = {
     'tutorial.report_step5_title': 'Kirim Laporan',
     'tutorial.report_step5_desc': 'Tekan "Kirim Laporan" dan selesai! QR code otomatis dibuat untuk barang temuan. Cek "Laporan Saya" untuk mengelola laporanmu.',
 
+    'tutorial.smart_title': 'Pencocokan Cerdas',
+    'tutorial.smart_subtitle': 'Sistem canggih kami membantu menemukan barangmu lebih cepat.',
+    'tutorial.smart_step1_title': 'Laporkan dengan Detail Lengkap',
+    'tutorial.smart_step1_desc': 'Masukkan nama deskriptif untuk barang tersebut — sistem kami menggunakan judul dan deskripsi untuk menemukan kecocokan.',
+    'tutorial.smart_step2_title': 'Analisis Cerdas',
+    'tutorial.smart_step2_desc': 'Sistem kami memindai semua barang temuan yang cocok dengan kategori, area, dan kata kunci dari nama dan deskripsi barangmu.',
+    'tutorial.smart_step3_title': 'Dapatkan Kecocokan',
+    'tutorial.smart_step3_desc': 'Kamu akan menerima notifikasi dan melihat saran di "Laporan Saya" — menampilkan barang temuan yang cocok dengan nama, deskripsi, dan lokasi barang hilangmu.',
+
     'tutorial.tip_title': 'Tips Singkat',
     'tutorial.tip1': 'Selalu cek "Laporan Saya" untuk notifikasi klaim.',
     'tutorial.tip2': 'Gunakan lokasi GPS saat melaporkan untuk akurasi lebih baik.',
     'tutorial.tip3': 'Barang temuan memerlukan foto langsung dari kamera — screenshot tidak berlaku.',
     'tutorial.tip4': 'QR code untuk setiap barang temuan ada di "Laporan Saya" — tunjukkan di meja piket.',
+    'tutorial.tip5': 'Gunakan nama dan deskripsi yang detail untuk hasil pencocokan yang lebih baik.',
 
     // === ItemCard ===
     'card.lost': 'HILANG',
@@ -484,6 +515,17 @@ const translations: Record<Locale, Record<string, string>> = {
     'rating.recent_ratings': 'Penilaian Terbaru',
     'rating.star': 'bintang',
     'rating.stars': 'bintang',
+
+    // === My Reports (suggestions) ===
+    'myreports.suggestions_title': 'Ini Mungkin Barangmu',
+    'myreports.suggestions_desc': 'Berdasarkan laporanmu, kami menemukan barang yang mungkin cocok.',
+    'myreports.suggestions_match': 'Cocok',
+    'myreports.suggestions_distance': 'jarak',
+    'myreports.suggestions_no_match': 'Belum ada barang yang cocok.',
+    'myreports.suggestions_check_back': 'Cek lagi nanti atau jelajahi halaman pencarian.',
+
+    // === Report (area_category) ===
+    'report.area_category': 'Area Kategori',
 
     // === Statistics ===
     'stats.title': 'Statistik',

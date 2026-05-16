@@ -23,7 +23,13 @@ const totalItems = ref(0);
 const searchInput = ref((route.query.q as string) || '');
 const filterType = ref<string>((route.query.type as string) || 'all');
 const filterCategory = ref<string>((route.query.category as string) || 'all');
+const filterAreaCategory = ref<string>((route.query.area_category as string) || 'all');
 const categories = ['Electronics', 'Daily Use', 'Clothing', 'Books/Stationery', 'Others'];
+const areaCategories = [
+  'Ruang Teori', 'Laboratorium', 'Masjid', 'Kantin', 'Koperasi',
+  'Bima', 'Yudhistira', 'Arjuna', 'Lapangan', 'Kantor',
+  'Parkir', 'Bengkel', 'Bangunan Kimia', 'Bangunan GP'
+];
 
 const fetchItems = async () => {
   isLoading.value = true;
@@ -34,6 +40,9 @@ const fetchItems = async () => {
     }
     if (filterCategory.value !== 'all') {
       params.category = filterCategory.value;
+    }
+    if (filterAreaCategory.value !== 'all') {
+      params.area_category = filterAreaCategory.value;
     }
     const res = await axios.get(`${API_URL}/api/items`, { headers: await getAuthHeaders(), params });
     items.value = res.data.items || [];
@@ -154,7 +163,7 @@ watch(() => route.query, (newQuery) => {
         </span>
       </div>
 
-      <div class="flex gap-2 mb-6 flex-wrap">
+      <div class="flex gap-2 mb-3 flex-wrap">
         <button @click="filterCategory = 'all'; handleSearch()"
           :class="['px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all', filterCategory === 'all' ? 'bg-[#387b41] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#387b41]']">
           {{ t('search.all_categories') }}
@@ -163,6 +172,18 @@ watch(() => route.query, (newQuery) => {
           :class="['px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all', filterCategory === cat ? 'bg-[#387b41] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#387b41]']">
           {{ t(`card.category.${cat}`) }}
         </button>
+      </div>
+
+      <div class="flex gap-2 mb-6 flex-wrap items-center">
+        <div class="relative w-full sm:w-auto min-w-[220px]">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-lg pointer-events-none">business</span>
+          <select v-model="filterAreaCategory" @change="handleSearch"
+            class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-3 pl-12 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-xs font-medium appearance-none cursor-pointer">
+            <option value="all">All Areas</option>
+            <option v-for="area in areaCategories" :key="area" :value="area">{{ area }}</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
+        </div>
       </div>
 
       <div v-if="isLoading" class="flex justify-center py-20">

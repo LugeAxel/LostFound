@@ -37,6 +37,19 @@
 | **Dark Mode** | Full dark mode support with system-aware toggling |
 | **i18n** | Indonesian and English language support |
 | **Retention Policy** | Unclaimed items auto-deleted after 10 days; returned items after 2 |
+| **Smart Item Matching** | When reporting a lost item, the system automatically finds matching found items by category, area, name/description keywords, and GPS proximity — then sends a suggestion notification |
+
+### 🤖 Smart Item Matching
+
+When you report a lost item, QReturn automatically searches all found items using a **3-pass query engine**:
+
+1. **Same category + same area** — highest confidence matches
+2. **Same category only** — broader scope within your category
+3. **Text keyword match** — finds items across all categories whose name/description contains your item's keywords (e.g. "dompet", "eiger", "hitam")
+
+Each candidate is scored by category match (+30), area match (+20), text relevance (phrase + keyword matching, up to 100+), and GPS proximity bonus (+25/<100m). The best match (score ≥ 30) triggers a **"This might be your item"** notification and appears as a suggestion card in **My Reports**.
+
+> 📖 Full documentation: [`docs/matching-system.md`](docs/matching-system.md)
 
 ---
 

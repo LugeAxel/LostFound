@@ -14,10 +14,17 @@ import { supabase } from '../lib/supabase';
 const router = useRouter();
 const toast = useToast();
 
+const areaCategories = [
+  'Ruang Teori', 'Laboratorium', 'Masjid', 'Kantin', 'Koperasi',
+  'Bima', 'Yudhistira', 'Arjuna', 'Lapangan', 'Kantor',
+  'Parkir', 'Bengkel', 'Bangunan Kimia', 'Bangunan GP'
+];
+
 const form = ref({
   name: '',
   location: '',
   category: 'Electronics',
+  area_category: '',
   type: 'found',
   description: '',
   imageUrl: '',
@@ -150,6 +157,7 @@ const submitReport = async () => {
     formData.append('name', form.value.name);
     formData.append('location', form.value.location);
     formData.append('category', form.value.category);
+    formData.append('area_category', form.value.area_category);
     formData.append('type', form.value.type);
     formData.append('description', form.value.description);
 
@@ -322,6 +330,17 @@ const submitReport = async () => {
                   <option>Clothing</option>
                   <option>Books/Stationery</option>
                   <option>Others</option>
+                </select>
+                <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Area Category</label>
+              <div class="relative">
+                <select v-model="form.area_category" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium appearance-none">
+                  <option value="">Select area (optional)</option>
+                  <option v-for="area in areaCategories" :key="area" :value="area">{{ area }}</option>
                 </select>
                 <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
               </div>

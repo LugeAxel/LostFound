@@ -24,7 +24,13 @@ const reportSteps = [
   { icon: 'send', color: '#22c55e', key: 'report_step5' },
 ];
 
-const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
+const smartSteps = [
+  { icon: 'search', color: '#387b41', key: 'smart_step1' },
+  { icon: 'psychology', color: '#8b5cf6', key: 'smart_step2' },
+  { icon: 'emoji_objects', color: '#f59e0b', key: 'smart_step3' },
+];
+
+const tips = ['tip1', 'tip2', 'tip3', 'tip4', 'tip5'];
 </script>
 
 <template>
@@ -131,6 +137,44 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4'];
                 <div class="flex items-center gap-3 mb-2">
                   <span
                     class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white z-50"
+                    :style="{ backgroundColor: step.color }">{{ index + 1 }}</span>
+                  <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t(`tutorial.${step.key}_title`) }}</h3>
+                </div>
+                <p class="text-sm text-[#40493d] dark:text-[#9ca3af] leading-relaxed pl-10">{{ t(`tutorial.${step.key}_desc`) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== Section 3: Smart Item Matching ===== -->
+      <section class="mb-16">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 rounded-xl bg-[#f3e8ff] dark:bg-[#2e1065] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[#8b5cf6]">psychology</span>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">{{ t('tutorial.smart_title') }}</h2>
+            <p class="text-sm text-[#40493d] dark:text-[#9ca3af]">{{ t('tutorial.smart_subtitle') }}</p>
+          </div>
+        </div>
+
+        <div class="mt-8 relative">
+          <div class="space-y-6 z-10">
+            <div v-for="(step, index) in smartSteps" :key="step.key"
+              class="relative flex gap-4 md:gap-6 items-start group">
+              <div class="relative z-10 shrink-0">
+                <div
+                  class="w-14 h-14 rounded-2xl flex items-center justify-center shadow-md transition-transform group-hover:scale-110"
+                  :style="{ backgroundColor: step.color + '15', color: step.color }">
+                  <span class="material-symbols-outlined text-2xl">{{ step.icon }}</span>
+                </div>
+              </div>
+              <div
+                class="flex-1 bg-white dark:bg-[#1e1e1e] rounded-2xl p-4 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm group-hover:shadow-md group-hover:border-[#8b5cf6]/20 transition-all z-10">
+                <div class="flex items-center gap-3 mb-2">
+                  <span
+                    class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold text-white"
                     :style="{ backgroundColor: step.color }">{{ index + 1 }}</span>
                   <h3 class="text-lg font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t(`tutorial.${step.key}_title`) }}</h3>
                 </div>

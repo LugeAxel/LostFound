@@ -136,20 +136,29 @@ onMounted(fetchStats);
             <div class="flex items-end gap-1 sm:gap-2" style="min-height: 200px">
               <div v-for="day in itemsPerDay" :key="day.date" class="flex-1 flex flex-col items-center gap-1">
                 <div class="flex items-stretch gap-px w-full" style="height: 180px">
-                  <div class="flex-1 flex flex-col items-center justify-end">
-                    <div class="w-full min-h-[3px] bg-[#ef4444] rounded-t-sm transition-all duration-500" 
-                      :style="{ height: maxDayCount > 0 ? (day.lost / maxDayCount) * 100 + '%' : '0%' }" 
-                      :title="'Lost: ' + day.lost"></div>
+                  <div class="flex-1 flex flex-col items-center justify-end relative group">
+                    <div class="w-full min-h-[3px] bg-[#ef4444] rounded-t-sm transition-all duration-500 relative" 
+                      :style="{ height: maxDayCount > 0 ? (day.lost / maxDayCount) * 100 + '%' : '0%' }">
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 hidden group-hover:block bg-[#1c1b1b] dark:bg-[#f3f4f6] text-white dark:text-[#1c1b1b] text-[10px] font-bold px-2 py-1 rounded whitespace-nowrap shadow-lg z-10 pointer-events-none mb-2">
+                        {{ t('stats.lost') }}: {{ day.lost }}
+                      </div>
+                    </div>
                   </div>
-                  <div class="flex-1 flex flex-col items-center justify-end">
-                    <div class="w-full min-h-[3px] bg-[#387b41] rounded-t-sm transition-all duration-500" 
-                      :style="{ height: maxDayCount > 0 ? (day.found / maxDayCount) * 100 + '%' : '0%' }"
-                      :title="'Found: ' + day.found"></div>
+                  <div class="flex-1 flex flex-col items-center justify-end relative group">
+                    <div class="w-full min-h-[3px] bg-[#387b41] rounded-t-sm transition-all duration-500 relative" 
+                      :style="{ height: maxDayCount > 0 ? (day.found / maxDayCount) * 100 + '%' : '0%' }">
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 hidden group-hover:block bg-[#1c1b1b] dark:bg-[#f3f4f6] text-white dark:text-[#1c1b1b] text-[10px] font-bold px-2 py-1 rounded whitespace-nowrap shadow-lg z-10 pointer-events-none mb-2">
+                        {{ t('stats.founded') }}: {{ day.found }}
+                      </div>
+                    </div>
                   </div>
-                  <div class="flex-1 flex flex-col items-center justify-end">
-                    <div class="w-full min-h-[3px] bg-[#0ea5e9] rounded-t-sm transition-all duration-500" 
-                      :style="{ height: maxDayCount > 0 ? (day.returned / maxDayCount) * 100 + '%' : '0%' }"
-                      :title="'Returned: ' + day.returned"></div>
+                  <div class="flex-1 flex flex-col items-center justify-end relative group">
+                    <div class="w-full min-h-[3px] bg-[#0ea5e9] rounded-t-sm transition-all duration-500 relative" 
+                      :style="{ height: maxDayCount > 0 ? (day.returned / maxDayCount) * 100 + '%' : '0%' }">
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 hidden group-hover:block bg-[#1c1b1b] dark:bg-[#f3f4f6] text-white dark:text-[#1c1b1b] text-[10px] font-bold px-2 py-1 rounded whitespace-nowrap shadow-lg z-10 pointer-events-none mb-2">
+                        {{ t('stats.returned') }}: {{ day.returned }}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <span class="text-[9px] sm:text-[10px] text-[#40493d] dark:text-[#9ca3af] font-medium truncate w-full text-center">{{ day.date.slice(5) }}</span>
@@ -172,9 +181,15 @@ onMounted(fetchStats);
                   <span class="font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">{{ cat.category }}</span>
                   <span class="text-[#40493d] dark:text-[#9ca3af]">{{ cat.count }} {{ t('stats.items') }}</span>
                 </div>
-                <div class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-full h-3 overflow-hidden">
-                  <div class="h-full rounded-full bg-gradient-to-r from-[#387b41] to-[#88d982] transition-all duration-700"
-                    :style="{ width: (cat.count / maxCategoryCount) * 100 + '%' }"></div>
+                <div class="relative group">
+                  <div class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-full h-3 overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#387b41] to-[#88d982] transition-all duration-700 relative"
+                      :style="{ width: (cat.count / maxCategoryCount) * 100 + '%' }">
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 hidden group-hover:block bg-[#1c1b1b] dark:bg-[#f3f4f6] text-white dark:text-[#1c1b1b] text-[10px] font-bold px-2 py-1 rounded whitespace-nowrap shadow-lg z-10 pointer-events-none">
+                        {{ cat.count }} {{ t('stats.items') }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -195,9 +210,15 @@ onMounted(fetchStats);
                   <span class="font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">{{ loc.location }}</span>
                   <span class="text-[#40493d] dark:text-[#9ca3af]">{{ loc.count }} {{ t('stats.items') }}</span>
                 </div>
-                <div class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-full h-3 overflow-hidden">
-                  <div class="h-full rounded-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] transition-all duration-700"
-                    :style="{ width: (loc.count / Math.max(...topLocations.map(l => l.count), 1)) * 100 + '%' }"></div>
+                <div class="relative group">
+                  <div class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-full h-3 overflow-hidden">
+                    <div class="h-full rounded-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] transition-all duration-700 relative"
+                      :style="{ width: (loc.count / Math.max(...topLocations.map(l => l.count), 1)) * 100 + '%' }">
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 hidden group-hover:block bg-[#1c1b1b] dark:bg-[#f3f4f6] text-white dark:text-[#1c1b1b] text-[10px] font-bold px-2 py-1 rounded whitespace-nowrap shadow-lg z-10 pointer-events-none">
+                        {{ loc.count }} {{ t('stats.items') }}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

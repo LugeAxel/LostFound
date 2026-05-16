@@ -147,6 +147,80 @@ const handleValidationErrors = (req, res, next) => {
     next();
 };
 
+// Haversine distance in meters
+function haversineDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371000;
+    const toRad = (deg) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+              Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+// Extract meaningful keywords from item name and description
+function extractKeywords(name, description) {
+    const text = `${name || ''} ${description || ''}`.toLowerCase();
+    const stopWords = new Set([
+        'dan', 'di', 'ke', 'dari', 'yang', 'ini', 'itu', 'saya', 'aku',
+        'the', 'a', 'an', 'in', 'of', 'to', 'is', 'for', 'on', 'and',
+        'or', 'with', 'yang', 'ada', 'tidak', 'bisa', 'barang', 'warna',
+    ]);
+    const words = text.split(/\s+/).filter(w => w.length >= 3 && !stopWords.has(w));
+    return [...new Set(words)];
+}
+
+// Compute text relevance score between lost item and found item
+function computeTextRelevance(lostItem, foundItem) {
+    const lostName = (lostItem.name || '').toLowerCase();
+    const lostDesc = (lostItem.description || '').toLowerCase();
+    const foundName = (foundItem.name || '').toLowerCase();
+    const foundDesc = (foundItem.description || '').toLowerCase();
+    const foundText = `${foundName} ${foundDesc}`;
+
+    let score = 0;
+
+    // Full phrase match: lost item name appears in found text
+    if (foundText.includes(lostName)) score += 30;
+    if (lostDesc && foundText.includes(lostDesc)) score += 15;
+
+    // Keyword-level matching
+    const keywords = extractKeywords(lostItem.name, lostItem.description);
+    for (const kw of keywords) {
+        if (foundName.includes(kw)) score += 15;
+        else if (foundDesc.includes(kw)) score += 5;
+    }
+
+    return score;
+}
+
+// Combined scoring for a found item against a lost item
+function scoreMatch(lostItem, foundItem) {
+    let score = 0;
+
+    // Category match (high weight)
+    if (foundItem.category === lostItem.category) score += 30;
+
+    // Area category match
+    if (lostItem.area_category && foundItem.area_category === lostItem.area_category) score += 20;
+
+    // Text relevance (name + description keywords)
+    score += computeTextRelevance(lostItem, foundItem);
+
+    // GPS proximity bonus
+    const lat = lostItem.coordinates_lat;
+    const lng = lostItem.coordinates_lng;
+    if (lat != null && lng != null && foundItem.coordinates_lat != null && foundItem.coordinates_lng != null) {
+        const dist = haversineDistance(lat, lng, foundItem.coordinates_lat, foundItem.coordinates_lng);
+        if (dist < 100) score += 25;
+        else if (dist < 500) score += 15;
+        else if (dist < 1000) score += 5;
+    }
+
+    return score;
+}
+
 // ─────────────────────────────────────────────
 // 4. ROUTES
 // ─────────────────────────────────────────────
@@ -448,6 +522,10 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
             query = query.eq('category', req.query.category);
         }
 
+        if (req.query.area_category && req.query.area_category !== 'all') {
+            query = query.eq('area_category', req.query.area_category);
+        }
+
         const { data: items, error, count } = await query;
 
         if (error) throw error;
@@ -512,6 +590,89 @@ app.get('/api/items/claim-code/:code', authMiddleware, async (req, res) => {
     }
 });
 
+// Get matched found items for a lost item (3-pass text + category + GPS scoring)
+app.get('/api/items/matches/:id', authMiddleware, async (req, res) => {
+    try {
+        const { data: lostItem, error: lostError } = await supabase
+            .from('items')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+
+        if (lostError || !lostItem) {
+            return res.status(404).json({ success: false, message: 'Item not found' });
+        }
+
+        if (lostItem.type !== 'lost') {
+            return res.json([]);
+        }
+
+        const keywords = extractKeywords(lostItem.name, lostItem.description);
+        const candidates = [];
+        const seen = new Set();
+
+        // Pass 1: same category + same area_category (highest confidence)
+        let q1 = supabase
+            .from('items')
+            .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
+            .eq('type', 'found')
+            .eq('status', 'Available')
+            .eq('category', lostItem.category)
+            .neq('id', lostItem.id);
+        if (lostItem.area_category) q1 = q1.eq('area_category', lostItem.area_category);
+        const { data: p1 } = await q1.limit(50);
+        if (p1) for (const fi of p1) { seen.add(fi.id); candidates.push(fi); }
+
+        // Pass 2: same category only (broader)
+        if (lostItem.area_category) {
+            let q2 = supabase
+                .from('items')
+                .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
+                .eq('type', 'found')
+                .eq('status', 'Available')
+                .eq('category', lostItem.category)
+                .neq('id', lostItem.id);
+            const { data: p2 } = await q2.limit(30);
+            if (p2) for (const fi of p2) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+        }
+
+        // Pass 3: text keyword match across all categories (catch miscategorized items)
+        if (keywords.length > 0) {
+            const orClauses = keywords.flatMap(kw => [
+                `name.ilike.%25${kw}%25`,
+                `description.ilike.%25${kw}%25`
+            ]).join(',');
+            let q3 = supabase
+                .from('items')
+                .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
+                .eq('type', 'found')
+                .eq('status', 'Available')
+                .neq('category', lostItem.category)
+                .neq('id', lostItem.id)
+                .or(orClauses);
+            const { data: p3 } = await q3.limit(20);
+            if (p3) for (const fi of p3) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+        }
+
+        // Score & sort
+        const scored = candidates.map(fi => {
+            const score = scoreMatch(lostItem, fi);
+            let distance = null;
+            if (lostItem.coordinates_lat != null && lostItem.coordinates_lng != null && fi.coordinates_lat != null && fi.coordinates_lng != null) {
+                distance = Math.round(haversineDistance(lostItem.coordinates_lat, lostItem.coordinates_lng, fi.coordinates_lat, fi.coordinates_lng));
+            }
+            return { ...fi, score, distance_meters: distance };
+        });
+
+        scored.sort((a, b) => b.score - a.score || (a.distance_meters || Infinity) - (b.distance_meters || Infinity));
+
+        res.json(scored.slice(0, 5));
+    } catch (error) {
+        console.error('Error fetching matches:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch matches.' });
+    }
+});
+
 // Get single item
 app.get('/api/items/:id', authMiddleware, async (req, res) => {
     try {
@@ -547,6 +708,7 @@ app.post('/api/items',
         body('location').trim().notEmpty().withMessage('Location is required')
             .isLength({ max: 200 }).withMessage('Location too long'),
         body('category').optional().trim().isLength({ max: 50 }),
+        body('area_category').optional().trim().isLength({ max: 50 }),
         body('type').trim().notEmpty().isIn(['found', 'lost']).withMessage('Type must be found or lost'),
         body('description').optional().trim().isLength({ max: 500 }).withMessage('Description too long'),
         body('imageUrl').optional().isLength({ max: 3000000 }).withMessage('Image too large'),
@@ -567,7 +729,7 @@ app.post('/api/items',
     handleValidationErrors,
     async (req, res) => {
         try {
-            const { name, location, category, type, description } = req.body;
+            const { name, location, category, area_category, type, description } = req.body;
             let coordinates;
             if (req.body.coordinates) {
                 try {
@@ -590,6 +752,7 @@ app.post('/api/items',
                 name,
                 location,
                 category: category || 'Others',
+                area_category: area_category || null,
                 type: type.toLowerCase(),
                 description,
                 image_url: imageUrl,
@@ -612,6 +775,73 @@ app.post('/api/items',
 
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
+
+            // If lost item, find matching found items (3-pass) and create suggestion notification
+            if (newItem.type === 'lost') {
+                try {
+                    const keywords = extractKeywords(newItem.name, newItem.description);
+                    const candidates = [];
+                    const seen = new Set();
+
+                    // Pass 1: same category + same area_category
+                    let q1 = supabase.from('items').select('*')
+                        .eq('type', 'found').eq('status', 'Available')
+                        .eq('category', newItem.category).neq('id', newItem.id);
+                    if (newItem.area_category) q1 = q1.eq('area_category', newItem.area_category);
+                    const { data: p1 } = await q1.limit(50);
+                    if (p1) for (const fi of p1) { seen.add(fi.id); candidates.push(fi); }
+
+                    // Pass 2: same category only
+                    if (newItem.area_category) {
+                        let q2 = supabase.from('items').select('*')
+                            .eq('type', 'found').eq('status', 'Available')
+                            .eq('category', newItem.category).neq('id', newItem.id);
+                        const { data: p2 } = await q2.limit(30);
+                        if (p2) for (const fi of p2) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+                    }
+
+                    // Pass 3: text keyword match across all categories
+                    if (keywords.length > 0) {
+                        const orClauses = keywords.flatMap(kw => [
+                            `name.ilike.%25${kw}%25`,
+                            `description.ilike.%25${kw}%25`
+                        ]).join(',');
+                        let q3 = supabase.from('items').select('*')
+                            .eq('type', 'found').eq('status', 'Available')
+                            .neq('category', newItem.category).neq('id', newItem.id)
+                            .or(orClauses);
+                        const { data: p3 } = await q3.limit(20);
+                        if (p3) for (const fi of p3) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+                    }
+
+                    if (candidates.length > 0) {
+                        let bestMatch = null;
+                        let bestScore = -Infinity;
+
+                        for (const fi of candidates) {
+                            const score = scoreMatch(newItem, fi);
+                            if (score > bestScore) {
+                                bestScore = score;
+                                bestMatch = fi;
+                            }
+                        }
+
+                        if (bestMatch && bestScore >= 30) {
+                            await supabase
+                                .from('notifications')
+                                .insert({
+                                    user_id: newItem.reporter,
+                                    type: 'suggestion',
+                                    item_id: bestMatch.id,
+                                    text: `This might be your item: ${bestMatch.name}`
+                                });
+                        }
+                    }
+                } catch (matchError) {
+                    console.error('Error finding matches:', matchError.message);
+                }
+            }
+
             res.status(201).json({ success: true, item: newItem });
         } catch (error) {
             console.error('Error creating item:', error.message);

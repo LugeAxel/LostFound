@@ -127,8 +127,12 @@ onBeforeUnmount(() => {
                 @click="onNotificationClick(notif.id, notif.item_id); showDropdown = false"
                 :class="['p-4 border-b border-[#f3f5f2] cursor-pointer hover:bg-[#f8faf7] dark:bg-[#121212] dark:hover:bg-[#353535] transition-all flex gap-3', !notif.is_read && 'bg-[#f0fdf4]']">
                 <div :class="['w-10 h-10 rounded-full flex items-center justify-center shrink-0', 
-                  notif.type === 'message' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600']">
-                  <span class="material-symbols-outlined text-xl">{{ notif.type === 'message' ? 'chat' : 'notifications' }}</span>
+                  notif.type === 'message' ? 'bg-blue-100 text-blue-600' : 
+                  notif.type === 'suggestion' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600']">
+                  <span class="material-symbols-outlined text-xl">{{ 
+                    notif.type === 'message' ? 'chat' : 
+                    notif.type === 'suggestion' ? 'lightbulb' : 'notifications' 
+                  }}</span>
                 </div>
                 <div>
                   <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1">{{ notif.text }}</p>
