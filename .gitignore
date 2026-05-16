@@ -41,3 +41,6 @@ __screenshots__/
 .env
 .env.*
 !.env.example
+
+*.md
+!README.md
