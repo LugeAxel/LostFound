@@ -3,6 +3,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { API_URL } from '@/config/api';
+import { optimizeImageUrl } from '../utils/cloudinary';
 import { useToast } from '../composables/useToast';
 import { getAuthHeaders } from '../composables/useAuth';
 
@@ -168,7 +169,7 @@ onBeforeUnmount(() => {
         </header>
 
         <div class="mb-10 p-4 md:p-6 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-3xl border border-[#e0e4df] dark:border-[#374151] flex gap-4 md:gap-6 items-center">
-          <img :src="item.image_url || 'https://placehold.co/400x300/f3f5f2/40493d?text=No+Image'" class="w-24 h-24 rounded-2xl object-cover border border-white shadow-sm" />
+          <img :src="optimizeImageUrl(item.image_url) || 'https://placehold.co/400x300/f3f5f2/40493d?text=No+Image'" class="w-24 h-24 rounded-2xl object-cover border border-white shadow-sm" />
           <div>
             <h4 class="font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.name }}</h4>
             <p class="text-xs text-[#40493d] dark:text-[#9ca3af] mt-1">{{ item.location }}</p>

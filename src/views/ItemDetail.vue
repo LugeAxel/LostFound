@@ -10,6 +10,7 @@ import { useI18n } from '../i18n';
 import { useToast } from '../composables/useToast';
 import { getAuthHeaders, getCurrentUser } from '../composables/useAuth';
 import { supabase } from '../lib/supabase';
+import { optimizeImageUrl } from '../utils/cloudinary';
 
 import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL } from '@/config/api';
@@ -296,7 +297,7 @@ const copyGps = async (lat: number, lng: number) => {
         <div class="space-y-8">
           <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm">
             <div class="aspect-video relative bg-[#f3f5f2] dark:bg-[#2a2a2a] flex items-center justify-center">
-              <img v-if="item.image_url" :src="item.image_url" class="w-full h-full object-cover" />
+              <img v-if="item.image_url" :src="optimizeImageUrl(item.image_url)" class="w-full h-full object-cover" />
               <span v-else class="material-symbols-outlined text-7xl text-[#40493d] dark:text-[#9ca3af]/20">{{ item.type === 'lost' ? 'search' : 'inventory_2' }}</span>
             </div>
             <div class="p-8">

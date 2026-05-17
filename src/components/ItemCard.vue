@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from '../i18n';
+import { optimizeImageUrl } from '../utils/cloudinary';
 
 const { t } = useI18n();
 
@@ -64,7 +65,7 @@ const translateStatus = (status: string) => {
     </div>
 
     <div class="relative aspect-[4/3] sm:aspect-[4/3] w-full overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a]">
-      <img v-if="item.image_url" :src="item.image_url" 
+      <img v-if="item.image_url" :src="optimizeImageUrl(item.image_url)" 
         :class="['w-full h-full object-cover group-hover:scale-105 transition-transform duration-500',
           item.status === 'Returned' ? 'grayscale' : '']" 
         alt="Item image"

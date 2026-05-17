@@ -10,6 +10,7 @@ import { useToast } from '../composables/useToast';
 import { getAuthHeaders } from '../composables/useAuth';
 import { supabase } from '../lib/supabase';
 import { useI18n } from '../i18n';
+import { optimizeImageUrl } from '../utils/cloudinary';
 import { useRealtimeItems } from '../composables/useRealtimeItems';
 
 const router = useRouter();
@@ -256,7 +257,7 @@ const saveEdit = async () => {
           
           <div class="flex flex-col md:flex-row gap-4 md:gap-8">
             <div class="w-full md:w-48 h-48 rounded-2xl overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a] flex-shrink-0 relative group">
-              <img :src="item.image_url || (item.type === 'lost' ? '/lost-default.svg' : '/found-default.svg')" 
+              <img :src="optimizeImageUrl(item.image_url) || (item.type === 'lost' ? '/lost-default.svg' : '/found-default.svg')" 
                 :class="['w-full h-full object-cover', !item.image_url && 'p-8 opacity-20']" loading="lazy" />
               <div v-if="!item.image_url" class="absolute inset-0 flex items-center justify-center">
                 <span class="material-symbols-outlined text-4xl text-[#40493d] dark:text-[#9ca3af]/40">{{ item.type === 'lost' ? 'search' : 'inventory_2' }}</span>
@@ -343,7 +344,7 @@ const saveEdit = async () => {
               <div v-for="match in itemMatches[item.id]" :key="match.id" @click="router.push(`/item/${match.id}`)"
                 class="bg-[#f8faf7] dark:bg-[#121212] rounded-xl border border-[#e0e4df] dark:border-[#374151] overflow-hidden hover:shadow-md hover:border-[#387b41]/30 transition-all cursor-pointer group flex gap-4 p-3">
                 <div class="w-20 h-20 rounded-lg bg-[#f3f5f2] dark:bg-[#2a2a2a] overflow-hidden flex-shrink-0">
-                  <img v-if="match.image_url" :src="match.image_url" :class="['w-full h-full object-cover', match.status === 'Returned' && 'grayscale opacity-70']" />
+                  <img v-if="match.image_url" :src="optimizeImageUrl(match.image_url)" :class="['w-full h-full object-cover', match.status === 'Returned' && 'grayscale opacity-70']" />
                   <div v-else class="w-full h-full flex items-center justify-center">
                     <span class="material-symbols-outlined text-xl text-[#40493d] dark:text-[#9ca3af]/20">inventory_2</span>
                   </div>

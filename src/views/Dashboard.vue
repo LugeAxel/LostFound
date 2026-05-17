@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { RouterLink, useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
@@ -18,6 +18,12 @@ const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
 const items = ref<any[]>([]);
 const stats = ref({ currentlyLost: 0, foundToday: 0, returnedAllTime: 0 });
 const recommendations = ref<any[]>([]);
+const recsOffset = ref(0);
+const visibleRecs = computed(() => recommendations.value.slice(recsOffset.value, recsOffset.value + 6));
+
+function prevRecs() { if (recsOffset.value > 0) recsOffset.value -= 6; }
+function nextRecs() { if (recsOffset.value + 6 < recommendations.value.length) recsOffset.value += 6; }
+
 const showOnboarding = ref(
   !localStorage.getItem('onboarding_seen') ||
   new URLSearchParams(window.location.search).has('onboarding')
@@ -47,6 +53,7 @@ const fetchRecommendations = async () => {
   try {
     const res = await axios.get(`${API_URL}/api/items/recommendations`, { headers: await getAuthHeaders() });
     recommendations.value = res.data || [];
+    recsOffset.value = 0;
   } catch (error: any) {
     console.error('Error fetching recommendations:', error);
   }
@@ -163,8 +170,24 @@ onMounted(() => { fetchStats(); fetchItems(); fetchRecommendations(); });
           <span class="material-symbols-outlined text-5xl text-[#40493d] dark:text-[#9ca3af]/10 mb-3">lightbulb</span>
           <p class="text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('dash.no_recommendations') }}</p>
         </div>
-        <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-          <ItemCard v-for="rec in recommendations" :key="rec.id" :item="rec" />
+        <div v-else class="relative">
+          <button v-if="recommendations.length > 6" @click="prevRecs" :disabled="recsOffset === 0"
+            class="absolute left-0 md:-left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/70 p-blur-sm shadow-md flex items-center justify-center hover:bg-white dark:hover:bg-[#2a2a2a] transition-all disabled:opacity-30 disabled:pointer-events-none">
+            <span class="material-symbols-outlined text-sm text-white">chevron_left</span>
+          </button>
+
+          <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 px-8 md:px-12">
+            <ItemCard v-for="rec in visibleRecs" :key="rec.id" :item="rec" />
+          </div>
+
+          <button v-if="recommendations.length > 6" @click="nextRecs" :disabled="recsOffset + 6 >= recommendations.length"
+            class="absolute right-0 md:-right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm shadow-md flex items-center justify-center hover:bg-white dark:hover:bg-[#2a2a2a] transition-all disabled:opacity-30 disabled:pointer-events-none">
+            <span class="material-symbols-outlined text-sm text-white ">chevron_right</span>
+          </button>
+
+          <div v-if="recommendations.length > 6" class="flex justify-center mt-4">
+            <span class="text-xs text-[#40493d] dark:text-[#9ca3af] font-medium">{{ recsOffset / 6 + 1 }} / {{ Math.ceil(recommendations.length / 6) }}</span>
+          </div>
         </div>
       </section>
 

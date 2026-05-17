@@ -13,6 +13,12 @@ const { Server } = require('socket.io');
 const { supabase } = require('./lib/supabase');
 const crypto = require('crypto');
 
+function extractCloudinaryPublicId(url) {
+    if (!url || !url.includes('cloudinary')) return null;
+    const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)\.\w+$/);
+    return match ? match[1] : null;
+}
+
 const app = express();
 app.set('trust proxy', 1);
 const upload = require('./middleware/upload');
@@ -715,7 +721,7 @@ app.get('/api/items/recommendations', authMiddleware, async (req, res) => {
 
         allMatches.sort((a, b) => b.score - a.score || (a.distance_meters || Infinity) - (b.distance_meters || Infinity));
 
-        res.json(allMatches.slice(0, 20));
+        res.json(allMatches.slice(0, 24));
     } catch (error) {
         console.error('Error fetching recommendations:', error.message);
         res.status(500).json({ success: false, message: 'Failed to fetch recommendations.' });
@@ -967,8 +973,8 @@ app.put('/api/items/:id',
             // Delete old Cloudinary image if a new image is being set
             if (updateData.image_url && item.image_url?.includes('cloudinary')) {
                 try {
-                    const publicId = item.image_url.split('/').pop().split('.')[0];
-                    await cloudinary.uploader.destroy(publicId);
+                    const publicId = extractCloudinaryPublicId(item.image_url);
+                    if (publicId) await cloudinary.uploader.destroy(publicId);
                 } catch (e) {
                     console.error('Failed to delete old Cloudinary image:', e.message);
                 }
@@ -1839,9 +1845,11 @@ const runCleanupJob = async () => {
         for (const item of itemsToDelete) {
             if (item.image_url?.includes('cloudinary')) {
                 try {
-                    const publicId = item.image_url.split('/').pop().split('.')[0];
-                    await cloudinary.uploader.destroy(publicId);
-                    console.log(`☁️ Deleted image: ${publicId}`);
+                    const publicId = extractCloudinaryPublicId(item.image_url);
+                    if (publicId) {
+                        await cloudinary.uploader.destroy(publicId);
+                        console.log(`☁️ Deleted image: ${publicId}`);
+                    }
                 } catch (cloudinaryErr) {
                     console.error('Cloudinary delete failed:', cloudinaryErr.message);
                 }
