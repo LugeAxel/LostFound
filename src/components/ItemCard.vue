@@ -16,6 +16,7 @@ const props = defineProps<{
     area_category?: string;
     coordinates_lat?: number;
     coordinates_lng?: number;
+    distance_meters?: number;
     reporter?: {
       nama: string;
       nisn: string;
@@ -92,11 +93,15 @@ const translateStatus = (status: string) => {
     <div class="p-3 sm:p-4 md:p-5">
       <h4 class="font-bold mb-1 truncate text-sm sm:text-base text-[#1c1b1b] dark:text-[#f3f4f6]">{{ item.name }}</h4>
       <div class="flex flex-col gap-0.5 sm:gap-1 mb-2 sm:mb-4">
-        <p class="text-[11px] sm:text-xs text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1 pl-1 truncate">
-          <span class="material-symbols-outlined text-sm sm:text-base shrink-0">location_on</span>
+        <p class="text-[8px] font-semibold sm:text-xs text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1 mb-0.5 truncate">
+          <span class="material-symbols-outlined text-5 sm:text-base shrink-0">location_on</span>
           {{ item.type === 'lost' ? t('detail.last_seen') + ' ' + item.location : t('detail.found_at') + ' ' + item.location }}
         </p>
-        <p class="text-[8px] sm:text-[9px] font-bold flex items-center gap-1 ml-1"
+        <p v-if="item.distance_meters != null && item.distance_meters < 300" class="text-[10px] sm:text-[11px] text-[#387b41] font-bold flex items-center gap-1 ml-1">
+          <span class="material-symbols-outlined text-[10px] sm:text-xs">near_me</span>
+          {{ item.distance_meters }}m
+        </p>
+        <p v-else class="text-[8px] sm:text-[9px] font-bold flex items-center gap-1"
           :class="hasGps() ? 'text-[#387b41]' : 'text-[#ba1a1a]'">
           <span class="material-symbols-outlined text-[10px] sm:text-xs">{{ hasGps() ? 'gps_fixed' : 'gps_off' }}</span>
           {{ hasGps() ? t('card.gps_verified') : t('card.no_gps') }}

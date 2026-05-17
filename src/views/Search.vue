@@ -170,10 +170,10 @@ watch(() => route.query, (newQuery) => {
       </div>
 
       <div class="flex gap-2 mb-6 flex-wrap items-center">
-        <div class="relative w-full sm:w-auto min-w-[220px]">
-          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-lg pointer-events-none">business</span>
+        <div class="relative sm:w-auto min-w-[220px] w-fit">
+          <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-700 dark:text-[#9ca3af] text-lg pointer-events-none">business</span>
           <select v-model="filterAreaCategory" @change="handleSearch"
-            class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-3 pl-12 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-xs font-medium appearance-none cursor-pointer">
+            class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-3 pl-13 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-xs font-medium appearance-none cursor-pointer">
             <option value="all">All Areas</option>
             <option v-for="area in areaCategories" :key="area" :value="area">{{ area }}</option>
           </select>

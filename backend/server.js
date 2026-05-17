@@ -195,30 +195,94 @@ function computeTextRelevance(lostItem, foundItem) {
     return score;
 }
 
-// Combined scoring for a found item against a lost item
-function scoreMatch(lostItem, foundItem) {
+// Score how well a candidate matches a source item (category + area + text + GPS)
+function computeScore(sourceItem, candidateItem) {
     let score = 0;
 
     // Category match (high weight)
-    if (foundItem.category === lostItem.category) score += 30;
+    if (candidateItem.category === sourceItem.category) score += 30;
 
     // Area category match
-    if (lostItem.area_category && foundItem.area_category === lostItem.area_category) score += 20;
+    if (sourceItem.area_category && candidateItem.area_category === sourceItem.area_category) score += 20;
 
     // Text relevance (name + description keywords)
-    score += computeTextRelevance(lostItem, foundItem);
+    score += computeTextRelevance(sourceItem, candidateItem);
 
     // GPS proximity bonus
-    const lat = lostItem.coordinates_lat;
-    const lng = lostItem.coordinates_lng;
-    if (lat != null && lng != null && foundItem.coordinates_lat != null && foundItem.coordinates_lng != null) {
-        const dist = haversineDistance(lat, lng, foundItem.coordinates_lat, foundItem.coordinates_lng);
+    const lat = sourceItem.coordinates_lat;
+    const lng = sourceItem.coordinates_lng;
+    if (lat != null && lng != null && candidateItem.coordinates_lat != null && candidateItem.coordinates_lng != null) {
+        const dist = haversineDistance(lat, lng, candidateItem.coordinates_lat, candidateItem.coordinates_lng);
         if (dist < 100) score += 25;
         else if (dist < 500) score += 15;
         else if (dist < 1000) score += 5;
     }
 
     return score;
+}
+
+// 3-pass matching: find top-N items of targetType that match sourceItem
+async function findMatchingItems(sourceItem, targetType, limit = 5) {
+    const keywords = extractKeywords(sourceItem.name, sourceItem.description);
+    const candidates = [];
+    const seen = new Set();
+
+    // Pass 1: same category + same area_category (highest confidence)
+    let q1 = supabase
+        .from('items')
+        .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
+        .eq('type', targetType)
+        .in('status', ['Available', 'On Progress', 'Returned'])
+        .eq('category', sourceItem.category)
+        .neq('id', sourceItem.id);
+    if (sourceItem.area_category) q1 = q1.eq('area_category', sourceItem.area_category);
+    const { data: p1 } = await q1.limit(50);
+    if (p1) for (const fi of p1) { seen.add(fi.id); candidates.push(fi); }
+
+    // Pass 2: same category only (broader)
+    if (sourceItem.area_category) {
+        let q2 = supabase
+            .from('items')
+            .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
+            .eq('type', targetType)
+            .in('status', ['Available', 'On Progress', 'Returned'])
+            .eq('category', sourceItem.category)
+            .neq('id', sourceItem.id);
+        const { data: p2 } = await q2.limit(30);
+        if (p2) for (const fi of p2) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+    }
+
+    // Pass 3: text keyword match across all categories
+    if (keywords.length > 0) {
+        const orClauses = keywords.flatMap(kw => [
+            `name.ilike.%25${kw}%25`,
+            `description.ilike.%25${kw}%25`
+        ]).join(',');
+        let q3 = supabase
+            .from('items')
+            .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
+            .eq('type', targetType)
+            .in('status', ['Available', 'On Progress', 'Returned'])
+            .neq('category', sourceItem.category)
+            .neq('id', sourceItem.id)
+            .or(orClauses);
+        const { data: p3 } = await q3.limit(20);
+        if (p3) for (const fi of p3) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+    }
+
+    // Score & sort
+    const scored = candidates.map(fi => {
+        const score = computeScore(sourceItem, fi);
+        let distance = null;
+        if (sourceItem.coordinates_lat != null && sourceItem.coordinates_lng != null && fi.coordinates_lat != null && fi.coordinates_lng != null) {
+            distance = Math.round(haversineDistance(sourceItem.coordinates_lat, sourceItem.coordinates_lng, fi.coordinates_lat, fi.coordinates_lng));
+        }
+        return { ...fi, score, distance_meters: distance };
+    });
+
+    scored.sort((a, b) => b.score - a.score || (a.distance_meters || Infinity) - (b.distance_meters || Infinity));
+
+    return scored.slice(0, limit);
 }
 
 // ─────────────────────────────────────────────
@@ -587,6 +651,11 @@ app.get('/api/items/claim-code/:code', authMiddleware, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Item not found' });
         }
 
+        // If item is On Progress and has an assigned claimer, only that claimer can access
+        if (item.status === 'On Progress' && item.claimer && item.claimer.id !== req.user.id) {
+            return res.status(403).json({ success: false, message: 'This claim link belongs to another user.' });
+        }
+
         res.json(item);
     } catch (error) {
         console.error('Error fetching item by claim code:', error.message);
@@ -611,69 +680,45 @@ app.get('/api/items/matches/:id', authMiddleware, async (req, res) => {
             return res.json([]);
         }
 
-        const keywords = extractKeywords(lostItem.name, lostItem.description);
-        const candidates = [];
-        const seen = new Set();
-
-        // Pass 1: same category + same area_category (highest confidence)
-        let q1 = supabase
-            .from('items')
-            .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
-            .eq('type', 'found')
-            .in('status', ['Available', 'On Progress', 'Returned'])
-            .eq('category', lostItem.category)
-            .neq('id', lostItem.id);
-        if (lostItem.area_category) q1 = q1.eq('area_category', lostItem.area_category);
-        const { data: p1 } = await q1.limit(50);
-        if (p1) for (const fi of p1) { seen.add(fi.id); candidates.push(fi); }
-
-        // Pass 2: same category only (broader)
-        if (lostItem.area_category) {
-            let q2 = supabase
-                .from('items')
-                .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
-                .eq('type', 'found')
-                .in('status', ['Available', 'On Progress', 'Returned'])
-                .eq('category', lostItem.category)
-                .neq('id', lostItem.id);
-            const { data: p2 } = await q2.limit(30);
-            if (p2) for (const fi of p2) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
-        }
-
-        // Pass 3: text keyword match across all categories (catch miscategorized items)
-        if (keywords.length > 0) {
-            const orClauses = keywords.flatMap(kw => [
-                `name.ilike.%25${kw}%25`,
-                `description.ilike.%25${kw}%25`
-            ]).join(',');
-            let q3 = supabase
-                .from('items')
-                .select('*, reporter:profiles!items_reporter_fkey(id, nama, nisn)')
-                .eq('type', 'found')
-                .in('status', ['Available', 'On Progress', 'Returned'])
-                .neq('category', lostItem.category)
-                .neq('id', lostItem.id)
-                .or(orClauses);
-            const { data: p3 } = await q3.limit(20);
-            if (p3) for (const fi of p3) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
-        }
-
-        // Score & sort
-        const scored = candidates.map(fi => {
-            const score = scoreMatch(lostItem, fi);
-            let distance = null;
-            if (lostItem.coordinates_lat != null && lostItem.coordinates_lng != null && fi.coordinates_lat != null && fi.coordinates_lng != null) {
-                distance = Math.round(haversineDistance(lostItem.coordinates_lat, lostItem.coordinates_lng, fi.coordinates_lat, fi.coordinates_lng));
-            }
-            return { ...fi, score, distance_meters: distance };
-        });
-
-        scored.sort((a, b) => b.score - a.score || (a.distance_meters || Infinity) - (b.distance_meters || Infinity));
-
-        res.json(scored.slice(0, 5));
+        const matches = await findMatchingItems(lostItem, 'found', 5);
+        res.json(matches);
     } catch (error) {
         console.error('Error fetching matches:', error.message);
         res.status(500).json({ success: false, message: 'Failed to fetch matches.' });
+    }
+});
+
+// Dashboard recommendations: find matches for ALL of the current user's items
+app.get('/api/items/recommendations', authMiddleware, async (req, res) => {
+    try {
+        const { data: myItems, error: myError } = await supabase
+            .from('items')
+            .select('*')
+            .eq('reporter', req.user.id);
+
+        if (myError) throw myError;
+        if (!myItems || myItems.length === 0) return res.json([]);
+
+        const seen = new Set();
+        const allMatches = [];
+
+        for (const item of myItems) {
+            const targetType = item.type === 'lost' ? 'found' : 'lost';
+            const matches = await findMatchingItems(item, targetType, 3);
+            for (const m of matches) {
+                if (!seen.has(m.id)) {
+                    seen.add(m.id);
+                    allMatches.push(m);
+                }
+            }
+        }
+
+        allMatches.sort((a, b) => b.score - a.score || (a.distance_meters || Infinity) - (b.distance_meters || Infinity));
+
+        res.json(allMatches.slice(0, 20));
+    } catch (error) {
+        console.error('Error fetching recommendations:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch recommendations.' });
     }
 });
 
@@ -823,7 +868,7 @@ app.post('/api/items',
                         let bestScore = -Infinity;
 
                         for (const fi of candidates) {
-                            const score = scoreMatch(newItem, fi);
+                            const score = computeScore(newItem, fi);
                             if (score > bestScore) {
                                 bestScore = score;
                                 bestMatch = fi;
@@ -850,6 +895,127 @@ app.post('/api/items',
         } catch (error) {
             console.error('Error creating item:', error.message);
             res.status(500).json({ success: false, message: 'Failed to create report.' });
+        }
+    }
+);
+
+// Edit item (reporter only)
+app.put('/api/items/:id',
+    authMiddleware,
+    upload.single('image'),
+    [
+        param('id').isUUID().withMessage('Invalid item ID'),
+        body('name').optional().trim().notEmpty().withMessage('Item name is required')
+            .isLength({ max: 200 }).withMessage('Item name too long'),
+        body('location').optional().trim().notEmpty().withMessage('Location is required')
+            .isLength({ max: 200 }).withMessage('Location too long'),
+        body('category').optional().trim().isLength({ max: 50 }),
+        body('area_category').optional({ values: 'falsy' }).trim().isLength({ max: 50 }),
+        body('type').optional().trim().isIn(['found', 'lost']).withMessage('Type must be found or lost'),
+        body('description').optional().trim().isLength({ max: 500 }).withMessage('Description too long'),
+        body('imageUrl').optional().isLength({ max: 3000000 }).withMessage('Image too large'),
+        body('coordinates').optional({ nullable: true }),
+        body('coordinates').custom((value) => {
+            if (!value) return true;
+            try {
+                const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+                if (typeof parsed !== 'object') throw new Error('Must be an object');
+                if (parsed.latitude && (parsed.latitude < -90 || parsed.latitude > 90)) throw new Error('Invalid latitude');
+                if (parsed.longitude && (parsed.longitude < -180 || parsed.longitude > 180)) throw new Error('Invalid longitude');
+            } catch (e) {
+                throw new Error('Invalid coordinates format');
+            }
+            return true;
+        }),
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const { data: item, error: itemError } = await supabase
+                .from('items')
+                .select('*')
+                .eq('id', req.params.id)
+                .single();
+
+            if (itemError || !item) {
+                return res.status(404).json({ success: false, message: 'Item not found' });
+            }
+
+            if (item.reporter !== req.user.id) {
+                return res.status(403).json({ success: false, message: 'Only the reporter can edit this item' });
+            }
+
+            if (item.status === 'Returned') {
+                return res.status(400).json({ success: false, message: 'Cannot edit a returned item' });
+            }
+
+            const updateData = {};
+            const editableFields = ['name', 'location', 'category', 'area_category', 'type', 'description'];
+
+            for (const field of editableFields) {
+                if (req.body[field] !== undefined) {
+                    updateData[field] = req.body[field];
+                }
+            }
+
+            if (req.file) {
+                updateData.image_url = req.file.path;
+            } else if (req.body.imageUrl) {
+                updateData.image_url = req.body.imageUrl;
+            }
+
+            // Delete old Cloudinary image if a new image is being set
+            if (updateData.image_url && item.image_url?.includes('cloudinary')) {
+                try {
+                    const publicId = item.image_url.split('/').pop().split('.')[0];
+                    await cloudinary.uploader.destroy(publicId);
+                } catch (e) {
+                    console.error('Failed to delete old Cloudinary image:', e.message);
+                }
+            }
+
+            if (req.body.coordinates) {
+                try {
+                    const coords = typeof req.body.coordinates === 'string' ? JSON.parse(req.body.coordinates) : req.body.coordinates;
+                    if (coords && typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
+                        updateData.coordinates_lat = coords.latitude;
+                        updateData.coordinates_lng = coords.longitude;
+                    }
+                } catch (e) {
+                    // invalid coordinates — skip
+                }
+            }
+
+            if (req.body.remove_claimer === true || req.body.remove_claimer === 'true') {
+                if (item.status !== 'On Progress') {
+                    return res.status(400).json({ success: false, message: 'Can only remove claimer from items with On Progress status' });
+                }
+                updateData.claimer = null;
+                updateData.status = 'Available';
+                updateData.claim_photo = null;
+                updateData.claim_notes = null;
+                updateData.claimed_at = null;
+            }
+
+            if (Object.keys(updateData).length === 0) {
+                return res.status(400).json({ success: false, message: 'No fields to update' });
+            }
+
+            const { data: updated, error: updateError } = await supabase
+                .from('items')
+                .update(updateData)
+                .eq('id', req.params.id)
+                .select();
+
+            if (updateError) throw updateError;
+
+            invalidateCache('/api/items');
+            invalidateCache('/api/stats');
+
+            res.json({ success: true, item: updated[0] });
+        } catch (error) {
+            console.error('Edit item error:', error.message);
+            res.status(500).json({ success: false, message: 'Failed to edit item.' });
         }
     }
 );
@@ -1074,7 +1240,12 @@ app.post('/api/items/:id/claim',
                 return res.status(400).json({ success: false, message: 'You cannot claim your own item' });
             }
 
-            const { error: updateError } = await supabase
+            // If item is On Progress and has an assigned claimer, only that claimer can claim
+            if (item.status === 'On Progress' && item.claimer && item.claimer !== req.user.id) {
+                return res.status(403).json({ success: false, message: 'This item is being claimed by another user.' });
+            }
+
+            const { data: updated, error: updateError } = await supabase
                 .from('items')
                 .update({
                     status: 'Returned',
@@ -1083,9 +1254,15 @@ app.post('/api/items/:id/claim',
                     claim_notes,
                     claimed_at: new Date().toISOString()
                 })
-                .eq('id', itemId);
+                .eq('id', itemId)
+                .neq('reporter', req.user.id)
+                .select();
 
             if (updateError) throw updateError;
+
+            if (!updated || updated.length === 0) {
+                return res.status(400).json({ success: false, message: 'Item could not be claimed. It may have been updated by someone else.' });
+            }
 
             const wibNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
             const y = wibNow.getUTCFullYear();
@@ -1104,6 +1281,15 @@ app.post('/api/items/:id/claim',
                 .upsert({ date: today, returned: 0 }, { onConflict: 'date' })
                 .then(async () => {
                     await supabase.rpc('increment_daily_counter', { counter_date: today });
+                });
+
+            await supabase
+                .from('notifications')
+                .insert({
+                    user_id: item.reporter,
+                    type: 'resolved',
+                    item_id: itemId,
+                    text: `Barang "${item.name}" telah diklaim dan dikembalikan.`
                 });
 
             invalidateCache('/api/items');

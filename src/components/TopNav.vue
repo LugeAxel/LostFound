@@ -125,7 +125,7 @@ onBeforeUnmount(() => {
           </button>
 
           <!-- Dropdown -->
-          <div v-if="showDropdown" class="z-20 absolute right-0 mt-3 w-80 bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl border border-[#e0e4df] dark:border-[#374151] overflow-hidden">
+          <div v-if="showDropdown" class="z-20 absolute right-[-30px] mt-3 w-80 bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl border border-[#e0e4df] dark:border-[#374151] overflow-hidden">
             <div class="p-4 border-b border-[#e0e4df] dark:border-[#374151] flex justify-between items-center bg-[#f8faf7] dark:bg-[#121212]">
               <h4 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('topnav.notifications') }}</h4>
               <span class="text-[10px] text-[#40493d] dark:text-[#9ca3af] font-bold uppercase tracking-wider">{{ unreadCount }} {{ t('topnav.new') }}</span>

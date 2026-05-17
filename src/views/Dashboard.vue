@@ -6,6 +6,7 @@ import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import ItemCard from '../components/ItemCard.vue';
 import Footer from '../components/Footer.vue';
+import OnboardingOverlay from '../components/OnboardingOverlay.vue';
 import { API_URL } from '@/config/api';
 import { useI18n } from '../i18n';
 import { getAuthHeaders } from '../composables/useAuth';
@@ -16,6 +17,11 @@ const { t } = useI18n();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
 const items = ref<any[]>([]);
 const stats = ref({ currentlyLost: 0, foundToday: 0, returnedAllTime: 0 });
+const recommendations = ref<any[]>([]);
+const showOnboarding = ref(
+  !localStorage.getItem('onboarding_seen') ||
+  new URLSearchParams(window.location.search).has('onboarding')
+);
 
 const fetchStats = async () => {
   try {
@@ -37,18 +43,28 @@ const fetchItems = async () => {
   }
 };
 
-onMounted(() => { fetchStats(); fetchItems(); });
+const fetchRecommendations = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/api/items/recommendations`, { headers: await getAuthHeaders() });
+    recommendations.value = res.data || [];
+  } catch (error: any) {
+    console.error('Error fetching recommendations:', error);
+  }
+};
+
+onMounted(() => { fetchStats(); fetchItems(); fetchRecommendations(); });
 </script>
 
 <template>
   <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex ">
+    <OnboardingOverlay v-if="showOnboarding" @close="showOnboarding = false" />
     <SideNav />
     <TopNav />
 
     <!-- Main Content -->
     <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-20 min-h-screen w-full max-w-[1200px] mx-auto">
       <!-- Welcome Banner -->
-      <section class="mb-10 mt-10">
+      <section class="mb-10">
         <div class="relative overflow-hidden rounded-[2rem] bg-[#387b41] p-10 text-white flex justify-between items-center shadow-lg">
           <div class="relative z-10 max-w-xl">
             <div
@@ -129,6 +145,26 @@ onMounted(() => { fetchStats(); fetchItems(); });
             <p class="text-xs sm:text-sm text-[#40493d] dark:text-[#9ca3af] mb-3 sm:mb-4 leading-relaxed line-clamp-2">{{ t('stats.subtitle') }}</p>
             <div class="flex items-center text-[#8b5cf6] font-bold text-xs sm:text-sm gap-1 sm:gap-2">Explore <span class="material-symbols-outlined text-sm sm:text-base group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
+        </div>
+      </section>
+
+      <!-- Recommendations -->
+      <section class="mb-10">
+        <div class="flex justify-between items-end mb-8">
+          <div>
+            <h3 class="text-lg dark:text-white text-black font-bold flex items-center gap-2">
+              <span class="material-symbols-outlined text-[#f57f17]">lightbulb</span>
+              {{ t('dash.recommendations') }}
+            </h3>
+            <p class="text-sm text-[#40493d] dark:text-[#9ca3af]">{{ t('dash.recommendations_sub') }}</p>
+          </div>
+        </div>
+        <div v-if="recommendations.length === 0" class="text-center py-16 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
+          <span class="material-symbols-outlined text-5xl text-[#40493d] dark:text-[#9ca3af]/10 mb-3">lightbulb</span>
+          <p class="text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('dash.no_recommendations') }}</p>
+        </div>
+        <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+          <ItemCard v-for="rec in recommendations" :key="rec.id" :item="rec" />
         </div>
       </section>
 
