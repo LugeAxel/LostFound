@@ -230,15 +230,15 @@ const saveEdit = async () => {
         </RouterLink>
       </div>
 
-      <div class="relative w-full sm:w-auto min-w-[220px] mb-6">
-        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-lg pointer-events-none">business</span>
-        <select v-model="filterAreaCategory"
-          class="w-full bg-white dark:bg-[#1e1e1e] dark:text-white border-2 border-[#e0e4df] dark:border-[#374151] rounded-xl px-5 py-3 pl-12 focus:border-[#387b41] outline-none transition-all text-xs font-medium appearance-none cursor-pointer">
-          <option value="all">All Areas</option>
-          <option v-for="area in areaCategories" :key="area" :value="area">{{ area }}</option>
-        </select>
-        <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
-      </div>
+      <div class="relative sm:w-fit min-w-[220px] w-fit mb-10">
+          <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-700 dark:text-[#9ca3af] text-lg pointer-events-none">business</span>
+          <select v-model="filterAreaCategory"
+            class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-3 pl-13 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-xs font-medium appearance-none cursor-pointer">
+            <option value="all">All Areas</option>
+            <option v-for="area in areaCategories" :key="area" :value="area">{{ area }}</option>
+          </select>
+          <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
+        </div>
 
       <div v-if="isLoading" class="flex justify-center py-20">
         <div class="w-10 h-10 border-4 border-[#387b41]/20 border-t-[#387b41] rounded-full animate-spin"></div>
