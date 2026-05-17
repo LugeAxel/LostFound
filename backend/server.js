@@ -165,6 +165,20 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
     return R * 2 * Math.asin(Math.sqrt(a));
 }
 
+// Basic criteria words — generic/common terms that get lower match weight
+const BASIC_CRITERIA = new Set([
+    'hitam', 'putih', 'merah', 'biru', 'hijau', 'kuning', 'coklat', 'abu', 'ungu',
+    'pink', 'orange', 'silver', 'emas', 'krem', 'tosca', 'marun',
+    'kain', 'plastik', 'logam', 'karet', 'kulit', 'kaca', 'kayu', 'besi', 'kertas',
+    'kecil', 'besar', 'baru', 'bekas', 'tipis', 'tebal', 'panjang', 'pendek',
+    'tas', 'botol', 'buku', 'pulpen', 'pensil', 'hp', 'ponsel', 'laptop',
+    'charger', 'kabel', 'mouse', 'sepatu', 'sandal', 'topi', 'jam', 'kaos',
+    'baju', 'jaket', 'celana', 'dompet', 'kacamata', 'handuk', 'payung',
+    'makanan', 'minuman', 'tumbler', 'earphone', 'headset', 'flashdisk',
+    'kalkulator', 'penggaris', 'penghapus', 'mistar',
+    'rusak', 'robek', 'sobek', 'hilang', 'ditemukan',
+]);
+
 // Extract meaningful keywords from item name and description
 function extractKeywords(name, description) {
     const text = `${name || ''} ${description || ''}`.toLowerCase();
@@ -179,23 +193,39 @@ function extractKeywords(name, description) {
 
 // Compute text relevance score between lost item and found item
 function computeTextRelevance(lostItem, foundItem) {
-    const lostName = (lostItem.name || '').toLowerCase();
+    const lostName = (lostItem.name || '').toLowerCase().trim();
     const lostDesc = (lostItem.description || '').toLowerCase();
-    const foundName = (foundItem.name || '').toLowerCase();
+    const foundName = (foundItem.name || '').toLowerCase().trim();
     const foundDesc = (foundItem.description || '').toLowerCase();
     const foundText = `${foundName} ${foundDesc}`;
 
     let score = 0;
 
-    // Full phrase match: lost item name appears in found text
-    if (foundText.includes(lostName)) score += 30;
-    if (lostDesc && foundText.includes(lostDesc)) score += 15;
+    // Exact full name match (highest priority)
+    if (lostName === foundName) {
+        score += 80;
+    } else {
+        // Check if all meaningful name words from lost item appear in found item name
+        const lostNameWords = lostName.split(/\s+/).filter(w => w.length >= 2 && w !== 'yang' && w !== 'dan');
+        const allWordsMatch = lostNameWords.length > 0 && lostNameWords.every(w => foundName.includes(w));
+        if (allWordsMatch) {
+            score += 50;
+        }
 
-    // Keyword-level matching
+        // Full phrase match: lost item name appears anywhere in found text
+        if (foundText.includes(lostName)) score += 30;
+    }
+
+    // Keyword-level matching with basic criteria awareness
     const keywords = extractKeywords(lostItem.name, lostItem.description);
     for (const kw of keywords) {
-        if (foundName.includes(kw)) score += 15;
-        else if (foundDesc.includes(kw)) score += 5;
+        if (BASIC_CRITERIA.has(kw)) {
+            if (foundName.includes(kw)) score += 3;
+            else if (foundDesc.includes(kw)) score += 1;
+        } else {
+            if (foundName.includes(kw)) score += 15;
+            else if (foundDesc.includes(kw)) score += 5;
+        }
     }
 
     return score;
@@ -205,23 +235,24 @@ function computeTextRelevance(lostItem, foundItem) {
 function computeScore(sourceItem, candidateItem) {
     let score = 0;
 
-    // Category match (high weight)
-    if (candidateItem.category === sourceItem.category) score += 30;
+    // Text relevance is the primary factor
+    const textScore = computeTextRelevance(sourceItem, candidateItem);
+    score += textScore;
 
-    // Area category match
-    if (sourceItem.area_category && candidateItem.area_category === sourceItem.area_category) score += 20;
+    // Category/area bonuses only apply if there's keyword text match
+    if (textScore > 0) {
+        if (candidateItem.category === sourceItem.category) score += 14;
+        if (sourceItem.area_category && candidateItem.area_category === sourceItem.area_category) score += 14;
+    }
 
-    // Text relevance (name + description keywords)
-    score += computeTextRelevance(sourceItem, candidateItem);
-
-    // GPS proximity bonus
+    // GPS proximity bonus (reduced weight)
     const lat = sourceItem.coordinates_lat;
     const lng = sourceItem.coordinates_lng;
     if (lat != null && lng != null && candidateItem.coordinates_lat != null && candidateItem.coordinates_lng != null) {
         const dist = haversineDistance(lat, lng, candidateItem.coordinates_lat, candidateItem.coordinates_lng);
-        if (dist < 100) score += 25;
-        else if (dist < 500) score += 15;
-        else if (dist < 1000) score += 5;
+        if (dist < 100) score += 10;
+        else if (dist < 500) score += 5;
+        else if (dist < 1000) score += 1;
     }
 
     return score;
@@ -240,9 +271,10 @@ async function findMatchingItems(sourceItem, targetType, limit = 5) {
         .eq('type', targetType)
         .in('status', ['Available', 'On Progress', 'Returned'])
         .eq('category', sourceItem.category)
-        .neq('id', sourceItem.id);
+        .neq('id', sourceItem.id)
+        .neq('reporter', sourceItem.reporter);
     if (sourceItem.area_category) q1 = q1.eq('area_category', sourceItem.area_category);
-    const { data: p1 } = await q1.limit(50);
+    const { data: p1 } = await q1.limit(30);
     if (p1) for (const fi of p1) { seen.add(fi.id); candidates.push(fi); }
 
     // Pass 2: same category only (broader)
@@ -253,8 +285,9 @@ async function findMatchingItems(sourceItem, targetType, limit = 5) {
             .eq('type', targetType)
             .in('status', ['Available', 'On Progress', 'Returned'])
             .eq('category', sourceItem.category)
-            .neq('id', sourceItem.id);
-        const { data: p2 } = await q2.limit(30);
+            .neq('id', sourceItem.id)
+            .neq('reporter', sourceItem.reporter);
+        const { data: p2 } = await q2.limit(20);
         if (p2) for (const fi of p2) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
     }
 
@@ -271,8 +304,9 @@ async function findMatchingItems(sourceItem, targetType, limit = 5) {
             .in('status', ['Available', 'On Progress', 'Returned'])
             .neq('category', sourceItem.category)
             .neq('id', sourceItem.id)
+            .neq('reporter', sourceItem.reporter)
             .or(orClauses);
-        const { data: p3 } = await q3.limit(20);
+        const { data: p3 } = await q3.limit(10);
         if (p3) for (const fi of p3) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
     }
 
@@ -288,7 +322,8 @@ async function findMatchingItems(sourceItem, targetType, limit = 5) {
 
     scored.sort((a, b) => b.score - a.score || (a.distance_meters || Infinity) - (b.distance_meters || Infinity));
 
-    return scored.slice(0, limit);
+    const filtered = scored.filter(s => s.score >= 40);
+    return filtered.slice(0, limit);
 }
 
 // ─────────────────────────────────────────────
@@ -710,7 +745,7 @@ app.get('/api/items/recommendations', authMiddleware, async (req, res) => {
 
         for (const item of myItems) {
             const targetType = item.type === 'lost' ? 'found' : 'lost';
-            const matches = await findMatchingItems(item, targetType, 3);
+            const matches = await findMatchingItems(item, targetType, 24);
             for (const m of matches) {
                 if (!seen.has(m.id)) {
                     seen.add(m.id);
@@ -831,70 +866,87 @@ app.post('/api/items',
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
 
-            // If lost item, find matching found items (3-pass) and create suggestion notification
-            if (newItem.type === 'lost') {
-                try {
-                    const keywords = extractKeywords(newItem.name, newItem.description);
-                    const candidates = [];
-                    const seen = new Set();
+            // Find matching items and create suggestion notifications
+            try {
+                const keywords = extractKeywords(newItem.name, newItem.description);
+                const targetType = newItem.type === 'lost' ? 'found' : 'lost';
+                const candidates = [];
+                const seen = new Set();
 
-                    // Pass 1: same category + same area_category
-                    let q1 = supabase.from('items').select('*')
-                        .eq('type', 'found').in('status', ['Available', 'On Progress', 'Returned'])
-                        .eq('category', newItem.category).neq('id', newItem.id);
-                    if (newItem.area_category) q1 = q1.eq('area_category', newItem.area_category);
-                    const { data: p1 } = await q1.limit(50);
-                    if (p1) for (const fi of p1) { seen.add(fi.id); candidates.push(fi); }
+                // Pass 1: same category + same area_category
+                let q1 = supabase.from('items').select('*')
+                    .eq('type', targetType).in('status', ['Available', 'On Progress', 'Returned'])
+                    .eq('category', newItem.category).neq('id', newItem.id).neq('reporter', newItem.reporter);
+                if (newItem.area_category) q1 = q1.eq('area_category', newItem.area_category);
+                const { data: p1 } = await q1.limit(30);
+                if (p1) for (const fi of p1) { seen.add(fi.id); candidates.push(fi); }
 
-                    // Pass 2: same category only
-                    if (newItem.area_category) {
-                        let q2 = supabase.from('items').select('*')
-                            .eq('type', 'found').in('status', ['Available', 'On Progress', 'Returned'])
-                            .eq('category', newItem.category).neq('id', newItem.id);
-                        const { data: p2 } = await q2.limit(30);
-                        if (p2) for (const fi of p2) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+                // Pass 2: same category only
+                if (newItem.area_category) {
+                    let q2 = supabase.from('items').select('*')
+                        .eq('type', targetType).in('status', ['Available', 'On Progress', 'Returned'])
+                        .eq('category', newItem.category).neq('id', newItem.id).neq('reporter', newItem.reporter);
+                    const { data: p2 } = await q2.limit(20);
+                    if (p2) for (const fi of p2) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+                }
+
+                // Pass 3: text keyword match across all categories
+                if (keywords.length > 0) {
+                    const orClauses = keywords.flatMap(kw => [
+                        `name.ilike.%25${kw}%25`,
+                        `description.ilike.%25${kw}%25`
+                    ]).join(',');
+                    let q3 = supabase.from('items').select('*')
+                        .eq('type', targetType).in('status', ['Available', 'On Progress', 'Returned'])
+                        .neq('category', newItem.category).neq('id', newItem.id).neq('reporter', newItem.reporter)
+                        .or(orClauses);
+                    const { data: p3 } = await q3.limit(10);
+                    if (p3) for (const fi of p3) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+                }
+
+                if (candidates.length > 0) {
+                    // Notify the creator of the new item about the best match
+                    let bestMatch = null;
+                    let bestScore = -Infinity;
+
+                    for (const fi of candidates) {
+                        const score = computeScore(newItem, fi);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMatch = fi;
+                        }
                     }
 
-                    // Pass 3: text keyword match across all categories
-                    if (keywords.length > 0) {
-                        const orClauses = keywords.flatMap(kw => [
-                            `name.ilike.%25${kw}%25`,
-                            `description.ilike.%25${kw}%25`
-                        ]).join(',');
-                        let q3 = supabase.from('items').select('*')
-                            .eq('type', 'found').in('status', ['Available', 'On Progress', 'Returned'])
-                            .neq('category', newItem.category).neq('id', newItem.id)
-                            .or(orClauses);
-                        const { data: p3 } = await q3.limit(20);
-                        if (p3) for (const fi of p3) { if (!seen.has(fi.id)) { seen.add(fi.id); candidates.push(fi); } }
+                    if (bestMatch && bestScore >= 40) {
+                        await supabase
+                            .from('notifications')
+                            .insert({
+                                user_id: newItem.reporter,
+                                type: 'suggestion',
+                                item_id: bestMatch.id,
+                                text: `This might be your item: ${bestMatch.name}`
+                            });
                     }
 
-                    if (candidates.length > 0) {
-                        let bestMatch = null;
-                        let bestScore = -Infinity;
-
+                    // If found item created, also notify matching lost item reporters
+                    if (newItem.type === 'found') {
                         for (const fi of candidates) {
                             const score = computeScore(newItem, fi);
-                            if (score > bestScore) {
-                                bestScore = score;
-                                bestMatch = fi;
+                            if (score >= 40) {
+                                await supabase
+                                    .from('notifications')
+                                    .insert({
+                                        user_id: fi.reporter,
+                                        type: 'suggestion',
+                                        item_id: newItem.id,
+                                        text: `We found a possible match: ${newItem.name}`
+                                    });
                             }
                         }
-
-                        if (bestMatch && bestScore >= 30) {
-                            await supabase
-                                .from('notifications')
-                                .insert({
-                                    user_id: newItem.reporter,
-                                    type: 'suggestion',
-                                    item_id: bestMatch.id,
-                                    text: `This might be your item: ${bestMatch.name}`
-                                });
-                        }
                     }
-                } catch (matchError) {
-                    console.error('Error finding matches:', matchError.message);
                 }
+            } catch (matchError) {
+                console.error('Error finding matches:', matchError.message);
             }
 
             res.status(201).json({ success: true, item: newItem });

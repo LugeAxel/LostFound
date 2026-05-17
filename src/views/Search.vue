@@ -175,7 +175,7 @@ watch(() => route.query, (newQuery) => {
           <select v-model="filterAreaCategory" @change="handleSearch"
             class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-3 pl-13 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-xs font-medium appearance-none cursor-pointer">
             <option value="all">All Areas</option>
-            <option v-for="area in areaCategories" :key="area" :value="area">{{ area }}</option>
+            <option v-for="area in areaCategories" :key="area" :value="area">{{ t('area.' + area) }}</option>
           </select>
           <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
         </div>

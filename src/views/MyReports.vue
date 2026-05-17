@@ -427,7 +427,7 @@ const saveEdit = async () => {
               <div class="relative">
                 <select v-model="editForm.area_category" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-4 py-3 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium appearance-none">
                   <option value="">Select area (optional)</option>
-                  <option v-for="area in areaCategories" :key="area" :value="area">{{ area }}</option>
+                  <option v-for="area in areaCategories" :key="area" :value="area">{{ t('area.' + area) }}</option>
                 </select>
                 <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
               </div>

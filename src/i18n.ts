@@ -276,6 +276,20 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // === Report (area_category) ===
     'report.area_category': 'Area Category',
+    'area.Ruang Teori': 'Theory Room',
+    'area.Laboratorium': 'Laboratory',
+    'area.Masjid': 'Mosque',
+    'area.Kantin': 'Canteen',
+    'area.Koperasi': 'Cooperative',
+    'area.Bima': 'Bima',
+    'area.Yudhistira': 'Yudhistira',
+    'area.Arjuna': 'Arjuna',
+    'area.Lapangan': 'Field',
+    'area.Kantor': 'Office',
+    'area.Parkir': 'Parking',
+    'area.Bengkel': 'Workshop',
+    'area.Bangunan Kimia': 'Chemistry Building',
+    'area.Bangunan GP': 'GP Building',
 
     // === Statistics ===
     'stats.title': 'Statistics',
@@ -568,6 +582,20 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // === Report (area_category) ===
     'report.area_category': 'Area Kategori',
+    'area.Ruang Teori': 'Ruang Teori',
+    'area.Laboratorium': 'Laboratorium',
+    'area.Masjid': 'Masjid',
+    'area.Kantin': 'Kantin',
+    'area.Koperasi': 'Koperasi',
+    'area.Bima': 'Bima',
+    'area.Yudhistira': 'Yudhistira',
+    'area.Arjuna': 'Arjuna',
+    'area.Lapangan': 'Lapangan',
+    'area.Kantor': 'Kantor',
+    'area.Parkir': 'Parkir',
+    'area.Bengkel': 'Bengkel',
+    'area.Bangunan Kimia': 'Bangunan Kimia',
+    'area.Bangunan GP': 'Bangunan GP',
 
     // === Statistics ===
     'stats.title': 'Statistik',

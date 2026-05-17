@@ -83,7 +83,7 @@ const translateStatus = (status: string) => {
           </span>
         <div class="flex gap-2">
           <span v-if="item.area_category" class="bg-[white]/90 backdrop-blur-sm text-slate-800 text-[10px] font-bold px-2 py-1 rounded shadow-sm flex items-center gap-0.5 truncate max-w-[130px] w-fit">
-          {{ item.area_category }}
+          {{ t('area.' + item.area_category) }}
         </span>
           <span class="bg-white/90 backdrop-blur-sm text-[#1c1b1b] text-[10px] font-bold px-2 py-1 rounded shadow-sm truncate max-w-[70px]">
             {{ translateCategory(item.category) }}

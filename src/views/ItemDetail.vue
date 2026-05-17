@@ -452,7 +452,7 @@ const copyGps = async (lat: number, lng: number) => {
               <p class="text-sm text-[#40493d] dark:text-[#9ca3af] mt-1">{{ item.type === 'lost' ? t('detail.last_seen') + ' ' + item.location : t('detail.found_at') + ' ' + item.location }}</p>
               <div v-if="item.area_category" class="mt-1.5 flex items-center gap-1">
                 <span class="material-symbols-outlined text-xs text-[#40493d] dark:text-[#9ca3af]">business</span>
-                <span class="text-xs text-[#40493d] dark:text-[#9ca3af] font-medium">{{ item.area_category }}</span>
+                <span class="text-xs text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('area.' + item.area_category) }}</span>
               </div>
               <div v-if="item.coordinates_lat != null" class="mt-2 flex items-center gap-2">
                 <span class="text-[10px] text-[#387b41] font-bold flex items-center gap-1">
