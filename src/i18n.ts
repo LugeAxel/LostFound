@@ -64,9 +64,9 @@ const translations: Record<Locale, Record<string, string>> = {
     'onboarding.p2_desc': '1. Snap a photo right from the app. 2. Add a quick description and location. 3. Our system scans for matches and notifies you instantly. Lost or found it takes less than a minute.',
     'onboarding.p2_cta': 'I\'m Ready!',
     'onboarding.p3_title': 'We don\'t just list. We connect.',
-    'onboarding.p3_desc': 'Our intelligent engine connects your items and other user items to find best matches automatically. The right item finds the right person no endless scrolling required.',
+    'onboarding.p3_desc': 'Our intelligent system connects your items and other user items to find best matches automatically. The right item finds the right person no endless scrolling required.',
     'onboarding.p3_tagline': 'Sometimes, all it takes is one good person to return something meaningful.',
-    'onboarding.p3_cta': 'Get Started',
+    'onboarding.p3_cta': 'Lets Get Started!',
 
     // === Search ===
     'search.title': 'Search Items',
@@ -355,10 +355,10 @@ const translations: Record<Locale, Record<string, string>> = {
     'onboarding.p2_title': 'Hanya Tiga langkah.',
     'onboarding.p2_desc': '1. Foto barang langsung dari aplikasi. 2. Tambah deskripsi dan lokasi singkat. 3. Sistem kami mencari kecocokan dan memberi tahu kamu saat itu juga. Hilang atau ditemukan butuh kurang dari semenit.',
     'onboarding.p2_cta': 'Aku siap!',
-    'onboarding.p3_title': 'bukan hanya list. Kami menghubungkan.',
-    'onboarding.p3_desc': 'System cerdas kami menghubungkan barangmu dan barang lainnya untuk menemukan kecocokan terbaik secara otomatis. Barang yang tepat menemukan orang yang tepat, tanpa perlu scroll tanpa henti.',
+    'onboarding.p3_title': 'Bukan hanya list. Kami menghubungkan.',
+    'onboarding.p3_desc': 'Sistem cerdas kami menghubungkan barangmu dan barang lainnya untuk menemukan kecocokan terbaik secara otomatis. Barang yang tepat menemukan orang yang tepat, tanpa perlu scroll tanpa henti.',
     'onboarding.p3_tagline': 'Kadang, yang dibutuhkan hanya satu orang baik untuk mengembalikan sesuatu yang berarti.',
-    'onboarding.p3_cta': 'Mulai Sekarang',
+    'onboarding.p3_cta': 'Mulai Sekarang Juga!',
 
     // === Search (ID) ===
     'search.title': 'Cari Barang',
