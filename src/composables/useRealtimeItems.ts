@@ -3,6 +3,14 @@ import { supabase } from '../lib/supabase'
 
 export function useRealtimeItems(onChange: () => void) {
   let subscription: any = null
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  const debouncedOnChange = () => {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      onChange()
+    }, 500)
+  }
 
   const subscribe = (userId: string) => {
     unsubscribe()
@@ -16,12 +24,16 @@ export function useRealtimeItems(onChange: () => void) {
           table: 'items',
           filter: `reporter=eq.${userId}`
         },
-        () => { onChange() }
+        () => { debouncedOnChange() }
       )
       .subscribe()
   }
 
   const unsubscribe = () => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+      debounceTimer = null
+    }
     if (subscription) {
       supabase.removeChannel(subscription)
       subscription = null

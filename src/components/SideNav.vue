@@ -33,13 +33,13 @@ const { t } = useI18n();
           <span class="material-symbols-outlined">dashboard</span>
           <span class="text-sm">{{ t('nav.dashboard') }}</span>
         </RouterLink>
-        <RouterLink to="/my-reports" 
+        <RouterLink to="/search" 
           :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
-            route.path === '/my-reports'
+            route.path === '/search'
               ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
               : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">inventory</span>
-          <span class="text-sm">{{ t('nav.my_reports') }}</span>
+          <span class="material-symbols-outlined">search</span>
+          <span class="text-sm">{{ t('nav.search') }}</span>
         </RouterLink>
         <RouterLink to="/report" 
           :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
@@ -49,13 +49,21 @@ const { t } = useI18n();
           <span class="material-symbols-outlined">report</span>
           <span class="text-sm">{{ t('nav.report') }}</span>
         </RouterLink>
-        <RouterLink to="/search" 
+        <RouterLink to="/my-reports" 
           :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
-            route.path === '/search'
+            route.path === '/my-reports'
               ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
               : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">search</span>
-          <span class="text-sm">{{ t('nav.search') }}</span>
+          <span class="material-symbols-outlined">inventory</span>
+          <span class="text-sm">{{ t('nav.my_reports') }}</span>
+        </RouterLink>
+        <RouterLink to="/scan" 
+          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
+            route.path === '/scan'
+              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
+          <span class="material-symbols-outlined">qr_code</span>
+          <span class="text-sm">Scan</span>
         </RouterLink>
         <RouterLink to="/statistics" 
           :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
@@ -65,14 +73,7 @@ const { t } = useI18n();
           <span class="material-symbols-outlined">leaderboard</span>
           <span class="text-sm">{{ t('nav.statistics') }}</span>
         </RouterLink>
-        <RouterLink to="/scan" 
-          :class="['flex items-center gap-3 mb-8 px-4 py-3 transition-all duration-200',
-            route.path === '/scan'
-              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
-              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">qr_code</span>
-          <span class="text-sm">Scan</span>
-        </RouterLink>
+        
       </nav>
       
       <div class="px-4 space-y-3 mt-auto">

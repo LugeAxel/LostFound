@@ -35,6 +35,7 @@ const editForm = ref({
 const editImagePreview = ref<string | null>(null);
 const editImageFile = ref<File | null>(null);
 const editFileInput = ref<HTMLInputElement | null>(null);
+const removeImage = ref(false);
 
 const { subscribe: subscribeItems } = useRealtimeItems(() => {
   fetchMyReports();
@@ -133,6 +134,7 @@ const openEdit = (item: any) => {
   };
   editImagePreview.value = item.image_url || null;
   editImageFile.value = null;
+  removeImage.value = false;
   showEditModal.value = true;
 };
 
@@ -141,18 +143,26 @@ const closeEdit = () => {
   editingItem.value = null;
   editImagePreview.value = null;
   editImageFile.value = null;
+  removeImage.value = false;
 };
 
 const handleEditImage = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files[0]) {
     editImageFile.value = target.files[0];
+    removeImage.value = false;
     const reader = new FileReader();
     reader.onload = (e) => {
       editImagePreview.value = e.target?.result as string;
     };
     reader.readAsDataURL(target.files[0]);
   }
+};
+
+const handleRemoveImage = () => {
+  editImagePreview.value = null;
+  editImageFile.value = null;
+  removeImage.value = true;
 };
 
 const removeClaimer = async () => {
@@ -183,6 +193,7 @@ const saveEdit = async () => {
   isSavingEdit.value = true;
   try {
     const hasNewImage = editImageFile.value != null;
+    const wantsRemove = removeImage.value && !hasNewImage;
     let payload;
 
     if (hasNewImage) {
@@ -194,21 +205,37 @@ const saveEdit = async () => {
       fd.append('type', editForm.value.type);
       fd.append('description', editForm.value.description);
       fd.append('image', editImageFile.value!);
+      if (wantsRemove) fd.append('remove_image', 'true');
       payload = fd;
     } else {
-      payload = { ...editForm.value };
+      payload = { ...editForm.value, ...(wantsRemove ? { remove_image: true } : {}) };
     }
 
-    await axios.put(`${API_URL}/api/items/${editingItem.value.id}`,
+    const res = await axios.put(`${API_URL}/api/items/${editingItem.value.id}`,
       payload,
       { headers: await getAuthHeaders() }
     );
-    toast.show('Item updated successfully', 'success');
+
+    if (res.data?.item) {
+      const updatedItem = res.data.item;
+      if (hasNewImage && updatedItem.image_url === editingItem.value?.image_url) {
+        toast.show('Item saved but image may not have changed', 'info');
+      } else {
+        toast.show('Item updated successfully', 'success');
+      }
+    } else {
+      toast.show('Item updated successfully', 'success');
+    }
     await fetchMyReports();
     closeEdit();
   } catch (error: any) {
-    console.error('Edit error:', error.response?.data || error.message);
-    toast.show(error.response?.data?.message || 'Failed to update item', 'error');
+    const data = error.response?.data;
+    const msg = data?.message || 'Failed to update item';
+    const code = data?.code || '';
+    const details = data?.details || '';
+    const fullMsg = code ? `${msg} (${code})` : msg;
+    console.error('Edit error:', { message: data?.message || error.message, code, details });
+    toast.show(details ? `${msg}: ${details}` : fullMsg, 'error');
   } finally {
     isSavingEdit.value = false;
   }
@@ -444,9 +471,14 @@ const saveEdit = async () => {
                 <div v-if="editImagePreview" class="w-20 h-20 rounded-xl overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a] border border-[#e0e4df] dark:border-[#374151] flex-shrink-0">
                   <img :src="editImagePreview" class="w-full h-full object-cover" />
                 </div>
-                <button @click="editFileInput?.click()" type="button" class="px-4 py-2 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-xl text-xs font-bold text-[#40493d] dark:text-[#9ca3af] hover:bg-[#e0e4df] dark:hover:bg-[#374151] transition-all">
-                  {{ editImagePreview ? 'Change Photo' : 'Upload Photo' }}
-                </button>
+                <div class="flex flex-wrap gap-2">
+                  <button @click="editFileInput?.click()" type="button" class="px-4 py-2 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-xl text-xs font-bold text-[#40493d] dark:text-[#9ca3af] hover:bg-[#e0e4df] dark:hover:bg-[#374151] transition-all">
+                    {{ editImagePreview ? 'Change Photo' : 'Upload Photo' }}
+                  </button>
+                  <button v-if="editImagePreview" @click="handleRemoveImage" type="button" class="px-4 py-2 bg-red-50 dark:bg-red-950/20 rounded-xl text-xs font-bold text-[#ba1a1a] hover:bg-red-100 dark:hover:bg-red-950/40 transition-all">
+                    Remove Photo
+                  </button>
+                </div>
                 <input ref="editFileInput" type="file" accept="image/*" class="hidden" @change="handleEditImage" />
               </div>
             </div>

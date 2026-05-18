@@ -81,6 +81,17 @@ const handleEmailSubmit = async () => {
         return;
       }
 
+      const emailVerified = data.user?.email_confirmed_at != null;
+      if (!emailVerified) {
+        setStatus("Email not verified. Please check your inbox.", "error");
+        isSubmitting.value = false;
+        setTimeout(() => router.push({
+          name: 'email-verification',
+          query: { email: emailForm.value.email }
+        }), 2000);
+        return;
+      }
+
       const res = await axios.get(`${API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${data.session.access_token}` }
       });
@@ -107,7 +118,9 @@ const handleEmailSubmit = async () => {
         return;
       }
 
-      if (data.session) {
+      const emailVerified = data.user?.email_confirmed_at != null;
+
+      if (data.session && emailVerified) {
         const res = await axios.get(`${API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${data.session.access_token}` }
         });
@@ -117,7 +130,10 @@ const handleEmailSubmit = async () => {
         setTimeout(() => router.push('/dashboard'), 1500);
       } else {
         setStatus("Account created! Check your email to verify.", "success");
-        setTimeout(() => router.push('/verify-email?email=' + encodeURIComponent(emailForm.value.email)), 2000);
+        setTimeout(() => router.push({
+          name: 'email-verification',
+          query: { email: emailForm.value.email }
+        }), 2000);
       }
     }
   } catch (err: any) {

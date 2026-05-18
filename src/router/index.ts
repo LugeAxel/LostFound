@@ -116,6 +116,18 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.requiresAuth && isAuthenticated) {
+    const emailVerified = session.user?.email_confirmed_at != null
+
+    if (!emailVerified) {
+      if (to.name !== 'email-verification') {
+        return next({
+          name: 'email-verification',
+          query: { email: session.user.email }
+        })
+      }
+      return next()
+    }
+
     if (!from.name) {
       try {
         const response = await fetch(`${API_URL}/api/auth/me`, {
@@ -133,6 +145,13 @@ router.beforeEach(async (to, from, next) => {
   }
 
   if (to.meta.requiresGuest && isAuthenticated) {
+    const emailVerified = session.user?.email_confirmed_at != null
+    if (!emailVerified) {
+      return next({
+        name: 'email-verification',
+        query: { email: session.user.email }
+      })
+    }
     return next({ name: 'dashboard' })
   }
 

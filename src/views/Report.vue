@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onBeforeUnmount } from 'vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import LocationPicker from '../components/LocationPicker.vue';
@@ -142,6 +142,8 @@ const handleFileUpload = (event: Event) => {
 const triggerFileInput = () => {
   if (fileInput.value) fileInput.value.click();
 };
+
+onBeforeUnmount(() => stopCamera());
 
 const submitReport = async () => {
   if (!form.value.name || !form.value.location) {

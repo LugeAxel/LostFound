@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 const router = useRouter();
 const { t } = useI18n();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
+const loadingUser = ref(true);
 const items = ref<any[]>([]);
 const stats = ref({ currentlyLost: 0, foundToday: 0, returnedAllTime: 0 });
 const recommendations = ref<any[]>([]);
@@ -59,7 +60,27 @@ const fetchRecommendations = async () => {
   }
 };
 
-onMounted(() => { fetchStats(); fetchItems(); fetchRecommendations(); });
+onMounted(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    try {
+      const res = await axios.get(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      if (res.data.success) {
+        user.value = res.data.user;
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      loadingUser.value = false;
+    }
+  } else {
+    loadingUser.value = false;
+  }
+  fetchStats(); fetchItems(); fetchRecommendations();
+});
 </script>
 
 <template>
@@ -78,7 +99,7 @@ onMounted(() => { fetchStats(); fetchItems(); fetchRecommendations(); });
               class="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] font-bold uppercase tracking-wider mb-4">
               <span class="material-symbols-outlined text-sm">school</span> SMKN 2 Depok
             </div>
-            <h2 class="text-4xl font-bold mb-4 tracking-tight">{{ t('dash.welcome') }} {{ user.nama ? user.nama.split(' ')[0] : 'Student' }}!</h2>
+            <h2 class="text-4xl font-bold mb-4 tracking-tight">{{ t('dash.welcome') }} <span v-if="loadingUser" class="inline-block w-24 h-8 bg-white/20 rounded animate-pulse"></span><template v-else>{{ user.nama ? user.nama.split(' ')[0] : 'Student' }}</template>!</h2>
             <p class="text-lg opacity-90 mb-8 leading-relaxed">{{ t('dash.welcome_sub') }}</p>
             <div class="flex gap-4">
               <RouterLink to="/my-reports" class="px-6 py-3 bg-white dark:bg-[#1e1e1e] text-[#387b41] rounded-xl font-bold hover:bg-opacity-90 transition-all shadow-md">{{ t('dash.view_my_items') }}</RouterLink>

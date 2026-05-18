@@ -134,7 +134,7 @@ onMounted(fetchRatings);
               class="w-full py-3 bg-[#387b41] text-white rounded-xl font-bold text-sm hover:bg-[#2d6334] transition-all shadow-md active:scale-95 disabled:opacity-50">
               <span v-if="isSubmitting" class="flex items-center justify-center gap-2">
                 <span class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
-                {{ t('detail.back') }}...
+                {{ t('rating.submit') }}...
               </span>
               <span v-else>{{ myRating ? t('rating.update') : t('rating.submit') }}</span>
             </button>

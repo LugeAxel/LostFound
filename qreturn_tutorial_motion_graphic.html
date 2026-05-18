@@ -1,0 +1,494 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--green:#2e7d32;--green-light:#88d982;--green-bg:#e8f5e9;--bg:#fcf9f8;--card:#fff;--text:#1c1b1b;--text2:#40493d;--border:#e0e4df}
+body{background:transparent;font-family:'Inter',sans-serif;color:var(--text)}
+.storyboard{width:100%;padding:1.5rem 0}
+.header{text-align:center;margin-bottom:2rem}
+.header h1{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.header p{font-size:14px;color:var(--color-text-secondary);margin-top:4px}
+.progress-bar{display:flex;align-items:center;gap:0;margin:1.5rem 0;position:relative}
+.prog-step{flex:1;display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.prog-dot{width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:var(--color-text-secondary);transition:all .3s;z-index:2;position:relative}
+.prog-dot.active{background:var(--green);border-color:var(--green);color:#fff}
+.prog-dot.done{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.prog-label{font-size:11px;color:var(--color-text-secondary);margin-top:6px;text-align:center;max-width:70px}
+.prog-line{position:absolute;top:16px;left:0;right:0;height:2px;background:var(--border);z-index:1}
+.prog-line-fill{height:100%;background:var(--green);transition:width .5s ease;width:0%}
+.scene-container{position:relative}
+.scene{display:none;animation:fadeIn .4s ease}
+.scene.active{display:flex;gap:2rem;align-items:flex-start}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.phone-wrap{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:12px}
+.phone{width:200px;height:400px;background:#1a1a1a;border-radius:32px;padding:12px;position:relative;overflow:hidden;border:3px solid #2a2a2a}
+.phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:80px;height:18px;background:#1a1a1a;border-radius:0 0 12px 12px;z-index:10}
+.phone-screen{width:100%;height:100%;border-radius:22px;overflow:hidden;position:relative;background:#111}
+.timing-badge{font-size:11px;font-weight:500;color:var(--green);background:var(--green-bg);padding:4px 10px;border-radius:20px;border:1px solid #c8e6c9}
+.scene-info{flex:1;padding-top:4px}
+.scene-title{font-size:18px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.scene-subtitle{font-size:13px;color:var(--color-text-secondary);margin-bottom:1.25rem;line-height:1.5}
+.overlay-list{margin-bottom:1.25rem}
+.overlay-list h4{font-size:12px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.overlay-item{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.overlay-icon{width:24px;height:24px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.overlay-icon i{font-size:13px;color:var(--green)}
+.overlay-text{font-size:13px;color:var(--color-text-primary);line-height:1.5}
+.text-overlay-box{background:var(--green-bg);border-left:3px solid var(--green);border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:1.25rem}
+.text-overlay-box p{font-size:13px;color:#1b5e20;font-style:italic;line-height:1.5}
+.nav-btns{display:flex;gap:8px;margin-top:1rem}
+.nav-btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--color-border-tertiary);background:var(--color-background-primary);color:var(--color-text-primary);transition:all .2s}
+.nav-btn:hover{background:var(--color-background-secondary)}
+.nav-btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.nav-btn.primary:hover{background:#1b5e20}
+
+.step-marker{position:absolute;width:20px;height:20px;border-radius:50%;background:var(--green);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;z-index:20;animation:stepPulse 1s ease infinite}
+@keyframes stepPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.highlight-ring{position:absolute;border-radius:50%;border:2px solid var(--green);animation:ringPing 0.8s ease-in-out infinite alternate;z-index:15;pointer-events:none}
+@keyframes ringPing{from{transform:scale(1);opacity:1}to{transform:scale(1.12);opacity:.7}}
+.cursor{position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;border:1.5px solid var(--green);z-index:25;animation:cursorMove 3s ease-in-out infinite;pointer-events:none}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);animation:scanAnim 2s linear infinite;z-index:18}
+@keyframes scanAnim{0%{top:20%}100%{top:80%}}
+.pulse-dot{animation:pulseDot 1.5s ease infinite}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.4}}
+.type-anim{overflow:hidden;white-space:nowrap;animation:typeOut 2s steps(20) infinite alternate}
+@keyframes typeOut{from{width:0}to{width:100%}}
+.match-line{stroke-dasharray:4 3;animation:marchAnts 0.8s linear infinite}
+@keyframes marchAnts{to{stroke-dashoffset:-14}}
+.count-up{animation:countUp 1s ease forwards}
+@keyframes countUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.particles{position:absolute;top:50%;left:50%;pointer-events:none}
+.particle{position:absolute;width:5px;height:3px;border-radius:50%;background:var(--green-light);animation:scatter var(--d) ease-out forwards}
+@keyframes scatter{to{transform:translate(var(--tx),var(--ty));opacity:0}}
+.closing-logo{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px;animation:logoFadeIn 1s ease}
+@keyframes logoFadeIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+</style>
+
+<div class="storyboard">
+  <h2 class="sr-only">QReturn tutorial motion graphic storyboard — 6 scenes with animated phone mockups and motion overlay details</h2>
+
+  <div class="header">
+    <h1>QReturn — Tutorial Motion Graphic</h1>
+    <p>:45s · 1080×1920 vertical · Forest Green #2e7d32 · iPhone 14 Pro mockup</p>
+  </div>
+
+  <div style="position:relative;margin-bottom:2rem">
+    <div class="prog-line"><div class="prog-line-fill" id="prog-fill"></div></div>
+    <div class="progress-bar" id="prog-bar">
+      <div class="prog-step" onclick="goTo(0)">
+        <div class="prog-dot active" id="pd0">1</div>
+        <div class="prog-label">Login</div>
+      </div>
+      <div class="prog-step" onclick="goTo(1)">
+        <div class="prog-dot" id="pd1">2</div>
+        <div class="prog-label">Dashboard</div>
+      </div>
+      <div class="prog-step" onclick="goTo(2)">
+        <div class="prog-dot" id="pd2">3</div>
+        <div class="prog-label">Report</div>
+      </div>
+      <div class="prog-step" onclick="goTo(3)">
+        <div class="prog-dot" id="pd3">4</div>
+        <div class="prog-label">My Reports</div>
+      </div>
+      <div class="prog-step" onclick="goTo(4)">
+        <div class="prog-dot" id="pd4">5</div>
+        <div class="prog-label">Claim</div>
+      </div>
+      <div class="prog-step" onclick="goTo(5)">
+        <div class="prog-dot" id="pd5">✦</div>
+        <div class="prog-label">Closing</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scene-container">
+
+    <!-- SCENE 1 -->
+    <div class="scene active" id="s0">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" style="background:#141414;display:flex;flex-direction:column;align-items:center;padding:28px 12px 12px">
+            <div style="width:32px;height:32px;border-radius:10px;background:#2e7d32;display:flex;align-items:center;justify-content:center;margin-bottom:6px"><i class="ti ti-qrcode" style="font-size:16px;color:#fff" aria-hidden="true"></i></div>
+            <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:2px">QReturn</div>
+            <div style="font-size:8px;color:#888;margin-bottom:10px">LAYANAN DIGITAL</div>
+            <div style="background:#1e1e1e;border-radius:14px;padding:12px;width:100%">
+              <div style="font-size:10px;font-weight:700;color:#fff;text-align:center;margin-bottom:2px">Student Login</div>
+              <div style="font-size:7px;color:#888;text-align:center;margin-bottom:8px">Scan your Student ID QR code</div>
+              <div style="display:flex;background:#2a2a2a;border-radius:8px;margin-bottom:10px;overflow:hidden">
+                <div style="flex:1;background:#2e7d32;padding:4px 0;text-align:center;font-size:7px;font-weight:700;color:#fff;border-radius:6px;margin:2px"><i class="ti ti-qrcode" style="font-size:8px" aria-hidden="true"></i> QR Code</div>
+                <div style="flex:1;padding:4px 0;text-align:center;font-size:7px;color:#666">✉ Email</div>
+              </div>
+              <div style="position:relative;background:#000;border-radius:8px;height:80px;border:1.5px solid #2e7d32;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                <div style="position:absolute;top:4px;left:4px;width:10px;height:10px;border-top:2px solid #fff;border-left:2px solid #fff;border-radius:2px 0 0 0"></div>
+                <div style="position:absolute;top:4px;right:4px;width:10px;height:10px;border-top:2px solid #fff;border-right:2px solid #fff;border-radius:0 2px 0 0"></div>
+                <div style="position:absolute;bottom:4px;left:4px;width:10px;height:10px;border-bottom:2px solid #fff;border-left:2px solid #fff;border-radius:0 0 0 2px"></div>
+                <div style="position:absolute;bottom:4px;right:4px;width:10px;height:10px;border-bottom:2px solid #fff;border-right:2px solid #fff;border-radius:0 0 2px 0"></div>
+                <div class="scan-line"></div>
+                <div style="font-size:7px;color:#444">camera</div>
+                <div class="highlight-ring" style="width:60px;height:60px;top:10px;left:50%;margin-left:-30px"></div>
+              </div>
+              <div style="font-size:6px;color:#666;text-align:center;margin-top:6px">● Ready to scan</div>
+            </div>
+            <div style="font-size:6px;color:#444;margin-top:8px;text-align:center">SMK NEGERI 2 DEPOK DIGITAL SERVICE</div>
+            <div class="step-marker" style="top:50px;right:16px">1</div>
+            <div class="cursor" style="top:130px;left:80px;animation:none"></div>
+          </div>
+        </div>
+        <div class="timing-badge">0:00 – 0:08</div>
+      </div>
+      <div class="scene-info">
+        <div class="scene-title">Scene 1 — Login via QR</div>
+        <div class="scene-subtitle">Phone shows the QReturn login page. The QR scanner viewfinder activates with a scan line animation and green corner bracket overlay.</div>
+        <div class="text-overlay-box"><p>"Scan your student ID card to log in instantly."</p></div>
+        <div class="overlay-list">
+          <h4>Motion overlays</h4>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-circle-dashed" aria-hidden="true"></i></div><div class="overlay-text">Green pulsing ring (3px stroke, 100%→115% ping-pong) wraps the QR viewfinder border</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-map-pin" aria-hidden="true"></i></div><div class="overlay-text">Step marker "1" in a 28px green circle appears top-right of the viewfinder</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-cursor-text" aria-hidden="true"></i></div><div class="overlay-text">Cursor taps center of viewfinder — brief green glow ripple expands outward</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-minus" aria-hidden="true"></i></div><div class="overlay-text">Scan line sweeps top→bottom continuously across the dark viewfinder</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 2 -->
+    <div class="scene" id="s1">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" style="background:#111;overflow-y:hidden;padding:20px 0 0">
+            <div style="display:flex;align-items:center;padding:0 8px 6px;gap:4px">
+              <div style="flex:1;background:#1e1e1e;border-radius:6px;padding:3px 6px;display:flex;align-items:center;gap:3px"><i class="ti ti-search" style="font-size:8px;color:#555" aria-hidden="true"></i><div style="font-size:7px;color:#444">Cari barang...</div></div>
+              <i class="ti ti-bell" style="font-size:11px;color:#888" aria-hidden="true"></i>
+              <div style="width:16px;height:16px;border-radius:50%;background:#2e7d32;display:flex;align-items:center;justify-content:center;font-size:7px;color:#fff;font-weight:700">L</div>
+            </div>
+            <div style="background:#2e7d32;margin:0 6px;border-radius:12px;padding:10px 10px 8px;position:relative;overflow:hidden;margin-bottom:6px">
+              <div style="font-size:6px;background:rgba(255,255,255,.2);color:#fff;padding:2px 6px;border-radius:10px;display:inline-block;margin-bottom:4px">🏫 SMKN 2 Depok</div>
+              <div style="font-size:10px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:2px">Selamat datang, Loppy!</div>
+              <div style="font-size:6px;color:rgba(255,255,255,.8);margin-bottom:6px">Kehilangan barang? Kami bantu.</div>
+              <div style="display:flex;gap:4px">
+                <div style="background:#fff;border-radius:6px;padding:3px 6px;font-size:6px;font-weight:700;color:#2e7d32">Lihat Barang</div>
+                <div style="border:1px solid rgba(255,255,255,.5);border-radius:6px;padding:3px 6px;font-size:6px;color:#fff">Cara kerja</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;padding:0 6px;margin-bottom:6px">
+              <div style="flex:1;background:#1e1e1e;border-radius:8px;padding:6px;text-align:center">
+                <div style="width:14px;height:14px;border-radius:50%;background:#ff5252;margin:0 auto 3px;display:flex;align-items:center;justify-content:center"><i class="ti ti-search" style="font-size:7px;color:#fff" aria-hidden="true"></i></div>
+                <div style="font-size:6px;color:#888">HILANG</div>
+                <div class="count-up" style="font-size:11px;font-weight:700;color:#fff">2</div>
+              </div>
+              <div style="flex:1;background:#1e1e1e;border-radius:8px;padding:6px;text-align:center">
+                <div style="width:14px;height:14px;border-radius:50%;background:#2e7d32;margin:0 auto 3px;display:flex;align-items:center;justify-content:center"><i class="ti ti-check" style="font-size:7px;color:#fff" aria-hidden="true"></i></div>
+                <div style="font-size:6px;color:#888">DITEMUKAN</div>
+                <div class="count-up" style="font-size:11px;font-weight:700;color:#fff">1</div>
+              </div>
+              <div style="flex:1;background:#1e1e1e;border-radius:8px;padding:6px;text-align:center">
+                <div style="width:14px;height:14px;border-radius:50%;background:#1565c0;margin:0 auto 3px;display:flex;align-items:center;justify-content:center"><i class="ti ti-package" style="font-size:7px;color:#fff" aria-hidden="true"></i></div>
+                <div style="font-size:6px;color:#888">KEMBALI</div>
+                <div class="count-up" style="font-size:11px;font-weight:700;color:#fff">1</div>
+              </div>
+            </div>
+            <div style="padding:0 6px">
+              <div style="display:flex;align-items:center;gap:3px;margin-bottom:4px"><i class="ti ti-bolt" style="font-size:9px;color:#f9a825" aria-hidden="true"></i><div style="font-size:8px;font-weight:700;color:#fff">Aksi Cepat</div></div>
+              <div style="background:#1e2d1e;border-left:2px solid #2e7d32;border-radius:0 8px 8px 0;padding:6px 8px;position:relative" id="report-btn">
+                <div style="font-size:7px;font-weight:700;color:#2e7d32">Lapor</div>
+                <div style="font-size:6px;color:#666">Report a lost item</div>
+                <div class="step-marker" style="top:-8px;right:-8px">2</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="timing-badge">0:08 – 0:16</div>
+      </div>
+      <div class="scene-info">
+        <div class="scene-title">Scene 2 — Dashboard Overview</div>
+        <div class="scene-subtitle">Dashboard appears with the green welcome banner, stat cards with animated counts, and quick action cards below.</div>
+        <div class="text-overlay-box"><p>"See your stats and report lost or found items."</p></div>
+        <div class="overlay-list">
+          <h4>Motion overlays</h4>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-scroll" aria-hidden="true"></i></div><div class="overlay-text">Cursor scrolls page downward at 120px/s (linear easing) revealing the Quick Actions section</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-message" aria-hidden="true"></i></div><div class="overlay-text">White callout box (280×64px, shadow, arrow pointer) snaps to the "Lapor" button with a spring entrance</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-hash" aria-hidden="true"></i></div><div class="overlay-text">Stat card numbers animate counting up from 0 to final value over 0.5s on scene entry</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-circle" aria-hidden="true"></i></div><div class="overlay-text">Step marker "2" pulse-enters next to the callout box</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 3 -->
+    <div class="scene" id="s2">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" style="background:#111;padding:20px 8px 8px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+              <i class="ti ti-arrow-left" style="font-size:10px;color:#888" aria-hidden="true"></i>
+              <div style="font-size:9px;font-weight:700;color:#fff">Buat Laporan</div>
+            </div>
+            <div style="background:#1e1e1e;border-radius:12px;padding:10px;position:relative">
+              <div style="position:absolute;top:-8px;right:-8px;width:40px;height:40px;border-radius:50%;background:rgba(46,125,50,.15)"></div>
+              <div style="font-size:8px;font-weight:700;color:#fff;margin-bottom:1px">Create Report</div>
+              <div style="font-size:6px;color:#666;margin-bottom:8px">Help the community find their belongings.</div>
+              <div style="display:flex;background:#2a2a2a;border-radius:6px;margin-bottom:8px;overflow:hidden">
+                <div style="flex:1;background:#2e7d32;padding:3px 0;text-align:center;font-size:6px;font-weight:700;color:#fff;border-radius:4px;margin:2px">Found</div>
+                <div style="flex:1;padding:3px 0;text-align:center;font-size:6px;color:#666">Lost</div>
+              </div>
+              <div style="font-size:6px;color:#888;font-weight:700;margin-bottom:2px">ITEM NAME</div>
+              <div style="background:#222;border-radius:6px;padding:4px 6px;margin-bottom:5px;border:1px solid #2e7d32;display:flex;align-items:center">
+                <div class="type-anim" style="font-size:7px;color:#fff;width:80px">Black Eiger Bag</div>
+              </div>
+              <div style="font-size:6px;color:#888;font-weight:700;margin-bottom:2px">LOCATION</div>
+              <div style="background:#222;border-radius:6px;padding:4px 6px;margin-bottom:5px;display:flex;align-items:center;gap:4px">
+                <i class="ti ti-map-pin" style="font-size:8px;color:#2e7d32" aria-hidden="true"></i>
+                <div style="font-size:6px;color:#666">Lab 3, next to window</div>
+              </div>
+              <div style="font-size:6px;color:#888;font-weight:700;margin-bottom:2px">CATEGORY</div>
+              <div style="background:#222;border-radius:6px;padding:4px 6px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:6px;color:#fff">Daily Use</div>
+                <i class="ti ti-chevron-down" style="font-size:8px;color:#666" aria-hidden="true"></i>
+              </div>
+              <div style="background:#1a1a1a;border-radius:6px;height:36px;position:relative;overflow:hidden;margin-bottom:6px;border:1px solid #1e3a1e">
+                <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,#1a2a1a 0px,#1c2c1c 2px,#1a2a1a 4px);opacity:.5"></div>
+                <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);width:8px;height:10px;background:#2e7d32;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;display:flex;align-items:flex-end;justify-content:center"><div style="width:2px;height:3px;background:#1a4a1a;border-radius:0 0 2px 2px"></div></div>
+                <div style="position:absolute;bottom:2px;right:4px;font-size:5px;color:#2e7d32">GPS ✓</div>
+              </div>
+              <div style="position:relative;height:4px;background:#1e1e1e;border-radius:2px;overflow:hidden">
+                <div style="position:absolute;left:0;top:0;bottom:0;background:#2e7d32;border-radius:2px;animation:fillBar 3s linear infinite" id="prog-fill-bar"></div>
+              </div>
+            </div>
+            <div style="background:#2e7d32;border-radius:8px;padding:5px;text-align:center;margin-top:6px"><div style="font-size:7px;font-weight:700;color:#fff">Submit Report</div></div>
+            <div class="step-marker" style="top:42px;right:12px">3</div>
+          </div>
+        </div>
+        <div class="timing-badge">0:16 – 0:26</div>
+      </div>
+      <div class="scene-info">
+        <div class="scene-title">Scene 3 — Report Form</div>
+        <div class="scene-subtitle">The report form auto-fills field by field — item name, location, category. A GPS pin drops onto the Leaflet map. Progress bar fills as each field completes.</div>
+        <div class="text-overlay-box"><p>"Describe your item, pick a category, and pin the location."</p></div>
+        <div class="overlay-list">
+          <h4>Motion overlays</h4>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-cursor-text" aria-hidden="true"></i></div><div class="overlay-text">Cursor clicks each field sequentially — active field gets a green focus ring (border: 1.5px #2e7d32)</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-keyboard" aria-hidden="true"></i></div><div class="overlay-text">Fields auto-fill: "Black Eiger Bag" → "Lab 3" → "Daily Use" → location tap on map</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-map-pin" aria-hidden="true"></i></div><div class="overlay-text">GPS pin animation drops onto map tile with a bounce (spring stiffness 180, damping 12)</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-progress" aria-hidden="true"></i></div><div class="overlay-text">Green progress bar at top of card fills 0%→100% as each required field is completed</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 4 -->
+    <div class="scene" id="s3">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" style="background:#111;padding:20px 8px 8px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div>
+                <div style="font-size:9px;font-weight:700;color:#fff">My Reports</div>
+                <div style="font-size:6px;color:#666">Manage your reported items</div>
+              </div>
+              <div style="background:#2e7d32;border-radius:5px;padding:3px 6px;display:flex;align-items:center;gap:2px"><i class="ti ti-plus" style="font-size:7px;color:#fff" aria-hidden="true"></i><div style="font-size:6px;color:#fff">New</div></div>
+            </div>
+            <div style="background:#1e1e1e;border-radius:10px;padding:8px;margin-bottom:6px;position:relative">
+              <div style="display:flex;gap:6px;align-items:flex-start">
+                <div style="width:44px;height:44px;background:#1a3a1a;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-package" style="font-size:16px;color:#2e7d32" aria-hidden="true"></i></div>
+                <div style="flex:1">
+                  <div style="display:flex;gap:3px;margin-bottom:2px">
+                    <div style="background:#b71c1c;padding:1px 4px;border-radius:3px;font-size:5px;font-weight:700;color:#fff">LOST</div>
+                    <div style="background:#1b5e20;padding:1px 4px;border-radius:3px;font-size:5px;font-weight:700;color:#88d982">TERSEDIA</div>
+                  </div>
+                  <div style="font-size:8px;font-weight:700;color:#fff;margin-bottom:1px">Dompet merek Eiger</div>
+                  <div style="font-size:6px;color:#666;display:flex;align-items:center;gap:2px"><i class="ti ti-map-pin" style="font-size:7px" aria-hidden="true"></i>Lab. PNP · 16 Mei 2026</div>
+                </div>
+                <div style="background:#0d1f0d;border-radius:6px;padding:4px;text-align:center">
+                  <svg width="28" height="28" viewBox="0 0 28 28"><rect x="2" y="2" width="5" height="5" fill="#fff"/><rect x="3" y="3" width="3" height="3" fill="#111"/><rect x="8" y="2" width="2" height="2" fill="#fff"/><rect x="11" y="2" width="2" height="2" fill="#fff"/><rect x="13" y="2" width="5" height="5" fill="#fff"/><rect x="14" y="3" width="3" height="3" fill="#111"/><rect x="2" y="13" width="5" height="5" fill="#fff"/><rect x="3" y="14" width="3" height="3" fill="#111"/><rect x="8" y="13" width="2" height="2" fill="#fff"/><rect x="11" y="14" width="3" height="3" fill="#fff"/><rect x="13" y="13" width="2" height="2" fill="#fff"/><rect x="8" y="7" width="2" height="3" fill="#fff"/><rect x="11" y="8" width="2" height="2" fill="#fff"/></svg>
+                  <div style="font-size:4px;color:#666">OKLB3MCN</div>
+                </div>
+              </div>
+            </div>
+            <div style="padding:0 4px;margin-bottom:4px">
+              <div style="display:flex;align-items:center;gap:3px;margin-bottom:4px"><div style="width:8px;height:8px;border-radius:50%;background:#f9a825;display:flex;align-items:center;justify-content:center"><i class="ti ti-bulb" style="font-size:5px;color:#fff" aria-hidden="true"></i></div><div style="font-size:7px;font-weight:700;color:#fff">Ini Mungkin Barangmu</div></div>
+              <div style="position:relative">
+                <div style="background:#1e1e1e;border-radius:8px;padding:6px;display:flex;gap:4px;align-items:center;margin-bottom:4px">
+                  <div style="width:28px;height:28px;background:#1a2a1a;border-radius:4px;flex-shrink:0"></div>
+                  <div style="flex:1"><div style="font-size:6px;font-weight:700;color:#fff">Dompet Eiger</div><div style="font-size:5px;color:#666">Lab. PNP</div></div>
+                  <div style="background:#2e7d32;padding:1px 5px;border-radius:3px;font-size:5px;color:#fff;font-weight:700;animation:stepPulse .8s ease infinite">COCOK</div>
+                </div>
+                <svg style="position:absolute;left:14px;top:-4px;pointer-events:none" width="4" height="20" viewBox="0 0 4 20"><line x1="2" y1="0" x2="2" y2="20" stroke="#2e7d32" stroke-width="1.5" stroke-dasharray="3 2" class="match-line"/></svg>
+              </div>
+            </div>
+            <div class="step-marker" style="top:42px;right:12px">4</div>
+          </div>
+        </div>
+        <div class="timing-badge">0:26 – 0:36</div>
+      </div>
+      <div class="scene-info">
+        <div class="scene-title">Scene 4 — My Reports + Smart Match</div>
+        <div class="scene-subtitle">The "My Reports" page shows item cards with LOST/FOUND badges. A dashed green marching-ants line connects a lost item to its AI-matched suggestion below.</div>
+        <div class="text-overlay-box"><p>"Our system automatically finds matching items for you."</p></div>
+        <div class="overlay-list">
+          <h4>Motion overlays</h4>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-line" aria-hidden="true"></i></div><div class="overlay-text">Dashed green stroke (2px, marching-ants animation) pulses between the LOST card and matched FOUND card below</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-badge" aria-hidden="true"></i></div><div class="overlay-text">"COCOK" (MATCH) badge on match card has a brief scale bounce on entry (spring, stiffness 180, damping 12)</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-scroll" aria-hidden="true"></i></div><div class="overlay-text">Cursor scrolls through the report list before resting on the match suggestion section</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-qrcode" aria-hidden="true"></i></div><div class="overlay-text">Claim QR code on each card subtly pulses to draw attention</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCENE 5 -->
+    <div class="scene" id="s4">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" style="background:#111;padding:20px 8px 8px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <i class="ti ti-arrow-left" style="font-size:10px;color:#888" aria-hidden="true"></i>
+              <div style="display:flex;gap:3px">
+                <div style="background:#b71c1c;padding:1px 5px;border-radius:3px;font-size:5px;font-weight:700;color:#fff">LOST</div>
+                <div style="background:#1b5e20;padding:1px 5px;border-radius:3px;font-size:5px;font-weight:700;color:#88d982">AVAILABLE</div>
+              </div>
+            </div>
+            <div style="background:#1e1e1e;border-radius:8px;padding:8px;margin-bottom:5px">
+              <div style="background:#0d1a0d;border-radius:6px;height:50px;display:flex;align-items:center;justify-content:center;margin-bottom:5px"><i class="ti ti-package" style="font-size:20px;color:#2e7d32" aria-hidden="true"></i></div>
+              <div style="font-size:8px;font-weight:700;color:#fff;margin-bottom:1px">Dompet merek Eiger</div>
+              <div style="font-size:6px;color:#666;font-style:italic;margin-bottom:5px">"Dompet, Hitam, Eiger, Kehilangan di Lab pnp"</div>
+              <div style="background:#141414;border-radius:6px;padding:6px;margin-bottom:5px">
+                <div style="font-size:6px;color:#888;margin-bottom:3px">Chat with Finder</div>
+                <div style="background:#0d2a0d;border-radius:4px;padding:3px 5px;margin-bottom:2px;align-self:flex-end;margin-left:auto;width:fit-content;max-width:80%"><div style="font-size:6px;color:#88d982">Is this my bag?</div></div>
+                <div style="background:#1e1e1e;border-radius:4px;padding:3px 5px;margin-bottom:3px;width:fit-content;max-width:80%"><div class="pulse-dot" style="font-size:6px;color:#888">● ● ●</div></div>
+                <div style="display:flex;gap:3px;margin-top:3px">
+                  <div style="flex:1;background:#222;border-radius:4px;padding:3px 5px;font-size:6px;color:#444">Type a message...</div>
+                  <div style="background:#2e7d32;border-radius:4px;padding:3px 5px"><i class="ti ti-send" style="font-size:7px;color:#fff" aria-hidden="true"></i></div>
+                </div>
+              </div>
+            </div>
+            <div style="position:relative">
+              <div style="background:#2e7d32;border-radius:8px;padding:6px;text-align:center;cursor:pointer" id="claim-btn">
+                <div style="font-size:7px;font-weight:700;color:#fff">Claim This Item</div>
+              </div>
+              <div id="burst-container" style="position:absolute;top:50%;left:50%;pointer-events:none;display:none"></div>
+            </div>
+            <div class="step-marker" style="top:42px;right:12px">5</div>
+          </div>
+        </div>
+        <div class="timing-badge">0:36 – 0:45</div>
+      </div>
+      <div class="scene-info">
+        <div class="scene-title">Scene 5 — Chat, Claim & Verify</div>
+        <div class="scene-subtitle">Chat bubbles animate in. The cursor clicks "Claim This Item" — a checkmark bursts with 30 leaf-shaped green particles scattering outward.</div>
+        <div class="text-overlay-box"><p>"Chat with the finder, claim your item, and get reunited."</p></div>
+        <div class="overlay-list">
+          <h4>Motion overlays</h4>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-message-dots" aria-hidden="true"></i></div><div class="overlay-text">Chat bubble enters with spring scale (0→100%, damping 10) — typing dots pulse before response appears</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-check" aria-hidden="true"></i></div><div class="overlay-text">Cursor clicks green "Claim" button — a checkmark bursts from center with 30 leaf particles (#88d982, 0.8s lifetime)</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-leaf" aria-hidden="true"></i></div><div class="overlay-text">Particles scatter outward in all directions, fading from #88d982 to transparent over 0.8s</div></div>
+        </div>
+        <button class="nav-btn primary" onclick="triggerBurst()" style="margin-top:.5rem">Preview particle burst ✦</button>
+      </div>
+    </div>
+
+    <!-- SCENE 6 CLOSING -->
+    <div class="scene" id="s5">
+      <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" style="background:#111;display:flex;align-items:center;justify-content:center">
+            <div class="closing-logo" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px">
+              <div style="width:44px;height:44px;border-radius:14px;background:#2e7d32;display:flex;align-items:center;justify-content:center;animation:stepPulse 2s ease infinite"><i class="ti ti-qrcode" style="font-size:22px;color:#fff" aria-hidden="true"></i></div>
+              <div style="font-size:16px;font-weight:700;color:#fff;letter-spacing:.02em">QReturn</div>
+              <div style="font-size:7px;color:#2e7d32;font-style:italic;overflow:hidden;white-space:nowrap" id="url-type"></div>
+              <div style="background:#2e7d32;border-radius:20px;padding:5px 14px;margin-top:4px;animation:stepPulse 1.5s ease infinite"><div style="font-size:7px;font-weight:700;color:#fff">Get Started →</div></div>
+              <div id="float-particles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+            </div>
+          </div>
+        </div>
+        <div class="timing-badge">0:45 — Closing</div>
+      </div>
+      <div class="scene-info">
+        <div class="scene-title">Closing Frame</div>
+        <div class="scene-subtitle">Phone mockup fades out. QReturn logo centers on screen. URL types out character by character. Soft green particles drift in the background.</div>
+        <div class="text-overlay-box"><p>"QReturn. Find what's yours." <span style="color:#2e7d32;font-style:normal">— optional VO</span></p></div>
+        <div class="overlay-list">
+          <h4>Motion overlays</h4>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-leaf" aria-hidden="true"></i></div><div class="overlay-text">Floating green leaf particles (#88d982) drift slowly upward across the #fcf9f8 background</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-cursor-text" aria-hidden="true"></i></div><div class="overlay-text">URL "qreturn.app" types out character by character at ~12 chars/sec</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-brand-google-play" aria-hidden="true"></i></div><div class="overlay-text">Pill CTA button pulses scale 100%→105% ping-pong, inviting tap</div></div>
+          <div class="overlay-item"><div class="overlay-icon"><i class="ti ti-sparkles" aria-hidden="true"></i></div><div class="overlay-text">QReturn icon fade-in with scale from 0.9→1.0 on a 1s ease curve</div></div>
+        </div>
+        <div style="margin-top:1rem;padding:12px;background:var(--color-background-secondary);border-radius:8px;border:0.5px solid var(--color-border-tertiary)">
+          <div style="font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px">Spec summary</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;color:var(--color-text-secondary)">
+            <div>Format: 1080×1920 vertical</div><div>Duration: :45s main / :30s cutdown</div>
+            <div>FPS: 30fps, H.264 15Mbps</div><div>Motion blur: 180° shutter</div>
+            <div>Primary: #2e7d32</div><div>Light: #88d982</div>
+            <div>BG: #fcf9f8</div><div>Font: Inter Bold / Regular</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem">
+    <button class="nav-btn" onclick="prev()" id="prev-btn" disabled><i class="ti ti-arrow-left" aria-hidden="true"></i> Prev</button>
+    <div style="font-size:13px;color:var(--color-text-secondary)" id="scene-counter">Scene 1 of 6</div>
+    <button class="nav-btn primary" onclick="next()" id="next-btn">Next <i class="ti ti-arrow-right" aria-hidden="true"></i></button>
+  </div>
+</div>
+
+<style>
+@keyframes fillBar{0%{width:0%}100%{width:100%}}
+</style>
+
+<script>
+let cur=0;
+const total=6;
+function goTo(n){
+  document.getElementById('s'+cur).classList.remove('active');
+  document.querySelectorAll('.prog-dot').forEach((d,i)=>{
+    d.classList.remove('active','done');
+    if(i<n)d.classList.add('done');
+    else if(i===n)d.classList.add('active');
+  });
+  cur=n;
+  document.getElementById('s'+cur).classList.add('active');
+  document.getElementById('prog-fill').style.width=(n/(total-1)*100)+'%';
+  document.getElementById('prev-btn').disabled=cur===0;
+  document.getElementById('next-btn').disabled=cur===total-1;
+  document.getElementById('scene-counter').textContent='Scene '+(cur+1)+' of '+total;
+  if(cur===5)startURLType();
+}
+function next(){if(cur<total-1)goTo(cur+1);}
+function prev(){if(cur>0)goTo(cur-1);}
+
+function startURLType(){
+  const el=document.getElementById('url-type');
+  const url='qreturn.app';
+  let i=0;el.textContent='';
+  const iv=setInterval(()=>{
+    if(i<url.length){el.textContent+=url[i];i++;}
+    else{clearInterval(iv);setTimeout(()=>startURLType(),2000);}
+  },100);
+}
+
+function triggerBurst(){
+  const c=document.getElementById('burst-container');
+  c.style.display='block';
+  c.innerHTML='';
+  for(let i=0;i<28;i++){
+    const p=document.createElement('div');
+    const angle=Math.random()*360;
+    const dist=30+Math.random()*50;
+    const tx=Math.cos(angle*Math.PI/180)*dist+'px';
+    const ty=Math.sin(angle*Math.PI/180)*dist+'px';
+    const d=(0.4+Math.random()*0.5)+'s';
+    p.style.cssText=`position:absolute;width:5px;height:3px;border-radius:50%;background:#88d982;--tx:${tx};--ty:${ty};--d:${d};animation:scatter ${d} ease-out forwards;top:-2px;left:-3px;`;
+    c.appendChild(p);
+  }
+  const check=document.createElement('div');
+  check.style.cssText='position:absolute;top:-10px;left:-10px;width:20px;height:20px;border-radius:50%;background:#2e7d32;display:flex;align-items:center;justify-content:center;animation:stepPulse .5s ease 2;';
+  check.innerHTML='<i class="ti ti-check" style="font-size:10px;color:#fff"></i>';
+  c.appendChild(check);
+  setTimeout(()=>{c.style.display='none';c.innerHTML='';},1200);
+}
+</script>

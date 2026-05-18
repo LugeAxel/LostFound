@@ -37,6 +37,10 @@ const fetchItem = async () => {
     const res = await axios.get(`${API_URL}/api/items/${itemId.value}`, { headers: await getAuthHeaders() });
     item.value = res.data;
     
+    if (!item.value.messages) {
+      item.value.messages = [];
+    }
+    
     // Set loading to false so the v-else-if="item" block (with map container) renders
     isLoading.value = false;
     
@@ -81,7 +85,7 @@ const initSocket = () => {
     });
 
     socket.on('new-message', (data: any) => {
-      if (data.itemId === itemId.value && item.value) {
+      if (data.itemId === itemId.value && item.value?.messages) {
         const exists = item.value.messages.some((m: any) => m.id === data.message.id);
         if (!exists) {
           item.value.messages.push(data.message);
@@ -128,7 +132,7 @@ const sendMessage = async () => {
   isSending.value = true;
   try {
     const res = await axios.post(`${API_URL}/api/items/${itemId.value}/chat`, { text: newMessage.value }, { headers: await getAuthHeaders() });
-    if (res.data.messages?.[0]) {
+    if (res.data.messages?.[0] && item.value?.messages) {
       const exists = item.value.messages.some((m: any) => m.id === res.data.messages[0].id);
       if (!exists) item.value.messages.push(res.data.messages[0]);
     }
@@ -224,7 +228,10 @@ const initMap = async () => {
 };
 
 const formatDate = (date: string) => {
-  return new Date(date).toLocaleDateString('id-ID', { 
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('id-ID', { 
     day: 'numeric', 
     month: 'long', 
     year: 'numeric',
@@ -374,7 +381,7 @@ const copyGps = async (lat: number, lng: number) => {
                   msg.sender === currentUser.id ? 'bg-[#387b41] text-white rounded-tr-none' : 'bg-[#f3f5f2] dark:bg-[#2a2a2a] text-[#1c1b1b] dark:text-[#f3f4f6] rounded-tl-none']">
                   {{ msg.text }}
                 </div>
-                <span class="text-[8px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ formatDate(msg.created_at) }}</span>
+                <span class="text-[8px] text-[#40493d] dark:text-[#9ca3af] mt-1">{{ formatDate(msg.timestamp) }}</span>
               </div>
               <div v-if="!item.messages?.length" class="h-full flex items-center justify-center text-[#40493d] dark:text-[#9ca3af]/40 text-xs italic">
                 {{ t('detail.no_messages') }}

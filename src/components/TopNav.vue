@@ -14,6 +14,7 @@ const router = useRouter();
 const route = useRoute();
 const { t, locale, toggleLocale } = useI18n();
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
+const loadingProfile = ref(true);
 const showDropdown = ref(false);
 const showProfileDropdown = ref(false);
 const searchQuery = ref((route.query.q as string) || '');
@@ -84,6 +85,22 @@ onMounted(async () => {
   if (session) {
     fetchNotifications();
     subscribeToNotifications(session.user.id);
+
+    try {
+      const res = await axios.get(`${API_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+      if (res.data.success) {
+        user.value = res.data.user;
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      loadingProfile.value = false;
+    }
+  } else {
+    loadingProfile.value = false;
   }
 
   socket = io(SOCKET_URL, {
@@ -175,8 +192,14 @@ onBeforeUnmount(() => {
               <span class="text-[#387b41] dark:text-[#88d982] font-bold text-base md:text-lg">{{ (user.nama || 'S').charAt(0) }}</span>
             </div>
             <div class="text-left hidden lg:block">
-              <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] dark:text-white">{{ user.nama || t('topnav.student') }}</p>
-              <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 font-medium">{{ user.nisn ? `${t('topnav.student')} (${user.nisn})` : user.email || t('topnav.student') }}</p>
+              <div v-if="loadingProfile" class="animate-pulse space-y-1">
+                <div class="h-4 w-24 bg-gray-200 dark:bg-[#374151] rounded"></div>
+                <div class="h-3 w-36 bg-gray-200 dark:bg-[#374151] rounded"></div>
+              </div>
+              <template v-else>
+                <p class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] dark:text-white">{{ user.nama || t('topnav.student') }}</p>
+                <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 font-medium">{{ user.nisn ? `${t('topnav.student')} (${user.nisn})` : user.email || t('topnav.student') }}</p>
+              </template>
             </div>
             <span class="material-symbols-outlined text-[#40493d] dark:text-[#9ca3af] ml-1">expand_more</span>
           </button>
@@ -184,8 +207,11 @@ onBeforeUnmount(() => {
           <!-- Profile Dropdown -->
           <div v-if="showProfileDropdown" class="absolute right-0 mt-3 w-56 bg-white dark:bg-[#1e1e1e] rounded-2xl shadow-2xl border border-[#e0e4df] dark:border-[#374151] overflow-hidden z-40">
             <div class="p-4 border-b border-[#e0e4df] dark:border-[#374151] bg-[#f8faf7] dark:bg-[#121212] lg:hidden">
-              <h4 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">{{ user.nama || t('topnav.student') }}</h4>
-              <p class="text-xs text-[#40493d] dark:text-[#9ca3af]">{{ user.nisn ? `${t('topnav.student')} (${user.nisn})` : user.email }}</p>
+              <h4 v-if="loadingProfile" class="animate-pulse h-4 w-24 bg-gray-200 dark:bg-[#374151] rounded"></h4>
+              <template v-else>
+                <h4 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">{{ user.nama || t('topnav.student') }}</h4>
+                <p class="text-xs text-[#40493d] dark:text-[#9ca3af]">{{ user.nisn ? `${t('topnav.student')} (${user.nisn})` : user.email }}</p>
+              </template>
             </div>
             <div class="p-2 flex flex-col gap-1">
               <button @click="toggleLocale" class="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] transition-all text-sm font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">

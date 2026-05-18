@@ -10,6 +10,7 @@ import { API_URL } from '@/config/api';
 import { useI18n } from '../i18n';
 import { getAuthHeaders } from '../composables/useAuth';
 import { supabase } from '../lib/supabase';
+import { useDebounce } from '../composables/useDebounce';
 
 const router = useRouter();
 const route = useRoute();
@@ -66,6 +67,8 @@ const fetchItems = async () => {
   }
 };
 
+const { debounced: debouncedFetch, cancel: cancelFetch } = useDebounce(fetchItems, 300);
+
 const goToPage = (page: number) => {
   if (page < 1 || page > totalPages.value) return;
   currentPage.value = page;
@@ -77,16 +80,6 @@ const handleSearch = () => {
   currentPage.value = 1;
   fetchItems();
 };
-
-const filteredItems = computed(() => {
-  const q = searchInput.value.toLowerCase().trim();
-  if (!q) return items.value;
-  return items.value.filter(item =>
-    item.name.toLowerCase().includes(q) ||
-    (item.description && item.description.toLowerCase().includes(q)) ||
-    (item.location && item.location.toLowerCase().includes(q))
-  );
-});
 
 const pageNumbers = computed(() => {
   const pages: number[] = [];
@@ -140,30 +133,30 @@ watch(() => route.query, (newQuery) => {
 
       <div class="flex items-center justify-between mb-6">
         <div class="flex gap-2">
-          <button @click="filterType = 'all'"
+          <button @click="filterType = 'all'; handleSearch()"
             :class="['px-5 py-2 rounded-xl text-xs font-bold transition-all', filterType === 'all' ? 'bg-[#387b41] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#387b41]']">
             {{ t('search.all') }}
           </button>
-          <button @click="filterType = 'lost'"
+          <button @click="filterType = 'lost'; handleSearch()"
             :class="['px-5 py-2 rounded-xl text-xs font-bold transition-all', filterType === 'lost' ? 'bg-[#ba1a1a] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#ba1a1a]']">
             {{ t('search.lost') }}
           </button>
-          <button @click="filterType = 'found'"
+          <button @click="filterType = 'found'; handleSearch()"
             :class="['px-5 py-2 rounded-xl text-xs font-bold transition-all', filterType === 'found' ? 'bg-[#1b6d24] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#387b41]']">
             {{ t('search.found') }}
           </button>
         </div>
         <span v-if="!isLoading" class="text-xs text-[#40493d] dark:text-[#9ca3af] font-medium">
-          {{ t('search.result_count') }} {{ filteredItems.length }} {{ t('search.results') }}
+          {{ t('search.result_count') }} {{ items.length }} {{ t('search.results') }}
         </span>
       </div>
 
       <div class="flex gap-2 mb-3 flex-wrap">
-        <button @click="filterCategory = 'all'; handleSearch()"
+        <button @click="filterCategory = 'all'; currentPage = 1; debouncedFetch()"
           :class="['px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all', filterCategory === 'all' ? 'bg-[#387b41] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#387b41]']">
           {{ t('search.all_categories') }}
         </button>
-        <button v-for="cat in categories" :key="cat" @click="filterCategory = cat; handleSearch()"
+        <button v-for="cat in categories" :key="cat" @click="filterCategory = cat; currentPage = 1; debouncedFetch()"
           :class="['px-4 py-1.5 rounded-lg text-[10px] font-bold transition-all', filterCategory === cat ? 'bg-[#387b41] text-white shadow-sm' : 'bg-white dark:bg-[#1e1e1e] text-[#40493d] dark:text-[#9ca3af] border border-[#e0e4df] dark:border-[#374151] hover:border-[#387b41]']">
           {{ t(`card.category.${cat}`) }}
         </button>
@@ -172,7 +165,7 @@ watch(() => route.query, (newQuery) => {
       <div class="flex gap-2 mb-6 flex-wrap items-center">
         <div class="relative sm:w-auto min-w-[220px] w-fit">
           <span class="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-slate-700 dark:text-[#9ca3af] text-lg pointer-events-none">business</span>
-          <select v-model="filterAreaCategory" @change="handleSearch"
+          <select v-model="filterAreaCategory" @change="currentPage = 1; debouncedFetch()"
             class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-3 pl-13 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-xs font-medium appearance-none cursor-pointer">
             <option value="all">All Areas</option>
             <option v-for="area in areaCategories" :key="area" :value="area">{{ t('area.' + area) }}</option>
@@ -185,7 +178,7 @@ watch(() => route.query, (newQuery) => {
         <div class="w-10 h-10 border-4 border-[#387b41]/20 border-t-[#387b41] rounded-full animate-spin"></div>
       </div>
 
-      <div v-else-if="filteredItems.length === 0" class="text-center py-32 bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
+      <div v-else-if="items.length === 0" class="text-center py-32 bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
         <span class="material-symbols-outlined text-7xl text-[#40493d] dark:text-[#9ca3af]/10 mb-6">search</span>
         <h3 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2">{{ t('search.no_results') }}</h3>
         <p class="text-[#40493d] dark:text-[#9ca3af] max-w-xs mx-auto text-sm">{{ t('search.no_results_sub') }}</p>
@@ -193,7 +186,7 @@ watch(() => route.query, (newQuery) => {
 
       <div v-else>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 mb-10">
-          <ItemCard v-for="item in filteredItems" :key="item.id" :item="item" />
+          <ItemCard v-for="item in items" :key="item.id" :item="item" />
         </div>
 
         <div v-if="totalPages > 1" class="flex items-center justify-center gap-2 py-6">

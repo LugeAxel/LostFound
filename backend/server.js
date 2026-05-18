@@ -3,7 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { body, param, validationResult } = require('express-validator');
-require('dotenv').config({ path: '../.env' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const cron = require('node-cron');
 const cloudinary = require('./config/cloudinary');
 const { cache, invalidateCache } = require('./middleware/cache');
@@ -12,6 +13,70 @@ const http = require('http');
 const { Server } = require('socket.io');
 const { supabase } = require('./lib/supabase');
 const crypto = require('crypto');
+
+// ── STRUCTURED LOGGER ─────────────────────────
+const LOG_LEVELS = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
+const CURRENT_LOG_LEVEL = LOG_LEVELS[process.env.LOG_LEVEL] || LOG_LEVELS.INFO;
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function timestamp() {
+    const d = new Date();
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${String(d.getUTCMilliseconds()).padStart(3,'0')}Z`;
+}
+
+const logger = {
+    _log(level, label, msg, meta) {
+        if (LOG_LEVELS[level] < CURRENT_LOG_LEVEL) return;
+        const metaStr = meta && Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+        const out = level === 'ERROR' || level === 'WARN' ? process.stderr : process.stdout;
+        out.write(`[${timestamp()}] [${label}] ${msg}${metaStr}\n`);
+    },
+    info(msg, meta)  { this._log('INFO', 'INFO', msg, meta); },
+    warn(msg, meta)  { this._log('WARN', 'WARN', msg, meta); },
+    error(msg, meta) { this._log('ERROR', 'ERR', msg, meta); },
+    debug(msg, meta) { this._log('DEBUG', 'DBG', msg, meta); },
+
+    request(req, msg, data) {
+        const meta = { ...data, requestId: req.requestId, userId: req.user?.id, method: req.method, path: req.originalUrl };
+        this.info(msg, meta);
+    },
+    response(req, res, durationMs) {
+        const meta = { requestId: req.requestId, userId: req.user?.id, statusCode: res.statusCode, durationMs };
+        const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+        this[level](`${req.method} ${req.originalUrl} → ${res.statusCode}`, meta);
+    }
+};
+
+// Attach requestId to every request
+function attachRequestId(req, res, next) {
+    req.requestId = crypto.randomUUID().slice(0, 8);
+    req._startTime = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - req._startTime;
+        if (req.originalUrl !== '/api/health') {
+            logger.response(req, res, duration);
+        }
+    });
+    next();
+}
+
+const ERROR_CODES = {
+    VALIDATION: 'VALIDATION_ERROR',
+    NOT_FOUND: 'NOT_FOUND',
+    FORBIDDEN: 'FORBIDDEN',
+    UNAUTHORIZED: 'UNAUTHORIZED',
+    CONFLICT: 'CONFLICT',
+    FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+    UPLOAD_FAILED: 'UPLOAD_FAILED',
+    INTERNAL: 'INTERNAL_ERROR',
+    BAD_REQUEST: 'BAD_REQUEST',
+};
+
+function sendError(res, status, message, code = ERROR_CODES.BAD_REQUEST, details = null) {
+    const body = { success: false, message, code };
+    if (details) body.details = details;
+    return res.status(status).json(body);
+}
 
 function extractCloudinaryPublicId(url) {
     if (!url || !url.includes('cloudinary')) return null;
@@ -29,7 +94,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    console.error('❌ FATAL: SUPABASE_URL or SUPABASE_ANON_KEY is not set in .env');
+    logger.error('FATAL: SUPABASE_URL or SUPABASE_ANON_KEY is not set in .env');
     process.exit(1);
 }
 
@@ -47,7 +112,7 @@ const allowedOrigins = [
         'http://localhost:5173',
         'http://localhost:5174',
         'http://localhost:4173',
-        process.env.FRONTEND_URL,
+        process.env.FRONTEND_URL ? process.env.FRONTEND_URL.replace(/\/$/, '') : null,
     ]),
     process.env.FRONTEND_URL
 ].filter(Boolean);
@@ -60,13 +125,14 @@ app.use(cors({
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
-        console.warn(`❌ Blocked by CORS: ${origin}`);
+        logger.warn(`Blocked by CORS: ${origin}`);
         return callback(new Error('Not allowed by CORS'));
     },
     credentials: true
 }));
 
 app.use(express.json({ limit: '5mb' }));
+app.use(attachRequestId);
 
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -101,19 +167,23 @@ const authMiddleware = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({
-                success: false,
-                message: 'Access denied. No token provided.'
-            });
+            logger.warn('Auth: no token provided', { requestId: req.requestId });
+            return sendError(res, 401, 'Access denied. No token provided.', ERROR_CODES.UNAUTHORIZED);
         }
 
         const token = authHeader.split(' ')[1];
         const { data: { user }, error } = await supabase.auth.getUser(token);
 
         if (error || !user) {
-            return res.status(401).json({
+            logger.warn('Auth: invalid or expired token', { requestId: req.requestId });
+            return sendError(res, 401, 'Invalid or expired token.', ERROR_CODES.UNAUTHORIZED);
+        }
+
+        if (!user.email_confirmed_at) {
+            return res.status(403).json({
                 success: false,
-                message: 'Invalid or expired token.'
+                message: 'Email not verified. Please check your inbox.',
+                email_verified: false
             });
         }
 
@@ -124,20 +194,16 @@ const authMiddleware = async (req, res, next) => {
             .single();
 
         if (profileError || !profile) {
-            return res.status(401).json({
-                success: false,
-                message: 'User profile not found.'
-            });
+            logger.warn('Auth: profile not found', { requestId: req.requestId, userId: user.id });
+            return sendError(res, 401, 'User profile not found.', ERROR_CODES.UNAUTHORIZED);
         }
 
         req.user = profile;
         req.supabaseUser = user;
         next();
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: 'Authentication error.'
-        });
+        logger.error('Auth middleware error', { requestId: req.requestId, error: error.message });
+        return sendError(res, 500, 'Authentication error.', ERROR_CODES.INTERNAL);
     }
 };
 
@@ -152,6 +218,11 @@ const handleValidationErrors = (req, res, next) => {
     }
     next();
 };
+
+function sanitizeHtml(str) {
+    if (typeof str !== 'string') return str;
+    return str.replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 // Haversine distance in meters
 function haversineDistance(lat1, lng1, lat2, lng2) {
@@ -363,7 +434,7 @@ app.post('/api/login',
     handleValidationErrors,
     async (req, res) => {
         const maskedNisn = req.body.nisn ? req.body.nisn.slice(0, -4) + '****' : '(none)';
-        console.log('📥 QR Login request for NISN:', maskedNisn);
+        logger.request(req, 'QR Login request', { nisn: maskedNisn });
 
         try {
             const { nisn, nama, nis, jurusan, ttl, agama, gender } = req.body;
@@ -375,9 +446,9 @@ app.post('/api/login',
                 .single();
 
             if (!profile) {
-                console.log('✨ New student detected, creating profile...');
+                logger.request(req, 'New student detected, creating profile', { nisn: maskedNisn });
                 const email = `nisn_${nisn}@qreturn.local`;
-                const password = `qr_${nisn}_${Date.now()}`;
+                const password = crypto.randomBytes(32).toString('hex');
 
                 const { data: authData, error: authError } = await supabase.auth.admin.createUser({
                     email,
@@ -387,16 +458,16 @@ app.post('/api/login',
                 });
 
                 if (authError) {
-                    console.error('Auth creation error:', authError.message);
-                    return res.status(500).json({ success: false, message: 'Failed to create user.' });
+                    logger.error('Auth creation error', { requestId: req.requestId, error: authError.message, nisn: maskedNisn });
+                    return sendError(res, 500, 'Failed to create user.', ERROR_CODES.INTERNAL);
                 }
 
                 profile = authData.user;
                 profile.qr_password = password;
             } else {
-                console.log('👋 Welcome back,', profile.nama);
+                logger.request(req, 'Welcome back', { nama: profile.nama, nisn: maskedNisn });
                 const { data: authUser } = await supabase.auth.admin.getUserById(profile.id);
-                profile.qr_password = authUser?.user?.user_metadata?.qr_password || `qr_${nisn}_${new Date(profile.created_at).getTime()}`;
+                profile.qr_password = authUser?.user?.user_metadata?.qr_password || crypto.randomBytes(32).toString('hex');
             }
 
             const email = `nisn_${nisn}@qreturn.local`;
@@ -408,8 +479,8 @@ app.post('/api/login',
             });
 
             if (sessionError) {
-                console.error('Session error, resetting password:', sessionError.message);
-                const newPassword = `qr_${nisn}_${Date.now()}`;
+                logger.error('Session error, resetting password', { requestId: req.requestId, error: sessionError.message, nisn: maskedNisn });
+                const newPassword = crypto.randomBytes(32).toString('hex');
                 await supabase.auth.admin.updateUserById(profile.id, {
                     password: newPassword,
                     user_metadata: { qr_password: newPassword }
@@ -421,8 +492,8 @@ app.post('/api/login',
                 });
 
                 if (newSessionError) {
-                    console.error('Failed to login after password reset:', newSessionError.message);
-                    return res.status(500).json({ success: false, message: 'Failed to authenticate user.' });
+                    logger.error('Failed to login after password reset', { requestId: req.requestId, error: newSessionError.message, nisn: maskedNisn });
+                    return sendError(res, 500, 'Failed to authenticate user.', ERROR_CODES.INTERNAL);
                 }
 
                 res.json({
@@ -457,8 +528,8 @@ app.post('/api/login',
                 }
             });
         } catch (error) {
-            console.error('🔥 QR Login Error:', error.message);
-            res.status(500).json({ success: false, message: 'Server error during login.' });
+            logger.error('QR Login error', { requestId: req.requestId, error: error.message, stack: error.stack });
+            sendError(res, 500, 'Server error during login.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -495,35 +566,31 @@ app.post('/api/auth/register-email',
                 email,
                 password,
                 options: {
-                    data: { nama }
+                    data: { nama },
+                    emailRedirectTo: `${process.env.FRONTEND_URL}/verify-email`
                 }
             });
 
             if (authError) {
-                console.error('🔥 Email Register Error:', authError.message);
-                return res.status(500).json({ success: false, message: 'Server error during registration.' });
+                logger.error('Email register error', { requestId: req.requestId, error: authError.message });
+                return sendError(res, 500, 'Server error during registration.', ERROR_CODES.INTERNAL);
             }
 
-            const token = authData.session?.access_token;
-
-            console.log('✨ New email user registered:', email?.split('@')[0] + '@***');
+            logger.info('New email user registered', { email: email?.split('@')[0] + '@***' });
 
             res.status(201).json({
                 success: true,
-                token,
+                message: 'Account created! Please check your email to verify.',
+                requiresVerification: true,
                 user: {
                     id: authData.user?.id,
-                    nama: authData.user?.user_metadata?.nama || nama,
-                    nisn: authData.user?.user_metadata?.nisn || null,
-                    nis: authData.user?.user_metadata?.nis || null,
-                    jurusan: authData.user?.user_metadata?.jurusan || null,
-                    role: authData.user?.user_metadata?.role || 'student',
-                    email: authData.user?.email
+                    email: authData.user?.email,
+                    email_confirmed_at: authData.user?.email_confirmed_at || null
                 }
             });
         } catch (error) {
-            console.error('🔥 Email Register Error:', error.message);
-            res.status(500).json({ success: false, message: 'Server error during registration.' });
+            logger.error('Email register error', { requestId: req.requestId, error: error.message, stack: error.stack });
+            sendError(res, 500, 'Server error during registration.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -552,13 +619,24 @@ app.post('/api/auth/login-email',
                 });
             }
 
+            const emailConfirmed = !!authData.user?.email_confirmed_at;
+
+            if (!emailConfirmed) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Email not verified. Please check your inbox.',
+                    email_verified: false,
+                    email: email
+                });
+            }
+
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', authData.user.id)
                 .single();
 
-            console.log('👋 Email login:', email?.split('@')[0] + '@***');
+            logger.info('Email login', { email: email?.split('@')[0] + '@***' });
 
             res.json({
                 success: true,
@@ -570,12 +648,13 @@ app.post('/api/auth/login-email',
                     nis: profile?.nis || null,
                     jurusan: profile?.jurusan || null,
                     role: profile?.role,
-                    email: profile?.email
+                    email: profile?.email,
+                    email_verified: emailConfirmed
                 }
             });
         } catch (error) {
-            console.error('🔥 Email Login Error:', error.message);
-            res.status(500).json({ success: false, message: 'Server error during login.' });
+            logger.error('Email login error', { requestId: req.requestId, error: error.message, stack: error.stack });
+            sendError(res, 500, 'Server error during login.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -591,9 +670,34 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
             nis: req.user.nis || null,
             jurusan: req.user.jurusan || null,
             role: req.user.role,
-            email: req.user.email || null
+            email: req.user.email || null,
+            email_verified: !!req.supabaseUser?.email_confirmed_at
         }
     });
+});
+
+// Resend email verification
+app.post('/api/auth/resend-verification', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required' });
+        }
+
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email
+        });
+
+        if (error) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
+
+        res.json({ success: true, message: 'Verification email sent' });
+    } catch (error) {
+        logger.error('Resend verification error', { requestId: req.requestId, error: error.message });
+        sendError(res, 500, 'Failed to resend verification email.', ERROR_CODES.INTERNAL);
+    }
 });
 
 // ── ITEM ROUTES (all protected) ──────────────
@@ -635,6 +739,11 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
             query = query.eq('type', req.query.type);
         }
 
+        if (req.query.q) {
+            const q = req.query.q.trim();
+            query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%,location.ilike.%${q}%`);
+        }
+
         const { data: items, error, count } = await query;
 
         if (error) throw error;
@@ -646,8 +755,8 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
             totalItems: count
         });
     } catch (error) {
-        console.error('Error fetching items:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch items.' });
+        logger.error('Error fetching items', { requestId: req.requestId, error: error.message });
+        sendError(res, 500, 'Failed to fetch items.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -669,8 +778,8 @@ app.get('/api/items/mine', authMiddleware, async (req, res) => {
 
         res.json(items);
     } catch (error) {
-        console.error('Error fetching my items:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch your reports.' });
+        logger.error('Error fetching my items', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to fetch your reports.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -699,8 +808,8 @@ app.get('/api/items/claim-code/:code', authMiddleware, async (req, res) => {
 
         res.json(item);
     } catch (error) {
-        console.error('Error fetching item by claim code:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch item.' });
+        logger.error('Error fetching item by claim code', { requestId: req.requestId, code: req.params.code, error: error.message });
+        sendError(res, 500, 'Failed to fetch item.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -724,8 +833,8 @@ app.get('/api/items/matches/:id', authMiddleware, async (req, res) => {
         const matches = await findMatchingItems(lostItem, 'found', 5);
         res.json(matches);
     } catch (error) {
-        console.error('Error fetching matches:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch matches.' });
+        logger.error('Error fetching matches', { requestId: req.requestId, itemId: req.params.id, error: error.message });
+        sendError(res, 500, 'Failed to fetch matches.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -758,8 +867,8 @@ app.get('/api/items/recommendations', authMiddleware, async (req, res) => {
 
         res.json(allMatches.slice(0, 24));
     } catch (error) {
-        console.error('Error fetching recommendations:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch recommendations.' });
+        logger.error('Error fetching recommendations', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to fetch recommendations.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -772,7 +881,8 @@ app.get('/api/items/:id', authMiddleware, async (req, res) => {
                 *,
                 reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
                 claimer:profiles!items_claimer_fkey(id, nama),
-                complaints(*, user:profiles!complaints_user_id_fkey(nama, id))
+                complaints(*, user:profiles!complaints_user_id_fkey(nama, id)),
+                messages(*)
             `)
             .eq('id', req.params.id)
             .single();
@@ -783,8 +893,8 @@ app.get('/api/items/:id', authMiddleware, async (req, res) => {
 
         res.json(item);
     } catch (error) {
-        console.error('Error fetching item:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch item.' });
+        logger.error('Error fetching item', { requestId: req.requestId, itemId: req.params.id, error: error.message });
+        sendError(res, 500, 'Failed to fetch item.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -825,7 +935,7 @@ app.post('/api/items',
                 try {
                     coordinates = typeof req.body.coordinates === 'string' ? JSON.parse(req.body.coordinates) : req.body.coordinates;
                 } catch (e) {
-                    console.error('Failed to parse coordinates');
+                    logger.warn('Failed to parse coordinates', { requestId: req.requestId });
                 }
             }
 
@@ -924,7 +1034,7 @@ app.post('/api/items',
                                 user_id: newItem.reporter,
                                 type: 'suggestion',
                                 item_id: bestMatch.id,
-                                text: `This might be your item: ${bestMatch.name}`
+                                text: `This might be your item: ${sanitizeHtml(bestMatch.name)}`
                             });
                     }
 
@@ -939,20 +1049,20 @@ app.post('/api/items',
                                         user_id: fi.reporter,
                                         type: 'suggestion',
                                         item_id: newItem.id,
-                                        text: `We found a possible match: ${newItem.name}`
+                                        text: `We found a possible match: ${sanitizeHtml(newItem.name)}`
                                     });
                             }
                         }
                     }
                 }
             } catch (matchError) {
-                console.error('Error finding matches:', matchError.message);
+                logger.error('Error finding matches for new item', { requestId: req.requestId, itemId: newItem.id, error: matchError.message });
             }
 
             res.status(201).json({ success: true, item: newItem });
         } catch (error) {
-            console.error('Error creating item:', error.message);
-            res.status(500).json({ success: false, message: 'Failed to create report.' });
+            logger.error('Error creating item', { requestId: req.requestId, error: error.message, stack: error.stack });
+            sendError(res, 500, 'Failed to create report.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -1016,19 +1126,47 @@ app.put('/api/items/:id',
                 }
             }
 
+            // Detect when a file was expected but multer didn't parse one
+            const isMultipart = req.headers['content-type']?.includes('multipart/form-data');
+            if (isMultipart && !req.file && !req.body.imageUrl) {
+                logger.warn('Edit item: multipart request but no file received', { requestId: req.requestId, itemId: req.params.id });
+            }
+
             if (req.file) {
                 updateData.image_url = req.file.path;
+                logger.info('Edit item: new image uploaded', { requestId: req.requestId, itemId: req.params.id, path: req.file.path });
             } else if (req.body.imageUrl) {
                 updateData.image_url = req.body.imageUrl;
             }
 
+            // Handle explicit image removal
+            if (req.body.remove_image === true || req.body.remove_image === 'true') {
+                updateData.image_url = null;
+            }
+
             // Delete old Cloudinary image if a new image is being set
-            if (updateData.image_url && item.image_url?.includes('cloudinary')) {
+            const oldImageUrl = updateData.image_url ? item.image_url : null;
+            if (updateData.image_url === null) {
+                // Image being removed — delete old if it was Cloudinary
+                if (item.image_url?.includes('cloudinary')) {
+                    try {
+                        const publicId = extractCloudinaryPublicId(item.image_url);
+                        if (publicId) await cloudinary.uploader.destroy(publicId);
+                        logger.info('Deleted Cloudinary image (removal)', { requestId: req.requestId, itemId: req.params.id, publicId });
+                    } catch (e) {
+                        logger.error('Failed to delete Cloudinary image on removal', { requestId: req.requestId, itemId: req.params.id, error: e.message });
+                    }
+                }
+            } else if (updateData.image_url && item.image_url?.includes('cloudinary')) {
+                // Image being replaced — delete old
                 try {
                     const publicId = extractCloudinaryPublicId(item.image_url);
-                    if (publicId) await cloudinary.uploader.destroy(publicId);
+                    if (publicId) {
+                        await cloudinary.uploader.destroy(publicId);
+                        logger.info('Deleted old Cloudinary image (replacement)', { requestId: req.requestId, itemId: req.params.id, publicId });
+                    }
                 } catch (e) {
-                    console.error('Failed to delete old Cloudinary image:', e.message);
+                    logger.error('Failed to delete old Cloudinary image', { requestId: req.requestId, itemId: req.params.id, error: e.message });
                 }
             }
 
@@ -1040,7 +1178,7 @@ app.put('/api/items/:id',
                         updateData.coordinates_lng = coords.longitude;
                     }
                 } catch (e) {
-                    // invalid coordinates — skip
+                    logger.warn('Edit item: invalid coordinates', { requestId: req.requestId });
                 }
             }
 
@@ -1059,6 +1197,9 @@ app.put('/api/items/:id',
                 return res.status(400).json({ success: false, message: 'No fields to update' });
             }
 
+            // Log what's being updated
+            logger.request(req, 'Edit item applying update', { itemId: req.params.id, fields: Object.keys(updateData) });
+
             const { data: updated, error: updateError } = await supabase
                 .from('items')
                 .update(updateData)
@@ -1072,8 +1213,8 @@ app.put('/api/items/:id',
 
             res.json({ success: true, item: updated[0] });
         } catch (error) {
-            console.error('Edit item error:', error.message);
-            res.status(500).json({ success: false, message: 'Failed to edit item.' });
+            logger.error('Edit item error', { requestId: req.requestId, itemId: req.params.id, userId: req.user?.id, error: error.message, stack: error.stack });
+            sendError(res, 500, 'Failed to edit item.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -1087,7 +1228,7 @@ app.post('/api/items/:id/start-claim',
     handleValidationErrors,
     async (req, res) => {
         try {
-            console.log('[claim] userId:', req.user.id, 'itemId:', req.params.id);
+            logger.request(req, 'Start claim', { itemId: req.params.id });
 
             const { data: updated, error } = await supabase
                 .from('items')
@@ -1130,15 +1271,15 @@ app.post('/api/items/:id/start-claim',
                     user_id: item.reporter,
                     type: 'claim',
                     item_id: item.id,
-                    text: `Someone wants to claim your item: ${item.name}`
+                    text: `Someone wants to claim your item: ${sanitizeHtml(item.name)}`
                 });
 
-            if (notifError) console.error('Notification error:', notifError.message);
+            if (notifError) logger.error('Notification error', { requestId: req.requestId, itemId: req.params.id, error: notifError.message });
 
             res.json({ success: true, item });
         } catch (error) {
-            console.error('Start claim error:', error.message);
-            res.status(500).json({ success: false, message: 'Failed to start claim.' });
+            logger.error('Start claim error', { requestId: req.requestId, itemId: req.params.id, userId: req.user?.id, error: error.message, stack: error.stack });
+            sendError(res, 500, 'Failed to start claim.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -1195,7 +1336,7 @@ app.post('/api/items/:id/chat',
                         user_id: recipientId,
                         type: 'message',
                         item_id: item.id,
-                        text: `New message from ${isReporter ? 'Founder' : 'Claimer'} for item: ${item.name}`
+                        text: `New message from ${isReporter ? 'Founder' : 'Claimer'} for item: ${sanitizeHtml(item.name)}`
                     });
             }
 
@@ -1204,10 +1345,11 @@ app.post('/api/items/:id/chat',
                 message
             });
 
+            logger.info('Chat message sent', { requestId: req.requestId, itemId: req.params.id, senderId: req.user.id });
             res.json({ success: true, messages: [message] });
         } catch (error) {
-            console.error('Chat error:', error.message);
-            res.status(500).json({ success: false, message: 'Failed to send message.' });
+            logger.error('Chat error', { requestId: req.requestId, itemId: req.params.id, userId: req.user?.id, error: error.message });
+            sendError(res, 500, 'Failed to send message.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -1256,14 +1398,14 @@ app.post('/api/items/:id/complaint',
                         user_id: item.reporter,
                         type: 'complaint',
                         item_id: item.id,
-                        text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${item.name}".`
+                        text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${sanitizeHtml(item.name)}".`
                     });
             }
 
             res.json({ success: true, message: 'Complaint filed' });
         } catch (error) {
-            console.error('Complaint error:', error.message);
-            res.status(500).json({ success: false, message: 'Failed to file complaint.' });
+            logger.error('Complaint error', { requestId: req.requestId, itemId: req.params.id, userId: req.user?.id, error: error.message });
+            sendError(res, 500, 'Failed to file complaint.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -1279,6 +1421,10 @@ app.post('/api/items/:id/claim',
         try {
             const { claim_photo, claim_notes } = req.body;
             const itemId = req.params.id;
+
+            if (claim_photo && typeof claim_photo === 'string' && claim_photo.length > 5 * 1024 * 1024) {
+                return res.status(400).json({ success: false, message: 'Photo too large (max 5MB base64)' });
+            }
 
             const { data: item, error: itemError } = await supabase
                 .from('items')
@@ -1347,7 +1493,7 @@ app.post('/api/items/:id/claim',
                     user_id: item.reporter,
                     type: 'resolved',
                     item_id: itemId,
-                    text: `Barang "${item.name}" telah diklaim dan dikembalikan.`
+                    text: `Barang "${sanitizeHtml(item.name)}" telah diklaim dan dikembalikan.`
                 });
 
             invalidateCache('/api/items');
@@ -1358,11 +1504,8 @@ app.post('/api/items/:id/claim',
                 message: 'Item claimed successfully! Proof submitted.'
             });
         } catch (error) {
-            console.error('Error claiming item:', error.message);
-            return res.status(500).json({
-                success: false,
-                message: 'Failed to claim item.'
-            });
+            logger.error('Error claiming item', { requestId: req.requestId, itemId: req.params.id, userId: req.user?.id, error: error.message, stack: error.stack });
+            return sendError(res, 500, 'Failed to claim item.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -1397,8 +1540,8 @@ app.get('/api/stats', authMiddleware, cache(60), async (req, res) => {
             returnedAllTime: counter?.value || 0
         });
     } catch (error) {
-        console.error('Error fetching stats:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch stats.' });
+        logger.error('Error fetching stats', { requestId: req.requestId, error: error.message });
+        sendError(res, 500, 'Failed to fetch stats.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -1446,8 +1589,8 @@ app.post('/api/ratings',
             invalidateCache('/api/ratings');
             res.json({ success: true, message: 'Rating submitted', rating: newRating });
         } catch (error) {
-            console.error('Submit rating error:', error.message);
-            res.status(500).json({ success: false, message: 'Failed to submit rating.' });
+            logger.error('Submit rating error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+            sendError(res, 500, 'Failed to submit rating.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -1474,8 +1617,8 @@ app.get('/api/ratings', authMiddleware, cache(300), async (req, res) => {
             ratings: ratingsWithUsers
         });
     } catch (error) {
-        console.error('Fetch ratings error:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch ratings.' });
+        logger.error('Fetch ratings error', { requestId: req.requestId, error: error.message });
+        sendError(res, 500, 'Failed to fetch ratings.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -1489,8 +1632,8 @@ app.get('/api/ratings/mine', authMiddleware, async (req, res) => {
 
         res.json({ rating: rating || null });
     } catch (error) {
-        console.error('Fetch my rating error:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch your rating.' });
+        logger.error('Fetch my rating error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to fetch your rating.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -1616,8 +1759,8 @@ app.get('/api/stats/detailed', authMiddleware, heavyEndpointLimiter, cache(300),
             }
         });
     } catch (error) {
-        console.error('Error fetching detailed stats:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch detailed stats.' });
+        logger.error('Error fetching detailed stats', { requestId: req.requestId, error: error.message });
+        sendError(res, 500, 'Failed to fetch detailed stats.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -1631,7 +1774,7 @@ app.post('/api/items/:id/resolve',
     handleValidationErrors,
     async (req, res) => {
         try {
-            console.log('[resolve] reporterId:', req.user.id, 'itemId:', req.params.id, 'newClaimer:', req.body.userId);
+            logger.request(req, 'Resolve claim', { itemId: req.params.id, newClaimerId: req.body.userId });
 
             const { data: item, error } = await supabase
                 .from('items')
@@ -1640,9 +1783,6 @@ app.post('/api/items/:id/resolve',
                 .single();
 
             if (error || !item) return res.status(404).json({ success: false, message: 'Item not found' });
-
-            console.log('[resolve] item reporter:', item.reporter, '| current user:', req.user.id);
-            console.log('[resolve] reporter === userId?', item.reporter === req.user.id);
 
             if (item.reporter !== req.user.id) {
                 return res.status(403).json({ success: false, message: 'Only founder can assign claimer' });
@@ -1654,10 +1794,10 @@ app.post('/api/items/:id/resolve',
                 .eq('id', req.params.id);
 
             if (updateError) {
-                console.log('[resolve] update error:', updateError.message);
+                logger.error('Resolve update error', { requestId: req.requestId, itemId: req.params.id, error: updateError.message });
                 throw updateError;
             }
-            console.log('[resolve] update succeeded');
+            logger.request(req, 'Resolve update succeeded', { itemId: req.params.id });
 
             await supabase
                 .from('complaints')
@@ -1671,15 +1811,16 @@ app.post('/api/items/:id/resolve',
                     user_id: req.body.userId,
                     type: 'resolved',
                     item_id: req.params.id,
-                    text: `You have been assigned as the claimer for: ${item.name}`
+                    text: `You have been assigned as the claimer for: ${sanitizeHtml(item.name)}`
                 });
 
             invalidateCache('/api/items');
 
+            logger.info('Claimer reassigned successfully', { requestId: req.requestId, itemId: req.params.id });
             res.json({ success: true, message: 'Claimer reassigned successfully' });
         } catch (error) {
-            console.error('Resolve error:', error.message);
-            res.status(500).json({ success: false, message: 'Failed to reassign claimer.' });
+            logger.error('Resolve error', { requestId: req.requestId, itemId: req.params.id, error: error.message, stack: error.stack });
+            sendError(res, 500, 'Failed to reassign claimer.', ERROR_CODES.INTERNAL);
         }
     }
 );
@@ -1698,8 +1839,8 @@ app.get('/api/notifications', authMiddleware, async (req, res) => {
 
         res.json(notifs);
     } catch (error) {
-        console.error('Fetch notifications error:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch notifications.' });
+        logger.error('Fetch notifications error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to fetch notifications.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -1714,8 +1855,8 @@ app.delete('/api/notifications', authMiddleware, async (req, res) => {
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Delete all notifications error:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to delete notifications.' });
+        logger.error('Delete all notifications error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to delete notifications.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -1731,8 +1872,8 @@ app.delete('/api/notifications/:id', authMiddleware, async (req, res) => {
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Delete notification error:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to delete notification.' });
+        logger.error('Delete notification error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to delete notification.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -1748,8 +1889,8 @@ app.post('/api/notifications/:id/read', authMiddleware, async (req, res) => {
 
         res.json({ success: true });
     } catch (error) {
-        console.error('Mark as read error:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to mark notification as read.' });
+        logger.error('Mark as read error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to mark notification as read.', ERROR_CODES.INTERNAL);
     }
 });
 
@@ -1758,9 +1899,23 @@ app.use('/api', (req, res) => {
     res.status(404).json({ success: false, message: 'API route not found.' });
 });
 
+// Multer/upload error handler (must come before the generic error handler)
 app.use((err, req, res, next) => {
-    console.error('💥 Unhandled Error Stack:', err.stack || err);
-    res.status(500).json({ success: false, message: 'Internal server error.' });
+    if (err.code === 'LIMIT_FILE_SIZE') {
+        logger.warn('File too large', { requestId: req.requestId, error: err.message });
+        return sendError(res, 413, 'File too large. Maximum size is 10MB.', ERROR_CODES.FILE_TOO_LARGE);
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        logger.warn('Unexpected file field', { requestId: req.requestId, error: err.message });
+        return sendError(res, 400, 'Unexpected file field.', ERROR_CODES.UPLOAD_FAILED);
+    }
+    if (err.name === 'MulterError' || err.message?.includes('multipart')) {
+        logger.error('Upload error', { requestId: req.requestId, error: err.message, code: err.code });
+        return sendError(res, 400, 'File upload failed: ' + err.message, ERROR_CODES.UPLOAD_FAILED);
+    }
+    // Generic error
+    logger.error('Unhandled error', { requestId: req.requestId, error: err.message, stack: err.stack, method: req.method, path: req.originalUrl });
+    sendError(res, 500, 'Internal server error.', ERROR_CODES.INTERNAL);
 });
 
 // ─────────────────────────────────────────────
@@ -1774,7 +1929,7 @@ const io = new Server(server, {
             if (allowedOrigins.includes(origin)) {
                 return callback(null, true);
             }
-            console.warn(`❌ Socket blocked by CORS: ${origin}`);
+            logger.warn('Socket blocked by CORS', { origin });
             return callback(new Error('Socket CORS blocked'));
         },
         methods: ['GET', 'POST'],
@@ -1818,7 +1973,7 @@ const checkSocketRateLimit = (socketId) => {
 };
 
 io.on('connection', (socket) => {
-    console.log('🔌 New socket connection:', socket.userId);
+    logger.info('New socket connection', { userId: socket.userId });
 
     socket.on('join-user', (userId) => {
         if (socket.userId === userId) {
@@ -1851,12 +2006,24 @@ io.on('connection', (socket) => {
             socket.emit('rate-limited', { message: 'Too many messages. Please slow down.' });
             return;
         }
+        try {
+            const { data: item } = await supabase
+                .from('items')
+                .select('reporter, claimer')
+                .eq('id', data.itemId)
+                .single();
+            if (!item) return;
+            const uid = socket.userId;
+            if (item.reporter !== uid && item.claimer !== uid) return;
+        } catch {
+            return;
+        }
         socket.broadcast.to(`item-${data.itemId}`).emit('new-message', data);
     });
 
     socket.on('disconnect', () => {
         socketRateLimit.delete(socket.id);
-        console.log('🔌 Socket disconnected:', socket.userId);
+        logger.info('Socket disconnected', { userId: socket.userId });
     });
 });
 
@@ -1864,16 +2031,11 @@ io.on('connection', (socket) => {
 // 6. CRON JOBS (Auto Cleanup)
 // ─────────────────────────────────────────────
 const runCleanupJob = async () => {
-    console.log('🧹 Running Auto-Cleanup Job...');
+    logger.info('Running Auto-Cleanup Job...');
 
     try {
-        const tenDaysAgo = new Date(
-            new Date().setDate(new Date().getDate() - 10)
-        );
-
-        const twoDaysAgo = new Date(
-            new Date().setDate(new Date().getDate() - 2)
-        );
+        const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
 
         const { data: expiredUnclaimed } = await supabase
             .from('items')
@@ -1892,7 +2054,7 @@ const runCleanupJob = async () => {
             ...(expiredReturned || [])
         ];
 
-        console.log(`🗑️ Found ${itemsToDelete.length} items.`);
+        logger.info('Found items to delete', { count: itemsToDelete.length });
 
         for (const item of itemsToDelete) {
             if (item.image_url?.includes('cloudinary')) {
@@ -1900,10 +2062,10 @@ const runCleanupJob = async () => {
                     const publicId = extractCloudinaryPublicId(item.image_url);
                     if (publicId) {
                         await cloudinary.uploader.destroy(publicId);
-                        console.log(`☁️ Deleted image: ${publicId}`);
+                        logger.info('Deleted Cloudinary image', { publicId, itemId: item.id });
                     }
                 } catch (cloudinaryErr) {
-                    console.error('Cloudinary delete failed:', cloudinaryErr.message);
+                    logger.error('Cloudinary delete failed', { itemId: item.id, error: cloudinaryErr.message });
                 }
             }
 
@@ -1913,7 +2075,7 @@ const runCleanupJob = async () => {
                     user_id: item.reporter,
                     type: 'system',
                     item_id: null,
-                    text: `Laporan "${item.name}" telah dihapus otomatis.`
+                    text: `Laporan "${sanitizeHtml(item.name)}" telah dihapus otomatis.`
                 });
 
             await supabase
@@ -1926,12 +2088,12 @@ const runCleanupJob = async () => {
                 .delete()
                 .eq('id', item.id);
 
-            console.log(`🗑️ Deleted item: ${item.name}`);
+            logger.info('Deleted item', { itemId: item.id, name: item.name });
         }
 
-        console.log('✅ Cleanup complete');
+        logger.info('Auto-Cleanup complete');
     } catch (error) {
-        console.error('❌ Cleanup failed:', error.message);
+        logger.error('Auto-Cleanup failed', { error: error.message, stack: error.stack });
     }
 };
 
@@ -1940,6 +2102,6 @@ cron.schedule('0 * * * *', async () => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-    console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
+    logger.info(`Server running`, { url: `http://localhost:${PORT}` });
+    logger.info(`Health check`, { url: `http://localhost:${PORT}/api/health` });
 });
