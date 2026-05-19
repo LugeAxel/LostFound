@@ -1,0 +1,16 @@
+[Unit]
+Description=LostFound (QReturn) Backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/LostFound
+ExecStart=/usr/bin/node backend/server.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=5005
+
+[Install]
+WantedBy=multi-user.target
