@@ -276,6 +276,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'detail.complaint_modal_cancel': 'Cancel',
     'detail.complaint_modal_submit': 'Submit Complaint',
     'detail.complaint_modal_placeholder': 'Describe why you are filing a complaint...',
+    'detail.complaint_min_length': 'Reason must be at least 3 characters',
     'detail.activity_log': 'Activity Log',
 
     // === Rating ===
@@ -608,6 +609,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'detail.complaint_modal_cancel': 'Batal',
     'detail.complaint_modal_submit': 'Kirim Komplain',
     'detail.complaint_modal_placeholder': 'Jelaskan alasan Anda mengajukan komplain...',
+    'detail.complaint_min_length': 'Alasan harus minimal 3 karakter',
     'detail.activity_log': 'Riwayat Aktivitas',
 
     // === Rating ===

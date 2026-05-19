@@ -49,6 +49,8 @@ const fetchItem = async () => {
     if (!item.value.messages) {
       item.value.messages = [];
     }
+    item.value.item_images ??= [];
+    selectedImageIndex.value = 0;
     
     fetchActivities();
     
@@ -224,7 +226,12 @@ const fileComplaint = () => {
 };
 
 const submitComplaint = async () => {
-  if (!complaintReason.value.trim()) return;
+  const reason = complaintReason.value.trim();
+  if (!reason) return;
+  if (reason.length < 3) {
+    toast.show(t('detail.complaint_min_length'), 'error');
+    return;
+  }
   hasFiledComplaint.value = true;
   showComplaintModal.value = false;
   try {
