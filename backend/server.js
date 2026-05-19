@@ -117,6 +117,134 @@ const allowedOrigins = [
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
+const io = new Server(server, {
+    cors: {
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+            logger.warn('Socket blocked by CORS', { origin });
+            return callback(new Error('Socket CORS blocked'));
+        },
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
+});
+
+io.use(async (socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (!token) {
+        return next(new Error('Authentication required'));
+    }
+    try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error || !user) {
+            return next(new Error('Invalid or expired token'));
+        }
+        socket.userId = user.id;
+        next();
+    } catch (err) {
+        next(new Error('Authentication error'));
+    }
+});
+
+const socketRateLimit = new Map();
+const SOCKET_RATE_LIMIT_WINDOW = 10000;
+const SOCKET_RATE_LIMIT_MAX = 20;
+
+const checkSocketRateLimit = (socketId) => {
+    const now = Date.now();
+    const entry = socketRateLimit.get(socketId);
+    if (!entry || now - entry.windowStart > SOCKET_RATE_LIMIT_WINDOW) {
+        socketRateLimit.set(socketId, { windowStart: now, count: 1 });
+        return true;
+    }
+    if (entry.count >= SOCKET_RATE_LIMIT_MAX) {
+        return false;
+    }
+    entry.count++;
+    return true;
+};
+
+const onlineUsers = new Set();
+
+io.on('connection', (socket) => {
+    logger.info('New socket connection', { userId: socket.userId });
+
+    onlineUsers.add(socket.userId);
+    socket.broadcast.emit('user-online', socket.userId);
+
+    socket.on('join-user', (userId) => {
+        if (socket.userId === userId) {
+            socket.join(`user-${userId}`);
+        }
+    });
+
+    socket.on('join-item', async (itemId) => {
+        try {
+            const { data: item } = await supabase
+                .from('items')
+                .select('reporter, claimer')
+                .eq('id', itemId)
+                .single();
+
+            if (!item) return;
+            const uid = socket.userId;
+            const isReporter = item.reporter === uid;
+            const isClaimer = item.claimer && item.claimer === uid;
+            if (isReporter || isClaimer) {
+                socket.join(`item-${itemId}`);
+            }
+        } catch (e) {
+            // silently ignore
+        }
+    });
+
+    socket.on('send-message', async (data) => {
+        if (!checkSocketRateLimit(socket.id)) {
+            socket.emit('rate-limited', { message: 'Too many messages. Please slow down.' });
+            return;
+        }
+        try {
+            const { data: item } = await supabase
+                .from('items')
+                .select('reporter, claimer')
+                .eq('id', data.itemId)
+                .single();
+            if (!item) return;
+            const uid = socket.userId;
+            if (item.reporter !== uid && item.claimer !== uid) return;
+        } catch {
+            return;
+        }
+        socket.broadcast.to(`item-${data.itemId}`).emit('new-message', data);
+    });
+
+    socket.on('disconnect', () => {
+        onlineUsers.delete(socket.userId);
+        socket.broadcast.emit('user-offline', socket.userId);
+        socketRateLimit.delete(socket.id);
+        logger.info('Socket disconnected', { userId: socket.userId });
+    });
+});
+
+async function logActivity({ itemId, userId, actionType, description, metadata }) {
+    try {
+        await supabase
+            .from('item_activities')
+            .insert({
+                item_id: itemId,
+                user_id: userId,
+                action_type: actionType,
+                description,
+                metadata: metadata || {},
+            });
+    } catch (e) {
+        logger.error('logActivity error', { itemId, actionType, error: e.message });
+    }
+}
+
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin) {
@@ -801,6 +929,10 @@ app.get('/api/items/claim-code/:code', authMiddleware, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Item not found' });
         }
 
+        if (item.status === 'Returned') {
+            return res.status(400).json({ success: false, message: 'This item has already been returned.' });
+        }
+
         // If item is On Progress and has an assigned claimer, only that claimer can access
         if (item.status === 'On Progress' && item.claimer && item.claimer.id !== req.user.id) {
             return res.status(403).json({ success: false, message: 'This claim link belongs to another user.' });
@@ -975,6 +1107,13 @@ app.post('/api/items',
 
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
+
+            logActivity({
+                itemId: newItem.id,
+                userId: req.user.id,
+                actionType: 'item_created',
+                description: `Melaporkan barang: ${newItem.name}`,
+            });
 
             // Find matching items and create suggestion notifications
             try {
@@ -1211,6 +1350,23 @@ app.put('/api/items/:id',
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
 
+            if (req.body.remove_claimer === true || req.body.remove_claimer === 'true') {
+                logActivity({
+                    itemId: req.params.id,
+                    userId: req.user.id,
+                    actionType: 'claimer_removed',
+                    description: `Menghapus klaimer dari barang: ${sanitizeHtml(item.name)}`,
+                });
+            } else {
+                logActivity({
+                    itemId: req.params.id,
+                    userId: req.user.id,
+                    actionType: 'item_edited',
+                    description: `Mengedit barang: ${sanitizeHtml(item.name)}`,
+                    metadata: { fields: Object.keys(updateData) },
+                });
+            }
+
             res.json({ success: true, item: updated[0] });
         } catch (error) {
             logger.error('Edit item error', { requestId: req.requestId, itemId: req.params.id, userId: req.user?.id, error: error.message, stack: error.stack });
@@ -1257,7 +1413,13 @@ app.post('/api/items/:id/start-claim',
                 if (existing.claimer === req.user.id) {
                     return res.status(400).json({ success: false, message: 'You have already claimed this item' });
                 }
-                return res.status(400).json({ success: false, message: 'Item is already being claimed or returned' });
+                if (existing.status === 'On Progress') {
+                    return res.status(400).json({ success: false, message: 'This item is already being claimed by someone else.' });
+                }
+                if (existing.status === 'Returned') {
+                    return res.status(400).json({ success: false, message: 'This item has already been returned.' });
+                }
+                return res.status(400).json({ success: false, message: 'Item is already being claimed or returned.' });
             }
 
             const item = updated[0];
@@ -1275,6 +1437,13 @@ app.post('/api/items/:id/start-claim',
                 });
 
             if (notifError) logger.error('Notification error', { requestId: req.requestId, itemId: req.params.id, error: notifError.message });
+
+            logActivity({
+                itemId: item.id,
+                userId: req.user.id,
+                actionType: 'claim_started',
+                description: `Mulai klaim barang: ${sanitizeHtml(item.name)}`,
+            });
 
             res.json({ success: true, item });
         } catch (error) {
@@ -1345,6 +1514,14 @@ app.post('/api/items/:id/chat',
                 message
             });
 
+            logActivity({
+                itemId: item.id,
+                userId: req.user.id,
+                actionType: 'message_sent',
+                description: `Mengirim pesan tentang: ${sanitizeHtml(item.name)}`,
+                metadata: { preview: text.slice(0, 100) },
+            });
+
             logger.info('Chat message sent', { requestId: req.requestId, itemId: req.params.id, senderId: req.user.id });
             res.json({ success: true, messages: [message] });
         } catch (error) {
@@ -1401,6 +1578,14 @@ app.post('/api/items/:id/complaint',
                         text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${sanitizeHtml(item.name)}".`
                     });
             }
+
+            logActivity({
+                itemId: req.params.id,
+                userId: req.user.id,
+                actionType: 'complaint_filed',
+                description: `Mengajukan komplain untuk barang`,
+                metadata: { reason: reason.slice(0, 200) },
+            });
 
             res.json({ success: true, message: 'Complaint filed' });
         } catch (error) {
@@ -1459,6 +1644,8 @@ app.post('/api/items/:id/claim',
                     claimed_at: new Date().toISOString()
                 })
                 .eq('id', itemId)
+                .eq('status', item.status)
+                .eq('claimer', item.claimer)
                 .neq('reporter', req.user.id)
                 .select();
 
@@ -1498,6 +1685,13 @@ app.post('/api/items/:id/claim',
 
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
+
+            logActivity({
+                itemId,
+                userId: req.user.id,
+                actionType: 'item_returned',
+                description: `Mengembalikan barang: ${sanitizeHtml(item.name)}`,
+            });
 
             return res.json({
                 success: true,
@@ -1816,6 +2010,13 @@ app.post('/api/items/:id/resolve',
 
             invalidateCache('/api/items');
 
+            logActivity({
+                itemId: req.params.id,
+                userId: req.user.id,
+                actionType: 'claimer_assigned',
+                description: `Menunjuk pengklaim baru untuk barang: ${sanitizeHtml(item.name)}`,
+            });
+
             logger.info('Claimer reassigned successfully', { requestId: req.requestId, itemId: req.params.id });
             res.json({ success: true, message: 'Claimer reassigned successfully' });
         } catch (error) {
@@ -1894,6 +2095,40 @@ app.post('/api/notifications/:id/read', authMiddleware, async (req, res) => {
     }
 });
 
+// Activity log for an item
+app.get('/api/items/:id/activities',
+    authMiddleware,
+    [
+        param('id').isUUID().withMessage('Invalid item ID'),
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const { data: activities, error } = await supabase
+                .from('item_activities')
+                .select('*')
+                .eq('item_id', req.params.id)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (error) throw error;
+
+            res.json(activities || []);
+        } catch (error) {
+            logger.error('Fetch activities error', { requestId: req.requestId, itemId: req.params.id, error: error.message });
+            sendError(res, 500, 'Failed to fetch activities.', ERROR_CODES.INTERNAL);
+        }
+    }
+);
+
+// Online users (presence)
+app.get('/api/online-users',
+    authMiddleware,
+    async (req, res) => {
+        res.json(Array.from(onlineUsers));
+    }
+);
+
 // ── CATCH-ALL ────────────────────────────────
 app.use('/api', (req, res) => {
     res.status(404).json({ success: false, message: 'API route not found.' });
@@ -1921,121 +2156,14 @@ app.use((err, req, res, next) => {
 // ─────────────────────────────────────────────
 // 5. SOCKET.IO & SERVER START
 // ─────────────────────────────────────────────
-
-const io = new Server(server, {
-    cors: {
-        origin: (origin, callback) => {
-            if (!origin) return callback(null, true);
-            if (allowedOrigins.includes(origin)) {
-                return callback(null, true);
-            }
-            logger.warn('Socket blocked by CORS', { origin });
-            return callback(new Error('Socket CORS blocked'));
-        },
-        methods: ['GET', 'POST'],
-        credentials: true
-    }
-});
-
-io.use(async (socket, next) => {
-    const token = socket.handshake.auth?.token;
-    if (!token) {
-        return next(new Error('Authentication required'));
-    }
-    try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        if (error || !user) {
-            return next(new Error('Invalid or expired token'));
-        }
-        socket.userId = user.id;
-        next();
-    } catch (err) {
-        next(new Error('Authentication error'));
-    }
-});
-
-const socketRateLimit = new Map();
-const SOCKET_RATE_LIMIT_WINDOW = 10000;
-const SOCKET_RATE_LIMIT_MAX = 20;
-
-const checkSocketRateLimit = (socketId) => {
-    const now = Date.now();
-    const entry = socketRateLimit.get(socketId);
-    if (!entry || now - entry.windowStart > SOCKET_RATE_LIMIT_WINDOW) {
-        socketRateLimit.set(socketId, { windowStart: now, count: 1 });
-        return true;
-    }
-    if (entry.count >= SOCKET_RATE_LIMIT_MAX) {
-        return false;
-    }
-    entry.count++;
-    return true;
-};
-
-io.on('connection', (socket) => {
-    logger.info('New socket connection', { userId: socket.userId });
-
-    socket.on('join-user', (userId) => {
-        if (socket.userId === userId) {
-            socket.join(`user-${userId}`);
-        }
-    });
-
-    socket.on('join-item', async (itemId) => {
-        try {
-            const { data: item } = await supabase
-                .from('items')
-                .select('reporter, claimer')
-                .eq('id', itemId)
-                .single();
-
-            if (!item) return;
-            const uid = socket.userId;
-            const isReporter = item.reporter === uid;
-            const isClaimer = item.claimer && item.claimer === uid;
-            if (isReporter || isClaimer) {
-                socket.join(`item-${itemId}`);
-            }
-        } catch (e) {
-            // silently ignore
-        }
-    });
-
-    socket.on('send-message', async (data) => {
-        if (!checkSocketRateLimit(socket.id)) {
-            socket.emit('rate-limited', { message: 'Too many messages. Please slow down.' });
-            return;
-        }
-        try {
-            const { data: item } = await supabase
-                .from('items')
-                .select('reporter, claimer')
-                .eq('id', data.itemId)
-                .single();
-            if (!item) return;
-            const uid = socket.userId;
-            if (item.reporter !== uid && item.claimer !== uid) return;
-        } catch {
-            return;
-        }
-        socket.broadcast.to(`item-${data.itemId}`).emit('new-message', data);
-    });
-
-    socket.on('disconnect', () => {
-        socketRateLimit.delete(socket.id);
-        logger.info('Socket disconnected', { userId: socket.userId });
-    });
-});
-
-// ─────────────────────────────────────────────
 // 6. CRON JOBS (Auto Cleanup)
 // ─────────────────────────────────────────────
 const runCleanupJob = async () => {
     logger.info('Running Auto-Cleanup Job...');
 
     try {
-        const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
-        const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+        const tenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        const twoDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
 
         const { data: expiredUnclaimed } = await supabase
             .from('items')

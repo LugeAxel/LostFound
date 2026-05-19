@@ -43,9 +43,9 @@ const router = useRouter();
 const { t } = useI18n();
 
 const developers = [
-  { name: 'dev1', displayName: t('developer.dev1_name'), roleKey: t('developer.dev1_role'), descKey: t('developer.dev1_desc'), photo: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80' },
+  { name: 'dev1', displayName: t('developer.dev1_name'), roleKey: t('developer.dev1_role'), descKey: t('developer.dev1_desc'), photo: 'https://res.cloudinary.com/djtwl4a6s/image/upload/q_auto/f_auto/v1779162940/f4a01707-0b70-4ec3-95c8-bfc0d12ad8e3_c6grno.jpg' },
   { name: 'dev2', displayName: t('developer.dev2_name'), roleKey: t('developer.dev2_role'), descKey: t('developer.dev2_desc'), photo: 'https://res.cloudinary.com/djtwl4a6s/image/upload/q_auto/f_auto/v1778853941/WhatsApp_Image_2026-05-15_at_9.05.12_PM_kgav1e.jpg' },
-  { name: 'dev3', displayName: t('developer.dev3_name'), roleKey: t('developer.dev3_role'), descKey: t('developer.dev3_desc'), photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80' },
-  { name: 'dev4', displayName: t('developer.dev4_name'), roleKey: t('developer.dev4_role'), descKey: t('developer.dev4_desc'), photo: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=150&q=80' },
+  { name: 'dev3', displayName: t('developer.dev3_name'), roleKey: t('developer.dev3_role'), descKey: t('developer.dev3_desc'), photo: 'https://res.cloudinary.com/djtwl4a6s/image/upload/q_auto/f_auto/v1779163827/4afefefe-12be-48f9-b4f3-545c3db160de_bgsfac.jpg' },
+  { name: 'dev4', displayName: t('developer.dev4_name'), roleKey: t('developer.dev4_role'), descKey: t('developer.dev4_desc'), photo: 'https://res.cloudinary.com/djtwl4a6s/image/upload/q_auto/f_auto/v1779162780/WhatsApp_Image_2026-05-19_at_10.51.49_AM_ytdsax.jpg' },
 ];
 </script>

@@ -7,6 +7,7 @@ import TopNav from '../components/TopNav.vue';
 import { useI18n } from '../i18n';
 import { API_URL } from '@/config/api';
 import { getAuthHeaders } from '../composables/useAuth';
+import { useRealtimeAllItems } from '../composables/useRealtimeAllItems';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -43,7 +44,14 @@ const fetchStats = async () => {
   }
 };
 
-onMounted(fetchStats);
+const { subscribe: subscribeToAllItems } = useRealtimeAllItems(() => {
+  fetchStats();
+}, 1000);
+
+onMounted(() => {
+  fetchStats();
+  subscribeToAllItems();
+});
 </script>
 
 <template>

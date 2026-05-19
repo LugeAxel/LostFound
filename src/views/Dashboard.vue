@@ -11,6 +11,7 @@ import { API_URL } from '@/config/api';
 import { useI18n } from '../i18n';
 import { getAuthHeaders } from '../composables/useAuth';
 import { supabase } from '../lib/supabase';
+import { useRealtimeAllItems } from '../composables/useRealtimeAllItems';
 
 const router = useRouter();
 const { t } = useI18n();
@@ -60,6 +61,12 @@ const fetchRecommendations = async () => {
   }
 };
 
+const { subscribe: subscribeToAllItems } = useRealtimeAllItems(() => {
+  fetchStats();
+  fetchItems();
+  fetchRecommendations();
+}, 1000);
+
 onMounted(async () => {
   const { data: { session } } = await supabase.auth.getSession();
   if (session) {
@@ -80,6 +87,7 @@ onMounted(async () => {
     loadingUser.value = false;
   }
   fetchStats(); fetchItems(); fetchRecommendations();
+  subscribeToAllItems();
 });
 </script>
 
@@ -167,11 +175,11 @@ onMounted(async () => {
             <p class="text-xs sm:text-sm text-[#40493d] dark:text-[#9ca3af] mb-3 sm:mb-4 leading-relaxed line-clamp-2">{{ t('dash.scan_to_claim_desc') }}</p>
             <div class="flex items-center text-[#387b41] font-bold text-xs sm:text-sm gap-1 sm:gap-2">{{ t('dash.open_scanner') }} <span class="material-symbols-outlined text-sm sm:text-base group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
-          <RouterLink to="/statistics" class="min-w-[75vw] sm:min-w-[65vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[4px] border-l-[#8b5cf6]">
-            <span class="material-symbols-outlined text-2xl sm:text-3xl md:text-4xl text-[#8b5cf6] mb-3 sm:mb-4">leaderboard</span>
+          <RouterLink to="/statistics" class="min-w-[75vw] sm:min-w-[65vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[4px] border-l-[#387b41]">
+            <span class="material-symbols-outlined text-2xl sm:text-3xl md:text-4xl text-[#387b41] mb-3 sm:mb-4">leaderboard</span>
             <h4 class="text-base sm:text-lg md:text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1 sm:mb-2">{{ t('nav.statistics') }}</h4>
             <p class="text-xs sm:text-sm text-[#40493d] dark:text-[#9ca3af] mb-3 sm:mb-4 leading-relaxed line-clamp-2">{{ t('stats.subtitle') }}</p>
-            <div class="flex items-center text-[#8b5cf6] font-bold text-xs sm:text-sm gap-1 sm:gap-2">Explore <span class="material-symbols-outlined text-sm sm:text-base group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
+            <div class="flex items-center text-[#387b41] font-bold text-xs sm:text-sm gap-1 sm:gap-2">Explore <span class="material-symbols-outlined text-sm sm:text-base group-hover:translate-x-1 transition-transform">arrow_forward</span></div>
           </RouterLink>
         </div>
       </section>

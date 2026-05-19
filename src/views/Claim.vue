@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { API_URL } from '@/config/api';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { useToast } from '../composables/useToast';
 import { getAuthHeaders } from '../composables/useAuth';
+import { useRealtimeSingleItem } from '../composables/useRealtimeSingleItem';
 
 const route = useRoute();
 const router = useRouter();
@@ -17,6 +18,11 @@ const isLoading = ref(true);
 const isSubmitting = ref(false);
 const imagePreview = ref<string | null>(null);
 const fileInput = ref<HTMLInputElement | null>(null);
+
+const claimItemId = computed(() => item.value?.id ?? null);
+useRealtimeSingleItem(claimItemId, () => {
+  fetchItemDetails();
+});
 
 const isCameraOpen = ref(false);
 const videoElement = ref<HTMLVideoElement | null>(null);

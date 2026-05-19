@@ -11,6 +11,7 @@ import { useI18n } from '../i18n';
 import { getAuthHeaders } from '../composables/useAuth';
 import { supabase } from '../lib/supabase';
 import { useDebounce } from '../composables/useDebounce';
+import { useRealtimeAllItems } from '../composables/useRealtimeAllItems';
 
 const router = useRouter();
 const route = useRoute();
@@ -95,7 +96,14 @@ const pageNumbers = computed(() => {
   return pages;
 });
 
-onMounted(fetchItems);
+const { subscribe: subscribeToAllItems } = useRealtimeAllItems(() => {
+  fetchItems();
+}, 1000);
+
+onMounted(() => {
+  fetchItems();
+  subscribeToAllItems();
+});
 
 watch(() => route.query, (newQuery) => {
   if (newQuery.q) {

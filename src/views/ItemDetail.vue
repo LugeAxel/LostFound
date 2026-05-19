@@ -11,6 +11,7 @@ import { useToast } from '../composables/useToast';
 import { getAuthHeaders, getCurrentUser } from '../composables/useAuth';
 import { supabase } from '../lib/supabase';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import { useRealtimeSingleItem } from '../composables/useRealtimeSingleItem';
 
 import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL } from '@/config/api';
@@ -32,6 +33,14 @@ const { t } = useI18n();
 const toast = useToast();
 let socket: any = null;
 
+const onlineUserIds = ref<Set<string>>(new Set());
+const activities = ref<any[]>([]);
+const showActivities = ref(false);
+
+useRealtimeSingleItem(itemId, () => {
+  fetchItem();
+});
+
 const fetchItem = async () => {
   try {
     const res = await axios.get(`${API_URL}/api/items/${itemId.value}`, { headers: await getAuthHeaders() });
@@ -40,6 +49,8 @@ const fetchItem = async () => {
     if (!item.value.messages) {
       item.value.messages = [];
     }
+    
+    fetchActivities();
     
     // Set loading to false so the v-else-if="item" block (with map container) renders
     isLoading.value = false;
@@ -63,36 +74,94 @@ const fetchItem = async () => {
   }
 };
 
+const fetchOnlineUsers = async () => {
+  try {
+    const { data: ids } = await axios.get(`${API_URL}/api/online-users`, { headers: await getAuthHeaders() });
+    onlineUserIds.value = new Set(ids || []);
+  } catch { /* ignore */ }
+};
+
+const fetchActivities = async () => {
+  try {
+    const res = await axios.get(`${API_URL}/api/items/${itemId.value}/activities`, { headers: await getAuthHeaders() });
+    activities.value = res.data || [];
+  } catch { /* ignore */ }
+};
+
+const isChatPartnerOnline = computed(() => {
+  if (!item.value) return false;
+  const partnerId = isFounder() ? item.value.claimer?.id : item.value.reporter?.id;
+  return partnerId ? onlineUserIds.value.has(partnerId) : false;
+});
+
+const activityIcons: Record<string, string> = {
+  item_created: 'add_circle',
+  claim_started: 'pan_tool',
+  message_sent: 'forum',
+  complaint_filed: 'report',
+  claimer_assigned: 'assignment_ind',
+  item_returned: 'verified',
+  item_edited: 'edit',
+  claimer_removed: 'person_remove',
+};
+
 onMounted(async () => {
     const user = await getCurrentUser();
   if (user) currentUser.value = user;
   
   fetchItem();
   initSocket();
+  fetchOnlineUsers();
 });
 
-const initSocket = () => {
-  if (socket) socket.disconnect();
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-      withCredentials: true,
-      auth: { token: session?.access_token }
-    });
-    
-    socket.on('connect', () => {
-      socket.emit('join-item', itemId.value);
-    });
+const initSocket = async () => {
+  if (socket) {
+    socket.removeAllListeners();
+    socket.disconnect();
+    socket = null;
+  }
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return;
 
-    socket.on('new-message', (data: any) => {
-      if (data.itemId === itemId.value && item.value?.messages) {
-        const exists = item.value.messages.some((m: any) => m.id === data.message.id);
-        if (!exists) {
-          item.value.messages.push(data.message);
-          scrollToBottom();
-        }
-      }
-    });
+  socket = io(SOCKET_URL, {
+    transports: ['websocket', 'polling'],
+    withCredentials: true,
+    auth: { token: session.access_token }
+  });
+
+  socket.on('connect', () => {
+    socket.emit('join-item', itemId.value);
+  });
+
+  socket.on('new-message', (data: any) => {
+    if (data.itemId !== itemId.value) return;
+    if (!item.value) item.value = { messages: [] };
+    if (!item.value.messages) item.value.messages = [];
+    const exists = item.value.messages.some((m: any) => m.id === data.message.id);
+    if (!exists) {
+      item.value.messages.push(data.message);
+      scrollToBottom();
+    }
+  });
+
+  socket.on('user-online', (userId: string) => {
+    onlineUserIds.value = new Set([...onlineUserIds.value, userId]);
+  });
+
+  socket.on('user-offline', (userId: string) => {
+    const next = new Set(onlineUserIds.value);
+    next.delete(userId);
+    onlineUserIds.value = next;
+  });
+
+  socket.on('disconnect', (reason: string) => {
+    if (reason === 'io server disconnect' || reason === 'io client disconnect') {
+      initSocket();
+    }
+  });
+
+  socket.on('connect_error', (err: any) => {
+    console.error('Socket connection error:', err.message);
   });
 };
 
@@ -371,7 +440,13 @@ const copyGps = async (lat: number, lng: number) => {
             class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm overflow-hidden flex flex-col h-[300px] md:h-[400px]">
             <div class="p-4 border-b border-[#e0e4df] dark:border-[#374151] bg-[#f8faf7] dark:bg-[#121212] flex items-center gap-2">
               <span class="material-symbols-outlined text-[#387b41]">forum</span>
-              <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('detail.chat_with') }} {{ isFounder() ? t('detail.claimer_label') : 'Founder' }}</h3>
+              <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-1.5">
+                {{ t('detail.chat_with') }} {{ isFounder() ? t('detail.claimer_label') : 'Founder' }}
+                <span :class="['inline-flex items-center gap-1 text-[10px] font-medium', isChatPartnerOnline ? 'text-[#29cc4e]' : 'text-[#9ca3af]']">
+                  <span :class="['inline-block w-2 h-2 rounded-full', isChatPartnerOnline ? 'bg-[#29cc4e]' : 'bg-[#9ca3af]']"></span>
+                  {{ isChatPartnerOnline ? 'Online' : 'Offline' }}
+                </span>
+              </h3>
             </div>
             
             <div id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4">
@@ -547,6 +622,32 @@ const copyGps = async (lat: number, lng: number) => {
           </div>
         </div>
       </div>
+
+      <!-- Activity Timeline -->
+      <div v-if="item && activities.length" class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm overflow-hidden">
+        <button @click="showActivities = !showActivities" class="w-full p-6 flex items-center justify-between hover:bg-[#f8faf7] dark:hover:bg-[#2a2a2a] transition-colors">
+          <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[#387b41]">timeline</span>
+            <h3 class="font-bold text-base text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('detail.activity_log') || 'Activity Log' }}</h3>
+          </div>
+          <span class="material-symbols-outlined text-[#40493d] dark:text-[#9ca3af] transition-transform" :class="showActivities ? 'rotate-180' : ''">expand_more</span>
+        </button>
+        <div v-if="showActivities" class="px-6 pb-6 space-y-0">
+          <div v-for="(act, i) in activities" :key="act.id" class="flex gap-4 relative">
+            <div class="flex flex-col items-center">
+              <div class="w-8 h-8 rounded-full bg-[#f3f5f2] dark:bg-[#2a2a2a] flex items-center justify-center shrink-0 z-10">
+                <span class="material-symbols-outlined text-sm text-[#387b41]">{{ activityIcons[act.action_type] || 'circle' }}</span>
+              </div>
+              <div v-if="i < activities.length - 1" class="w-px flex-1 bg-[#e0e4df] dark:bg-[#374151] min-h-[24px]"></div>
+            </div>
+            <div class="pb-6 pt-0.5">
+              <p class="text-sm font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">{{ act.description }}</p>
+              <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af] mt-0.5">{{ formatDate(act.created_at) }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       </div>
     </main>
   </div>
