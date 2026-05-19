@@ -1407,6 +1407,17 @@ app.post('/api/items/:id/start-claim',
                     .single();
 
                 if (!existing) return res.status(404).json({ success: false, message: 'Item not found' });
+
+                logger.error('Claim UPDATE returned 0 rows', {
+                    itemId: req.params.id,
+                    userId: req.user.id,
+                    existingStatus: JSON.stringify(existing.status),
+                    existingReporter: existing.reporter,
+                    existingClaimer: existing.claimer,
+                    matchReporter: existing.reporter === req.user.id,
+                    matchClaimer: existing.claimer === req.user.id,
+                });
+
                 if (existing.reporter === req.user.id) {
                     return res.status(400).json({ success: false, message: 'You cannot claim your own item' });
                 }
@@ -1419,7 +1430,13 @@ app.post('/api/items/:id/start-claim',
                 if (existing.status === 'Returned') {
                     return res.status(400).json({ success: false, message: 'This item has already been returned.' });
                 }
-                return res.status(400).json({ success: false, message: 'Item is already being claimed or returned.' });
+                if (existing.status === 'Available') {
+                    logger.error('Claim failed — status IS Available but UPDATE affected 0 rows. Possible RLS/permission issue.', {
+                        itemId: req.params.id, userId: req.user.id, reporterId: existing.reporter
+                    });
+                    return res.status(400).json({ success: false, message: 'Cannot claim item. Server configuration issue.' });
+                }
+                return res.status(400).json({ success: false, message: `Item status "${existing.status}" cannot be claimed.` });
             }
 
             const item = updated[0];
