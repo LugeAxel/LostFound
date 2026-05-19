@@ -104,7 +104,7 @@ onMounted(async () => {
   }
 
   socket = io(SOCKET_URL, {
-    transports: ['websocket', 'polling'],
+    transports: ['polling'],
     withCredentials: true,
     auth: { token: session?.access_token }
   });
@@ -119,6 +119,7 @@ onBeforeUnmount(() => {
   if (socket) socket.disconnect();
   unsubscribe();
 });
+
 </script>
 
 <template>

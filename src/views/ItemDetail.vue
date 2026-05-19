@@ -124,7 +124,7 @@ const initSocket = async () => {
   if (!session?.access_token) return;
 
   socket = io(SOCKET_URL, {
-    transports: ['websocket', 'polling'],
+    transports: ['polling'],
     withCredentials: true,
     auth: { token: session.access_token }
   });
