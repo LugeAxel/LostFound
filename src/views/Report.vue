@@ -36,7 +36,7 @@ const form = ref({
 const isSubmitting = ref(false);
 const isGettingLocation = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
-const imagePreview = ref<string | null>(null);
+const imagePreviews = ref<string[]>([]);
 
 const isCameraOpen = ref(false);
 const videoElement = ref<HTMLVideoElement | null>(null);
@@ -50,7 +50,6 @@ const startCamera = async () => {
       videoElement.value.srcObject = stream;
     }
     isCameraOpen.value = true;
-    imagePreview.value = null;
   } catch (error) {
     console.error('Error accessing camera:', error);
     toast.show('Unable to access camera. Please allow camera permissions.', 'error');
@@ -73,15 +72,19 @@ const takePhoto = () => {
   const ctx = canvas.getContext('2d');
   if (ctx) {
     ctx.drawImage(videoElement.value, 0, 0, canvas.width, canvas.height);
-    imagePreview.value = canvas.toDataURL('image/jpeg', 0.8);
-    form.value.imageUrl = imagePreview.value;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    if (imagePreviews.value.length < 3) {
+      imagePreviews.value.push(dataUrl);
+    }
     stopCamera();
   }
 };
 
+const removePhoto = (index: number) => {
+  imagePreviews.value.splice(index, 1);
+};
+
 const retakePhoto = () => {
-  imagePreview.value = null;
-  form.value.imageUrl = '';
   startCamera();
 };
 
@@ -124,19 +127,21 @@ const getLiveLocation = () => {
 
 const handleFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  if (target.files && target.files[0]) {
-    const file = target.files[0];
+  if (!target.files) return;
+  const remaining = 3 - imagePreviews.value.length;
+  const filesToAdd = Array.from(target.files).slice(0, remaining);
+  for (const file of filesToAdd) {
     if (file.size > 2 * 1024 * 1024) {
-      toast.show('File too large. Please select an image smaller than 2MB.', 'error');
-      return;
+      toast.show(`File too large: ${file.name}. Max 2MB per image.`, 'error');
+      continue;
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-      imagePreview.value = e.target?.result as string;
-      form.value.imageUrl = imagePreview.value;
+      imagePreviews.value.push(e.target?.result as string);
     };
     reader.readAsDataURL(file);
   }
+  target.value = '';
 };
 
 const triggerFileInput = () => {
@@ -150,8 +155,8 @@ const submitReport = async () => {
     toast.show('Please fill in required fields', 'error');
     return;
   }
-  if (!form.value.imageUrl && form.value.type === 'found') {
-    toast.show('Please provide a photo of the found item (Direct Camera Required)', 'error');
+  if (imagePreviews.value.length === 0 && form.value.type === 'found') {
+    toast.show('Please provide at least one photo of the found item', 'error');
     return;
   }
 
@@ -172,11 +177,11 @@ const submitReport = async () => {
       }));
     }
 
-    if (form.value.imageUrl) {
+    for (const preview of imagePreviews.value) {
       try {
-        const fetchRes = await fetch(form.value.imageUrl);
+        const fetchRes = await fetch(preview);
         const blob = await fetchRes.blob();
-        formData.append('image', blob, 'item_photo.jpg');
+        formData.append('images', blob, `photo_${Date.now()}.jpg`);
       } catch (e) {
         console.error('Failed to convert image to blob', e);
       }
@@ -224,69 +229,58 @@ const submitReport = async () => {
         <form @submit.prevent="submitReport" class="space-y-5 sm:space-y-6 md:space-y-8 relative z-10">
           <!-- Type Toggle -->
           <div class="grid grid-cols-2 gap-4 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl">
-            <button type="button" @click="form.type = 'found'; imagePreview = null; form.imageUrl = ''; stopCamera()"
+            <button type="button" @click="form.type = 'found'; imagePreviews = []; stopCamera()"
               :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', 
               form.type === 'found' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41]']">
               <span class="material-symbols-outlined text-xl">add_a_photo</span> Found
             </button>
-            <button type="button" @click="form.type = 'lost'; imagePreview = null; form.imageUrl = ''; stopCamera()"
+            <button type="button" @click="form.type = 'lost'; imagePreviews = []; stopCamera()"
               :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', 
               form.type === 'lost' ? 'bg-white dark:bg-[#1e1e1e] text-[#ba1a1a] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#ba1a1a]']">
               <span class="material-symbols-outlined text-xl">search</span> Lost
             </button>
           </div>
 
-          <!-- Image Input -->
+          <!-- Image Input (up to 3) -->
           <div class="space-y-3">
-            <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">
-              {{ form.type === 'found' ? 'Photo of Item (Direct Camera) *' : 'Photo of Item (Optional)' }}
-            </label>
-            <div class="relative w-full">
-              <!-- Found Item Native Camera Interface -->
-              <div v-if="form.type === 'found'" class="w-full">
-                <div v-if="!imagePreview && !isCameraOpen" @click="startCamera" class="w-full aspect-video md:h-64 border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-3xl bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center gap-2 hover:bg-[#f3f5f2] dark:bg-[#2a2a2a] hover:border-[#387b41]/30 transition-all cursor-pointer">
-                  <span class="material-symbols-outlined text-4xl text-[#40493d] dark:text-[#9ca3af]/40">photo_camera</span>
-                  <p class="text-xs font-bold text-[#40493d] dark:text-[#9ca3af]">Click to Open Camera</p>
-                  <p class="text-[10px] text-[#387b41] font-bold">REQUIRED FOR FOUND ITEMS</p>
-                </div>
-                
-                <div v-show="isCameraOpen && !imagePreview" class="relative w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151] bg-black">
-                  <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover"></video>
-                  <button @click.prevent="takePhoto" type="button" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white dark:bg-[#1e1e1e] rounded-full border-4 border-[#387b41] shadow-lg flex items-center justify-center hover:scale-105 transition-transform">
-                    <div class="w-12 h-12 rounded-full border-2 border-[#e0e4df] dark:border-[#374151]"></div>
-                  </button>
-                  <button @click.prevent="switchCamera" type="button" class="absolute top-4 left-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
-                    <span class="material-symbols-outlined text-sm">flip_camera_android</span>
-                  </button>
-                  <button @click.prevent="stopCamera" type="button" class="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
-                    <span class="material-symbols-outlined text-sm">close</span>
-                  </button>
-                </div>
+            <div class="flex items-center justify-between px-1">
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] uppercase tracking-wider">
+                {{ form.type === 'found' ? 'Photos *' : 'Photos' }} ({{ imagePreviews.length }}/3)
+              </label>
+            </div>
 
-                <div v-if="imagePreview" class="relative w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151]">
-                  <img :src="imagePreview" class="w-full h-full object-cover" />
-                  <button @click.prevent="retakePhoto" type="button" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2 hover:bg-white dark:bg-[#1e1e1e] transition-all">
-                    <span class="material-symbols-outlined text-lg">refresh</span> Retake Photo
-                  </button>
-                </div>
+            <!-- Gallery grid -->
+            <div class="grid grid-cols-3 gap-3">
+              <div v-for="(preview, i) in imagePreviews" :key="i" class="relative aspect-square rounded-2xl overflow-hidden border border-[#e0e4df] dark:border-[#374151] bg-[#f3f5f2] dark:bg-[#2a2a2a] group">
+                <img :src="preview" class="w-full h-full object-cover" />
+                <button @click.prevent="removePhoto(i)" type="button" class="absolute top-1 right-1 w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span class="material-symbols-outlined text-sm">close</span>
+                </button>
               </div>
 
-              <!-- Lost Item File Upload Interface -->
-              <div v-else @click="triggerFileInput" class="w-full relative group cursor-pointer">
-                <div v-if="!imagePreview" class="w-full aspect-video md:h-64 border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-3xl bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center gap-2 group-hover:bg-[#f3f5f2] dark:bg-[#2a2a2a] group-hover:border-[#387b41]/30 transition-all">
-                  <span class="material-symbols-outlined text-4xl text-[#40493d] dark:text-[#9ca3af]/40">upload_file</span>
-                  <p class="text-xs font-bold text-[#40493d] dark:text-[#9ca3af]">Click to Upload</p>
-                  <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af]/50">Will use default icon if empty</p>
-                </div>
-                <div v-else class="w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151]">
-                  <img :src="imagePreview" class="w-full h-full object-cover" />
-                  <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <p class="text-white font-bold text-sm">Change Photo</p>
-                  </div>
-                </div>
-                <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileUpload" />
+              <!-- Add photo button -->
+              <div v-if="imagePreviews.length < 3" @click="form.type === 'found' ? startCamera() : triggerFileInput()"
+                class="aspect-square border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-2xl bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center gap-1 hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] hover:border-[#387b41]/30 transition-all cursor-pointer">
+                <span class="material-symbols-outlined text-2xl text-[#40493d] dark:text-[#9ca3af]/40">{{ form.type === 'found' ? 'photo_camera' : 'upload_file' }}</span>
+                <span class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af]">{{ form.type === 'found' ? 'Camera' : 'Upload' }}</span>
               </div>
             </div>
+
+            <!-- Camera viewfinder (shown when camera is open) -->
+            <div v-show="isCameraOpen" class="relative w-full aspect-video rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151] bg-black">
+              <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover"></video>
+              <button @click.prevent="takePhoto" type="button" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white dark:bg-[#1e1e1e] rounded-full border-4 border-[#387b41] shadow-lg flex items-center justify-center hover:scale-105 transition-transform">
+                <div class="w-12 h-12 rounded-full border-2 border-[#e0e4df] dark:border-[#374151]"></div>
+              </button>
+              <button @click.prevent="switchCamera" type="button" class="absolute top-4 left-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
+                <span class="material-symbols-outlined text-sm">flip_camera_android</span>
+              </button>
+              <button @click.prevent="stopCamera" type="button" class="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
+                <span class="material-symbols-outlined text-sm">close</span>
+              </button>
+            </div>
+
+            <input ref="fileInput" type="file" accept="image/*" multiple class="hidden" @change="handleFileUpload" />
           </div>
 
           <!-- Details -->

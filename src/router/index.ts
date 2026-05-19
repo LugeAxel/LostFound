@@ -14,6 +14,8 @@ import Tutorial from '../views/Tutorial.vue'
 import DeveloperView from '../views/DeveloperView.vue'
 import Rating from '../views/Rating.vue'
 import Statistics from '../views/Statistics.vue'
+import ProfileEdit from '../views/ProfileEdit.vue'
+import ProfilePublic from '../views/ProfilePublic.vue'
 
 const router = createRouter({
   history: createWebHistory((import.meta as any).env.BASE_URL),
@@ -99,6 +101,17 @@ const router = createRouter({
       name: 'statistics',
       component: Statistics,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileEdit,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/profile/:username',
+      name: 'profile-public',
+      component: ProfilePublic
     },
     {
       path: '/:pathMatch(.*)*',

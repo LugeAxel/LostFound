@@ -230,6 +230,12 @@ onBeforeUnmount(() => {
                 </div>
               </button>
 
+              <RouterLink to="/profile" @click="showProfileDropdown = false"
+                class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] transition-all text-sm font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">
+                <span class="material-symbols-outlined text-xl text-[#40493d] dark:text-[#9ca3af]">badge</span>
+                <span>{{ t('nav.profile') }}</span>
+              </RouterLink>
+
               <RouterLink to="/statistics" @click="showProfileDropdown = false"
                 class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] transition-all text-sm font-medium text-[#1c1b1b] dark:text-[#f3f4f6]">
                 <span class="material-symbols-outlined text-xl text-[#40493d] dark:text-[#9ca3af]">leaderboard</span>

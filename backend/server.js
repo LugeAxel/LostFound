@@ -828,6 +828,166 @@ app.post('/api/auth/resend-verification', async (req, res) => {
     }
 });
 
+// ── PROFILE ROUTES ──────────────────────────
+
+// Get own profile (full, with new fields)
+app.get('/api/profile/me', authMiddleware, async (req, res) => {
+    try {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', req.user.id)
+            .single();
+
+        if (error || !profile) {
+            return res.status(404).json({ success: false, message: 'Profile not found.' });
+        }
+
+        res.json({ success: true, profile });
+    } catch (error) {
+        logger.error('Fetch profile error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to fetch profile.', ERROR_CODES.INTERNAL);
+    }
+});
+
+// Update own profile
+app.put('/api/profile/me',
+    authMiddleware,
+    [
+        body('username').optional({ values: 'null' }).trim().isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters')
+            .matches(/^[a-zA-Z0-9_-]+$/).withMessage('Username can only contain letters, numbers, hyphens, and underscores'),
+        body('bio').optional({ values: 'falsy' }).trim().isLength({ max: 200 }).withMessage('Bio too long'),
+        body('wa').optional({ values: 'falsy' }).trim().isLength({ max: 20 }).withMessage('WhatsApp number too long'),
+        body('ig').optional({ values: 'falsy' }).trim().isLength({ max: 50 }).withMessage('Instagram handle too long'),
+        body('fb').optional({ values: 'falsy' }).trim().isLength({ max: 50 }).withMessage('Facebook handle too long'),
+        body('tg').optional({ values: 'falsy' }).trim().isLength({ max: 50 }).withMessage('Telegram handle too long'),
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const updateData = {};
+            const contactFields = ['wa', 'ig', 'fb', 'tg'];
+            const profileFields = ['username', 'bio', ...contactFields];
+
+            for (const field of profileFields) {
+                if (req.body[field] !== undefined) {
+                    updateData[field] = req.body[field] || null;
+                }
+            }
+
+            // Enforce max 3 contacts
+            const filledContacts = contactFields.filter(f => updateData[f] !== undefined && updateData[f] !== null);
+            const existingProfileResult = await supabase.from('profiles').select('*').eq('id', req.user.id).single();
+            const existingProfile = existingProfileResult.data;
+            const existingFilled = contactFields.filter(f => existingProfile?.[f]);
+            const finalFilled = [...new Set([...filledContacts.filter(f => updateData[f] !== null), ...existingFilled.filter(f => !(f in updateData))])];
+
+            if (finalFilled.length > 3) {
+                return res.status(400).json({ success: false, message: 'Maximum 3 contact links allowed.' });
+            }
+
+            // Username cannot be changed once set
+            if (existingProfile?.username && req.body.username !== undefined && req.body.username !== existingProfile.username) {
+                return res.status(400).json({ success: false, message: 'Username cannot be changed after it has been set.' });
+            }
+
+            // Auto-generate username from nama if not provided and user has none yet
+            if (req.body.username === undefined && (!existingProfile?.username)) {
+                let slug = req.user.nama
+                    .trim()
+                    .replace(/\s+/g, '')
+                    .replace(/[^a-zA-Z0-9]/g, '');
+                if (slug.length < 3) slug = 'user' + slug;
+                if (slug.length > 50) slug = slug.slice(0, 50);
+
+                // Ensure uniqueness with -1, -2 fallback
+                let candidate = slug;
+                let attempt = 0;
+                while (true) {
+                    const { data: conflict } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('username', candidate)
+                        .neq('id', req.user.id)
+                        .maybeSingle();
+                    if (!conflict) break;
+                    attempt++;
+                    candidate = attempt === 1 ? `${slug}-1` : `${slug.slice(0, 47)}-${attempt}`;
+                    if (attempt > 100) {
+                        candidate = slug + '-' + Date.now().toString(36);
+                        break;
+                    }
+                }
+                updateData.username = candidate;
+            }
+
+            if (Object.keys(updateData).length === 0) {
+                return res.status(400).json({ success: false, message: 'No fields to update.' });
+            }
+
+            // Check username uniqueness when user explicitly provides it (not auto-gen)
+            if (req.body.username !== undefined && updateData.username) {
+                const { data: existing } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('username', updateData.username)
+                    .neq('id', req.user.id)
+                    .maybeSingle();
+
+                if (existing) {
+                    return res.status(400).json({ success: false, message: 'Username already taken.' });
+                }
+            }
+
+            const { data: updated, error } = await supabase
+                .from('profiles')
+                .update(updateData)
+                .eq('id', req.user.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            res.json({ success: true, profile: updated });
+        } catch (error) {
+            logger.error('Update profile error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+            sendError(res, 500, 'Failed to update profile.', ERROR_CODES.INTERNAL);
+        }
+    }
+);
+
+// Public profile (no auth) — for QR scanning
+app.get('/api/profile/:username', async (req, res) => {
+    try {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('id, nama, nisn, jurusan, bio, wa, ig, fb, tg')
+            .eq('username', req.params.username)
+            .maybeSingle();
+
+        if (error || !profile) {
+            return res.status(404).json({ success: false, message: 'Profile not found.' });
+        }
+
+        // Mask WA: show only last 4 digits
+        const maskedWa = profile.wa
+            ? '*'.repeat(Math.max(0, profile.wa.length - 4)) + profile.wa.slice(-4)
+            : null;
+
+        res.json({
+            success: true,
+            profile: {
+                ...profile,
+                wa: maskedWa,
+                wa_raw: profile.wa || null,
+            }
+        });
+    } catch (error) {
+        logger.error('Fetch public profile error', { requestId: req.requestId, username: req.params.username, error: error.message });
+        sendError(res, 500, 'Failed to fetch profile.', ERROR_CODES.INTERNAL);
+    }
+});
+
 // ── ITEM ROUTES (all protected) ──────────────
 
 // Get all items
@@ -850,7 +1010,8 @@ app.get('/api/items', authMiddleware, (req, res, next) => {
             .select(`
                 *,
                 reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
-                claimer:profiles!items_claimer_fkey(id, nama)
+                claimer:profiles!items_claimer_fkey(id, nama),
+                item_images(id, image_url)
             `)
             .order('reported_at', { ascending: false })
             .range(from, to);
@@ -897,7 +1058,8 @@ app.get('/api/items/mine', authMiddleware, async (req, res) => {
                 *,
                 reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
                 claimer:profiles!items_claimer_fkey(id, nama),
-                complaints(*)
+                complaints(*),
+                item_images(id, image_url)
             `)
             .eq('reporter', req.user.id)
             .order('reported_at', { ascending: false });
@@ -920,7 +1082,8 @@ app.get('/api/items/claim-code/:code', authMiddleware, async (req, res) => {
                 *,
                 reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
                 claimer:profiles!items_claimer_fkey(id, nama),
-                complaints(*, user:profiles!complaints_user_id_fkey(nama, id))
+                complaints(*, user:profiles!complaints_user_id_fkey(nama, id)),
+                item_images(id, image_url)
             `)
             .eq('claim_code', req.params.code)
             .single();
@@ -1014,7 +1177,8 @@ app.get('/api/items/:id', authMiddleware, async (req, res) => {
                 reporter:profiles!items_reporter_fkey(id, nama, nisn, jurusan),
                 claimer:profiles!items_claimer_fkey(id, nama),
                 complaints(*, user:profiles!complaints_user_id_fkey(nama, id)),
-                messages(*)
+                messages(*),
+                item_images(id, image_url)
             `)
             .eq('id', req.params.id)
             .single();
@@ -1033,7 +1197,14 @@ app.get('/api/items/:id', authMiddleware, async (req, res) => {
 // Create new item
 app.post('/api/items',
     authMiddleware,
-    upload.single('image'),
+    (req, res, next) => {
+        const ct = req.headers['content-type'] || '';
+        if (ct.includes('multipart/form-data')) {
+            upload.array('images', 3)(req, res, next);
+        } else {
+            next();
+        }
+    },
     [
         body('name').trim().notEmpty().withMessage('Item name is required')
             .isLength({ max: 200 }).withMessage('Item name too long'),
@@ -1071,7 +1242,17 @@ app.post('/api/items',
                 }
             }
 
-            const imageUrl = req.file ? req.file.path : null;
+            let mainImageUrl = null;
+            const extraImageUrls = [];
+
+            if (req.files && req.files.length > 0) {
+                mainImageUrl = req.files[0].path;
+                for (let i = 1; i < req.files.length; i++) {
+                    extraImageUrls.push(req.files[i].path);
+                }
+            } else if (req.body.imageUrl) {
+                mainImageUrl = req.body.imageUrl;
+            }
 
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
             const bytes = crypto.randomBytes(8);
@@ -1087,7 +1268,7 @@ app.post('/api/items',
                 area_category: area_category || null,
                 type: type.toLowerCase(),
                 description,
-                image_url: imageUrl,
+                image_url: mainImageUrl,
                 reporter: req.user.id,
                 claim_code: claimCode,
             };
@@ -1104,6 +1285,15 @@ app.post('/api/items',
                 .single();
 
             if (error) throw error;
+
+            // Save extra images to item_images table
+            if (extraImageUrls.length > 0) {
+                const imageRows = extraImageUrls.map(url => ({
+                    item_id: newItem.id,
+                    image_url: url,
+                }));
+                await supabase.from('item_images').insert(imageRows);
+            }
 
             invalidateCache('/api/items');
             invalidateCache('/api/stats');

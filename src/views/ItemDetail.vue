@@ -296,6 +296,25 @@ const initMap = async () => {
   setTimeout(() => map.invalidateSize(), 400);
 };
 
+const selectedImageIndex = ref(0);
+
+const allItemImages = computed(() => {
+  if (!item.value) return [];
+  const images: string[] = [];
+  if (item.value.image_url) images.push(item.value.image_url);
+  if (item.value.item_images) {
+    for (const img of item.value.item_images) {
+      if (img.image_url) images.push(img.image_url);
+    }
+  }
+  return images;
+});
+
+const currentImage = computed(() => {
+  const images = allItemImages.value;
+  return images[selectedImageIndex.value] || images[0] || null;
+});
+
 const formatDate = (date: string) => {
   if (!date) return '';
   const d = new Date(date);
@@ -373,8 +392,15 @@ const copyGps = async (lat: number, lng: number) => {
         <div class="space-y-8">
           <div class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] overflow-hidden border border-[#e0e4df] dark:border-[#374151] shadow-sm">
             <div class="aspect-video relative bg-[#f3f5f2] dark:bg-[#2a2a2a] flex items-center justify-center">
-              <img v-if="item.image_url" :src="optimizeImageUrl(item.image_url)" class="w-full h-full object-cover" />
+              <img v-if="currentImage" :src="optimizeImageUrl(currentImage)" class="w-full h-full object-cover" />
               <span v-else class="material-symbols-outlined text-7xl text-[#40493d] dark:text-[#9ca3af]/20">{{ item.type === 'lost' ? 'search' : 'inventory_2' }}</span>
+            </div>
+            <!-- Thumbnail strip -->
+            <div v-if="allItemImages.length > 1" class="flex gap-2 px-4 pt-4 pb-2 overflow-x-auto">
+              <button v-for="(img, i) in allItemImages" :key="i" @click="selectedImageIndex = i"
+                :class="['w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all', i === selectedImageIndex ? 'border-[#387b41] ring-2 ring-[#387b41]/30' : 'border-transparent opacity-60 hover:opacity-100']">
+                <img :src="optimizeImageUrl(img)" class="w-full h-full object-cover" />
+              </button>
             </div>
             <div class="p-8">
               <h1 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-4">{{ item.name }}</h1>
