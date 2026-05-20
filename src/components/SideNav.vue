@@ -65,14 +65,6 @@ const { t } = useI18n();
           <span class="material-symbols-outlined">qr_code</span>
           <span class="text-sm">Scan</span>
         </RouterLink>
-        <RouterLink to="/profile" 
-          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
-            route.path === '/profile'
-              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
-              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">badge</span>
-          <span class="text-sm">{{ t('nav.profile') }}</span>
-        </RouterLink>
         <RouterLink to="/statistics" 
           :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
             route.path === '/statistics'
