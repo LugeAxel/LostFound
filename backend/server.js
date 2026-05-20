@@ -877,8 +877,9 @@ app.put('/api/profile/me',
 
             // Enforce max 3 contacts
             const filledContacts = contactFields.filter(f => updateData[f] !== undefined && updateData[f] !== null);
-            const existingProfileResult = await supabase.from('profiles').select('*').eq('id', req.user.id).single();
-            const existingProfile = existingProfileResult.data;
+            const { data: existingProfile, error: fetchProfileError } = await supabase.from('profiles').select('*').eq('id', req.user.id).maybeSingle();
+
+            if (fetchProfileError) throw fetchProfileError;
             const existingFilled = contactFields.filter(f => existingProfile?.[f]);
             const finalFilled = [...new Set([...filledContacts.filter(f => updateData[f] !== null), ...existingFilled.filter(f => !(f in updateData))])];
 
@@ -939,14 +940,18 @@ app.put('/api/profile/me',
                 }
             }
 
-            const { data: updated, error } = await supabase
+            const { data: updated, error: updateError } = await supabase
                 .from('profiles')
                 .update(updateData)
                 .eq('id', req.user.id)
                 .select()
-                .single();
+                .maybeSingle();
 
-            if (error) throw error;
+            if (updateError) throw updateError;
+
+            if (!updated) {
+                return res.status(404).json({ success: false, message: 'Profile not found.' });
+            }
 
             res.json({ success: true, profile: updated });
         } catch (error) {
