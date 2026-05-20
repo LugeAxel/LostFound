@@ -214,17 +214,17 @@ const submitReport = async () => {
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-12 w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 w-full max-w-[1200px] mx-auto">
       <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
         <span class="text-[#1c1b1b] dark:text-[#f3f4f6] material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
-        Back to Dashboard
+        {{ t('report.back_to_dashboard') }}
       </button>
 
       <div class="bg-white dark:bg-[#1e1e1e] rounded-[2rem] sm:rounded-[2.5rem] shadow-xl p-4 sm:p-8 md:p-10 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
         <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-5 rounded-full"></div>
         
-        <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2 tracking-tight">Create Report</h2>
-        <p class="text-[#40493d] dark:text-[#9ca3af] mb-10 text-sm font-medium">Help the community find their belongings.</p>
+        <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2 tracking-tight">{{ t('report.title') }}</h2>
+        <p class="text-[#40493d] dark:text-[#9ca3af] mb-10 text-sm font-medium">{{ t('report.subtitle') }}</p>
 
         <form @submit.prevent="submitReport" class="space-y-5 sm:space-y-6 md:space-y-8 relative z-10">
           <!-- Type Toggle -->
@@ -232,12 +232,12 @@ const submitReport = async () => {
             <button type="button" @click="form.type = 'found'; imagePreviews = []; stopCamera()"
               :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', 
               form.type === 'found' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41]']">
-              <span class="material-symbols-outlined text-xl">add_a_photo</span> Found
+              <span class="material-symbols-outlined text-xl">add_a_photo</span> {{ t('report.found') }}
             </button>
             <button type="button" @click="form.type = 'lost'; imagePreviews = []; stopCamera()"
               :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', 
               form.type === 'lost' ? 'bg-white dark:bg-[#1e1e1e] text-[#ba1a1a] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#ba1a1a]']">
-              <span class="material-symbols-outlined text-xl">search</span> Lost
+              <span class="material-symbols-outlined text-xl">search</span> {{ t('report.lost') }}
             </button>
           </div>
 
@@ -245,7 +245,7 @@ const submitReport = async () => {
           <div class="space-y-3">
             <div class="flex items-center justify-between px-1">
               <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] uppercase tracking-wider">
-                {{ form.type === 'found' ? 'Photos *' : 'Photos' }} ({{ imagePreviews.length }}/3)
+                {{ form.type === 'found' ? t('report.photos') + ' *' : t('report.photos') }} ({{ imagePreviews.length }}/3)
               </label>
             </div>
 
@@ -262,7 +262,7 @@ const submitReport = async () => {
               <div v-if="imagePreviews.length < 3" @click="form.type === 'found' ? startCamera() : triggerFileInput()"
                 class="aspect-square border-2 border-dashed border-[#e0e4df] dark:border-[#374151] rounded-2xl bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center gap-1 hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] hover:border-[#387b41]/30 transition-all cursor-pointer">
                 <span class="material-symbols-outlined text-2xl text-[#40493d] dark:text-[#9ca3af]/40">{{ form.type === 'found' ? 'photo_camera' : 'upload_file' }}</span>
-                <span class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af]">{{ form.type === 'found' ? 'Camera' : 'Upload' }}</span>
+                <span class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af]">{{ form.type === 'found' ? t('report.camera') : t('report.upload') }}</span>
               </div>
             </div>
 
@@ -286,33 +286,33 @@ const submitReport = async () => {
           <!-- Details -->
           <div class="space-y-6">
             <div class="space-y-2">
-              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Item Name *</label>
-              <input v-model="form.name" type="text" placeholder="e.g. Blue Hydroflask, MacBook Air" 
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">{{ t('report.item_name') }}</label>
+              <input v-model="form.name" type="text" :placeholder="t('report.item_name_placeholder')" 
                 class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
             </div>
             
             <!-- Live Location Section -->
             <div class="space-y-3">
               <div class="flex justify-between items-center px-1">
-                <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] uppercase tracking-wider">Location *</label>
+                <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] uppercase tracking-wider">{{ t('report.location') }}</label>
                 <button type="button" @click="getLiveLocation" :disabled="isGettingLocation"
                   class="flex items-center gap-1 text-[10px] font-bold text-[#387b41] hover:underline disabled:opacity-50">
                   <span class="material-symbols-outlined text-sm">{{ isGettingLocation ? 'sync' : 'my_location' }}</span>
-                  {{ isGettingLocation ? 'Getting location...' : 'Use Live Location' }}
+                  {{ isGettingLocation ? t('report.getting_location') : t('report.use_live_location') }}
                 </button>
               </div>
               <div class="relative">
-                <input v-model="form.location" type="text" placeholder="e.g. Lab 3, Library" 
+                <input v-model="form.location" type="text" :placeholder="t('report.location_placeholder')" 
                   class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-5 py-4 pl-12 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af]">location_on</span>
               </div>
               <div v-if="form.coordinates" class="space-y-2">
                 <div class="flex justify-between items-center px-1">
                   <p class="text-[10px] text-[#387b41] font-bold flex items-center gap-1">
-                    <span class="material-symbols-outlined text-xs">gps_fixed</span> Coordinates attached
+                    <span class="material-symbols-outlined text-xs">gps_fixed</span> {{ t('report.coordinates_attached') }}
                   </p>
                   <button type="button" @click="form.coordinates = null" class="text-[10px] font-bold text-[#ba1a1a] hover:underline flex items-center gap-1">
-                    <span class="material-symbols-outlined text-xs">close</span> Clear pin
+                    <span class="material-symbols-outlined text-xs">close</span> {{ t('report.clear_pin') }}
                   </button>
                 </div>
                 <LocationPicker v-model="form.coordinates" />
@@ -320,24 +320,20 @@ const submitReport = async () => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Category</label>
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">{{ t('report.category') }}</label>
               <div class="relative">
                 <select v-model="form.category" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium appearance-none">
-                  <option>Electronics</option>
-                  <option>Daily Use</option>
-                  <option>Clothing</option>
-                  <option>Books/Stationery</option>
-                  <option>Others</option>
+                  <option v-for="cat in ['Electronics','Daily Use','Clothing','Books/Stationery','Others']" :key="cat" :value="cat">{{ t('card.category.' + cat) }}</option>
                 </select>
                 <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
               </div>
             </div>
 
             <div class="space-y-2">
-              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Area Category</label>
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">{{ t('report.area_category') }}</label>
               <div class="relative">
                 <select v-model="form.area_category" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium appearance-none">
-                  <option value="">Select area (optional)</option>
+                  <option value="">{{ t('myreports.select_area') }}</option>
                   <option v-for="area in areaCategories" :key="area" :value="area">{{ t('area.' + area) }}</option>
                 </select>
                 <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
@@ -345,8 +341,8 @@ const submitReport = async () => {
             </div>
 
             <div class="space-y-2">
-              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Description</label>
-              <textarea v-model="form.description" rows="3" placeholder="Color, brand, or other identifying features..." 
+              <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">{{ t('report.description') }}</label>
+              <textarea v-model="form.description" rows="3" :placeholder="t('report.description_placeholder')" 
                 class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium resize-none"></textarea>
             </div>
           </div>
@@ -354,7 +350,7 @@ const submitReport = async () => {
           <button type="submit" :disabled="isSubmitting"
             :class="['w-full py-5 rounded-[1.25rem] font-bold text-base transition-all shadow-lg active:scale-95 disabled:opacity-50 disabled:pointer-events-none text-white', 
             form.type === 'found' ? 'bg-[#387b41] hover:bg-[#2d6334]' : 'bg-[#ba1a1a] hover:bg-[#961515]']">
-            {{ isSubmitting ? 'Submitting...' : 'Submit Report' }}
+            {{ isSubmitting ? t('report.submitting') : t('report.submit') }}
           </button>
         </form>
       </div>

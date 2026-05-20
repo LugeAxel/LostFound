@@ -118,7 +118,7 @@ watch(() => route.query, (newQuery) => {
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-12 w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 w-full max-w-[1200px] mx-auto">
       <div class="mb-8">
         <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">{{ t('search.title') }}</h2>
         <p class="text-[#40493d] dark:text-[#9ca3af] text-sm mt-1">{{ t('search.subtitle') }}</p>

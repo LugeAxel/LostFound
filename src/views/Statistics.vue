@@ -59,7 +59,7 @@ onMounted(() => {
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-12 w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 w-full max-w-[1200px] mx-auto">
       <button @click="router.push('/dashboard')"
         class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-6 sm:mb-8 transition-colors font-bold text-sm group">
         <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
