@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onBeforeUnmount } from 'vue';
+import { useHead } from '@unhead/vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import LocationPicker from '../components/LocationPicker.vue';
@@ -15,6 +16,7 @@ import { supabase } from '../lib/supabase';
 const router = useRouter();
 const toast = useToast();
 const { t } = useI18n();
+useHead({ title: () => `${t('report.title')} — QReturn` });
 
 const areaCategories = [
   'Ruang Teori', 'Laboratorium', 'Masjid', 'Kantin', 'Koperasi',

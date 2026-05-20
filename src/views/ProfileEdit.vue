@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { useHead } from '@unhead/vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import QRCodeStyling from 'qr-code-styling';
@@ -13,6 +14,7 @@ import { API_URL } from '@/config/api';
 const router = useRouter();
 const { t } = useI18n();
 const toast = useToast();
+useHead({ title: () => `${t('profile.title')} — QReturn` });
 
 const platforms = ['wa', 'ig', 'fb', 'tg'] as const;
 const platformLabels: Record<string, string> = { wa: 'WhatsApp', ig: 'Instagram', fb: 'Facebook', tg: 'Telegram' };

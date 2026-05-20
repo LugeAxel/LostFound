@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { useHead } from '@unhead/vue';
 import axios from 'axios';
 import { useRouter, useRoute } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
@@ -16,6 +17,7 @@ import { useRealtimeAllItems } from '../composables/useRealtimeAllItems';
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
+useHead({ title: () => `${t('search.title')} — QReturn` });
 
 const items = ref<any[]>([]);
 const isLoading = ref(true);

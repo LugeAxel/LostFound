@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useHead } from '@unhead/vue';
 import { useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
@@ -6,6 +7,7 @@ import { useI18n } from '../i18n';
 
 const router = useRouter();
 const { t } = useI18n();
+useHead({ title: () => `${t('tutorial.title')} — QReturn` });
 
 const claimSteps = [
   { icon: 'dashboard', color: '#387b41', key: 'claim_step1' },

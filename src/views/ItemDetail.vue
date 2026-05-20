@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick, onBeforeUnmount } from 'vue';
+import { useHead } from '@unhead/vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import "leaflet/dist/leaflet.css";
@@ -24,6 +25,7 @@ const item = ref<any>(null);
 const isLoading = ref(true);
 const errorMessage = ref<string | null>(null);
 const mapContainer = ref<HTMLElement | null>(null);
+useHead({ title: () => item.value ? `${item.value.name} — QReturn` : 'QReturn' });
 const mapInstance = ref<L.Map | null>(null);
 
 const newMessage = ref('');

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { useHead } from '@unhead/vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { API_URL } from '@/config/api';
@@ -12,6 +13,7 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const claimCode = route.params.claimCode as string;
+useHead({ title: 'Klaim Barang — QReturn' });
 
 const item = ref<any>(null);
 const isLoading = ref(true);

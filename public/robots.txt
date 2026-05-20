@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Allow: /verify-email
+Disallow: /dashboard
+Disallow: /my-reports
+Disallow: /report
+Disallow: /profile
+Disallow: /scan
+Disallow: /claim/
+Disallow: /item/
+
+Sitemap: https://qreturn.sijaarc.xyz/sitemap.xml

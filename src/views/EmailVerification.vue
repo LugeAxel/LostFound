@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useHead } from '@unhead/vue';
 import { useRouter, useRoute } from 'vue-router';
 import { supabase } from '../lib/supabase';
 import { API_URL } from '@/config/api';
@@ -8,6 +9,7 @@ import { DotLottieVue } from '@lottiefiles/dotlottie-vue';
 
 const router = useRouter();
 const route = useRoute();
+useHead({ title: 'Verifikasi Email — QReturn' });
 
 const status = ref<'loading' | 'pending' | 'success' | 'error'>('loading');
 const message = ref('');

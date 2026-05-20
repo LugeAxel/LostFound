@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useHead } from '@unhead/vue';
 import axios from 'axios';
 import { RouterLink, useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
@@ -15,6 +16,7 @@ import { useRealtimeAllItems } from '../composables/useRealtimeAllItems';
 
 const router = useRouter();
 const { t } = useI18n();
+useHead({ title: () => `${t('nav.dashboard')} — QReturn` });
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
 const loadingUser = ref(true);
 const items = ref<any[]>([]);

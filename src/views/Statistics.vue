@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useHead } from '@unhead/vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
@@ -11,6 +12,7 @@ import { useRealtimeAllItems } from '../composables/useRealtimeAllItems';
 
 const router = useRouter();
 const { t } = useI18n();
+useHead({ title: () => `${t('stats.title')} — QReturn` });
 
 const itemsPerDay = ref<any[]>([]);
 const topLocations = ref<any[]>([]);

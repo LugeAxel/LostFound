@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useHead } from '@unhead/vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import SideNav from '../components/SideNav.vue';
@@ -12,6 +13,7 @@ import { getAuthHeaders } from '../composables/useAuth';
 const router = useRouter();
 const { t } = useI18n();
 const toast = useToast();
+useHead({ title: () => `${t('rating.title')} — QReturn` });
 
 const averageRating = ref(0);
 const totalRatings = ref(0);

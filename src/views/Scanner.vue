@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { useHead } from '@unhead/vue';
 import { useRouter } from 'vue-router';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import SideNav from '../components/SideNav.vue';
@@ -11,6 +12,7 @@ import { DotLottieVue } from '@lottiefiles/dotlottie-vue';
 const router = useRouter();
 const { t } = useI18n();
 const toast = useToast();
+useHead({ title: () => `${t('scanner.title')} — QReturn` });
 
 let scanner: Html5Qrcode | null = null;
 let scanLocked = false;

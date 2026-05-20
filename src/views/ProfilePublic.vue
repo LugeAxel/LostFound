@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useHead } from '@unhead/vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useI18n } from '../i18n';
@@ -8,6 +9,7 @@ import { API_URL } from '@/config/api';
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+useHead({ title: () => `${t('profile.public_title')} — QReturn` });
 
 const profile = ref<any>(null);
 const isLoading = ref(true);

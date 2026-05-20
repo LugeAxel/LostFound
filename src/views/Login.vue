@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useHead } from '@unhead/vue';
 import { Html5Qrcode } from 'html5-qrcode';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
@@ -15,6 +16,7 @@ const resultData = ref<any>(null);
 const lastScan = ref('');
 let html5QrCode: Html5Qrcode | null = null;
 const toast = useToast();
+useHead({ title: 'QReturn — Lost & Found SMKN 2 Depok' });
 const loginMode = ref<'qr' | 'email'>('qr');
 const emailForm = ref({ email: '', password: '', nama: '' });
 const isEmailMode = ref<'login' | 'register'>('login');

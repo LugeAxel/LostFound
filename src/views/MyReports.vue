@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useHead } from '@unhead/vue';
 import axios from 'axios';
 import { useRouter } from 'vue-router';
 import QrcodeVue from 'qrcode.vue';
@@ -16,6 +17,7 @@ import { useRealtimeItems } from '../composables/useRealtimeItems';
 const router = useRouter();
 const toast = useToast();
 const { t } = useI18n();
+useHead({ title: () => `${t('myreports.title')} — QReturn` });
 const items = ref<any[]>([]);
 const isLoading = ref(true);
 const itemMatches = ref<Record<string, any[]>>({});

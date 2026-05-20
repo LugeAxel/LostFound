@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import { useHead } from '@unhead/vue';
 import { useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
@@ -41,6 +42,7 @@ import { useI18n } from '../i18n';
 
 const router = useRouter();
 const { t } = useI18n();
+useHead({ title: () => `${t('developer.title')} — QReturn` });
 
 const developers = [
   { name: 'dev1', displayName: t('developer.dev1_name'), roleKey: t('developer.dev1_role'), descKey: t('developer.dev1_desc'), photo: 'https://res.cloudinary.com/djtwl4a6s/image/upload/q_auto/f_auto/v1779162940/f4a01707-0b70-4ec3-95c8-bfc0d12ad8e3_c6grno.jpg' },
