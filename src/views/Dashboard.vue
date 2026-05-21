@@ -107,7 +107,7 @@ onMounted(async () => {
     <TopNav />
 
     <!-- Main Content -->
-    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-20 min-h-screen w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-20 min-h-screen flex-1 min-w-0">
       <!-- Welcome Banner -->
       <section class="mb-10">
         <div class="relative overflow-hidden rounded-[2rem] bg-[#387b41] p-10 text-white flex justify-between items-center shadow-lg">
@@ -165,7 +165,7 @@ onMounted(async () => {
         <h3 class="text-lg font-bold mb-4 sm:mb-6 dark:text-[#88d982] text-[#387b41] flex items-center gap-2">
           <span class="material-symbols-outlined text-[#387b41]">bolt</span> {{ t('dash.quick_actions') }}
         </h3>
-        <div class="flex overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 gap-3 sm:gap-4 md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 md:pb-0 md:mx-0 md:px-0 hide-scrollbar">
+        <div class="flex overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 gap-3 sm:gap-4 md:grid md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] md:gap-4 md:pb-0 md:mx-0 md:px-0 hide-scrollbar">
           <RouterLink to="/report" class="min-w-[75vw] sm:min-w-[65vw] md:min-w-0 snap-center bg-white dark:bg-[#1e1e1e] rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all group border-l-[4px] border-l-[#1b6d24]">
             <span class="material-symbols-outlined text-2xl sm:text-3xl md:text-4xl text-[#1b6d24] mb-3 sm:mb-4">find_in_page</span>
             <h4 class="text-base sm:text-lg md:text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1 sm:mb-2">{{ t('dash.report_lost') }}</h4>
@@ -204,7 +204,7 @@ onMounted(async () => {
             <p class="text-sm text-[#40493d] dark:text-[#9ca3af]">{{ t('dash.recommendations_sub') }}</p>
           </div>
         </div>
-        <div v-if="loadingRecs" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 px-8 md:px-12">
+        <div v-if="loadingRecs" class="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 md:gap-6 px-8 md:px-12">
           <ItemSkeleton v-for="i in 3" :key="i" />
         </div>
         <div v-else-if="recommendations.length === 0" class="text-center py-16 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
@@ -217,7 +217,7 @@ onMounted(async () => {
             <span class="material-symbols-outlined text-sm text-white">chevron_left</span>
           </button>
 
-          <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 px-8 md:px-12">
+          <div class="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 md:gap-6 px-8 md:px-12">
             <ItemCard v-for="rec in visibleRecs" :key="rec.id" :item="rec" />
           </div>
 
@@ -244,14 +244,14 @@ onMounted(async () => {
             <span class="material-symbols-outlined text-base">arrow_forward</span>
           </RouterLink>
         </div>
-        <div v-if="loadingItems" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-16">
+        <div v-if="loadingItems" class="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 md:gap-6 mb-16">
           <ItemSkeleton v-for="i in 3" :key="i" />
         </div>
         <div v-else-if="items.length === 0" class="text-center py-20 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151] mb-16">
           <span class="material-symbols-outlined text-6xl text-[#40493d] dark:text-[#9ca3af]/10 mb-4">inventory_2</span>
           <p class="text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('dash.no_items') }}</p>
         </div>
-        <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-16">
+        <div v-else class="grid grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 md:gap-6 mb-16">
           <ItemCard v-for="item in items" :key="item.id" :item="item" />
         </div>
       </section>

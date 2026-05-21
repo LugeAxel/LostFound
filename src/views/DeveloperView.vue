@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex font-sans pb-20">
     <SideNav />
     <TopNav />
-    <main class="md:ml-64 pt-24 px-8 pb-12 w-full max-w-[1200px] mx-auto flex flex-col min-h-screen">
+    <main class="md:ml-64 pt-24 px-8 pb-12 flex-1 min-w-0 flex flex-col min-h-screen">
       <div class="flex-grow">
         <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
           <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
@@ -15,7 +15,7 @@
           <h1 class="text-4xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-4 tracking-tight">{{ t('developer.title') }}</h1>
           <p class="text-[#40493d] dark:text-[#9ca3af] mb-12 text-base md:text-lg font-medium max-w-2xl">{{ t('developer.subtitle') }}</p>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 relative z-10">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4 md:gap-8 relative z-10">
             <div v-for="dev in developers" :key="dev.name" class="bg-[#f8faf7] dark:bg-[#121212] rounded-[2rem] p-4 md:p-6 shadow-sm border border-[#e0e4df] dark:border-[#374151] text-center hover:shadow-md transition-all group">
               <div class="w-32 h-32 mx-auto rounded-full bg-gray-200 mb-6 overflow-hidden border-4 border-white shadow-sm group-hover:scale-105 transition-transform duration-300">
                 <img :src="dev.photo" alt="Developer photo" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300" />

@@ -6,6 +6,7 @@ import { useRouter, useRoute } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import ItemCard from '../components/ItemCard.vue';
+import ItemSkeleton from '../components/ItemSkeleton.vue';
 import Footer from '../components/Footer.vue';
 import { API_URL } from '@/config/api';
 import { useI18n } from '../i18n';
@@ -120,7 +121,7 @@ watch(() => route.query, (newQuery) => {
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 flex-1 min-w-0">
       <div class="mb-8">
         <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">{{ t('search.title') }}</h2>
         <p class="text-[#40493d] dark:text-[#9ca3af] text-sm mt-1">{{ t('search.subtitle') }}</p>
@@ -184,8 +185,8 @@ watch(() => route.query, (newQuery) => {
         </div>
       </div>
 
-      <div v-if="isLoading" class="flex justify-center py-20">
-        <div class="w-10 h-10 border-4 border-[#387b41]/20 border-t-[#387b41] rounded-full animate-spin"></div>
+      <div v-if="isLoading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 md:gap-5 mb-10">
+        <ItemSkeleton v-for="i in 8" :key="i" />
       </div>
 
       <div v-else-if="items.length === 0" class="text-center py-32 bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
@@ -195,7 +196,7 @@ watch(() => route.query, (newQuery) => {
       </div>
 
       <div v-else>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5 mb-10">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-3 md:gap-5 mb-10">
           <ItemCard v-for="item in items" :key="item.id" :item="item" />
         </div>
 

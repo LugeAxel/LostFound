@@ -216,7 +216,7 @@ const submitReport = async () => {
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 flex-1 min-w-0">
       <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] mb-8 transition-colors font-bold text-sm group">
         <span class="text-[#1c1b1b] dark:text-[#f3f4f6] material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
         {{ t('report.back_to_dashboard') }}
@@ -268,18 +268,22 @@ const submitReport = async () => {
               </div>
             </div>
 
-            <!-- Camera viewfinder (shown when camera is open) -->
-            <div v-show="isCameraOpen" class="relative w-full aspect-video rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151] bg-black">
-              <video ref="videoElement" autoplay playsinline class="w-full h-full object-cover"></video>
-              <button @click.prevent="takePhoto" type="button" class="absolute bottom-4 left-1/2 -translate-x-1/2 w-16 h-16 bg-white dark:bg-[#1e1e1e] rounded-full border-4 border-[#387b41] shadow-lg flex items-center justify-center hover:scale-105 transition-transform">
-                <div class="w-12 h-12 rounded-full border-2 border-[#e0e4df] dark:border-[#374151]"></div>
-              </button>
-              <button @click.prevent="switchCamera" type="button" class="absolute top-4 left-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
-                <span class="material-symbols-outlined text-sm">flip_camera_android</span>
-              </button>
-              <button @click.prevent="stopCamera" type="button" class="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70">
-                <span class="material-symbols-outlined text-sm">close</span>
-              </button>
+            <!-- Full-screen Camera Overlay -->
+            <div v-show="isCameraOpen" class="fixed inset-0 z-50 bg-black flex flex-col animate-slide-up top-24 bottom-20 md:left-64 md:bottom-0">
+              <video ref="videoElement" autoplay playsinline class="flex-1 w-full h-full object-cover"></video>
+              <div class="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10">
+                <button @click.prevent="switchCamera" type="button" class="w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70 transition-all">
+                  <span class="material-symbols-outlined text-sm">flip_camera_android</span>
+                </button>
+                <button @click.prevent="stopCamera" type="button" class="w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-md hover:bg-black/70 transition-all">
+                  <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+              </div>
+              <div class="absolute bottom-12 left-0 right-0 flex justify-center z-10">
+                <button @click.prevent="takePhoto" type="button" class="w-20 h-20 bg-white rounded-full border-4 border-[#387b41] shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+                  <div class="w-14 h-14 rounded-full border-2 border-[#e0e4df]"></div>
+                </button>
+              </div>
             </div>
 
             <input ref="fileInput" type="file" accept="image/*" multiple class="hidden" @change="handleFileUpload" />
@@ -360,4 +364,14 @@ const submitReport = async () => {
     </main>
     </div>
 </template>
+
+<style scoped>
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+</style>
 

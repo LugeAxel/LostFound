@@ -6,6 +6,7 @@ import { useRouter } from 'vue-router';
 import QrcodeVue from 'qrcode.vue';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
+import ItemSkeleton from '../components/ItemSkeleton.vue';
 import { API_URL } from '@/config/api';
 import { useToast } from '../composables/useToast';
 import { getAuthHeaders } from '../composables/useAuth';
@@ -249,7 +250,7 @@ const saveEdit = async () => {
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 w-full max-w-[1200px] mx-auto">
+    <main class="md:ml-64 pt-24 px-4 sm:px-6 md:px-8 pb-24 md:pb-12 flex-1 min-w-0">
       <div class="flex justify-between items-center mb-10">
         <div>
           <h2 class="text-3xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] tracking-tight">{{ t('myreports.title') }}</h2>
@@ -270,8 +271,8 @@ const saveEdit = async () => {
           <span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#40493d] dark:text-[#9ca3af]">expand_more</span>
         </div>
 
-      <div v-if="isLoading" class="flex justify-center py-20">
-        <div class="w-10 h-10 border-4 border-[#387b41]/20 border-t-[#387b41] rounded-full animate-spin"></div>
+      <div v-if="isLoading" class="grid grid-cols-1 gap-6">
+        <ItemSkeleton v-for="i in 4" :key="i" />
       </div>
 
       <div v-else-if="filteredItems.length === 0" class="text-center py-32 bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
@@ -280,14 +281,14 @@ const saveEdit = async () => {
         <p class="text-[#40493d] dark:text-[#9ca3af] max-w-xs mx-auto">{{ t('myreports.no_reports_desc') }}</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6">
-        <div v-for="item in filteredItems" :key="item.id" class="bg-white dark:bg-[#1e1e1e] rounded-3xl p-4 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+      <div v-else class="grid grid-cols-1 gap-4">
+        <div v-for="item in filteredItems" :key="item.id" @click="router.push(`/item/${item.id}`)" class="bg-white dark:bg-[#1e1e1e] rounded-xl p-4 md:p-5 border border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md transition-all relative overflow-hidden cursor-pointer">
           <div v-if="item.status === 'Returned'" class="absolute top-0 right-0 z-10 overflow-hidden w-24 h-24">
             <span class="absolute top-3 right-[-30px] w-28 py-1 bg-[#387b41] text-white text-[10px] font-bold uppercase tracking-widest text-center rotate-45 shadow-sm">{{ t('card.returned') }}</span>
           </div>
           
-          <div class="flex flex-col md:flex-row gap-4 md:gap-8">
-            <div class="w-full md:w-48 h-48 rounded-2xl overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a] flex-shrink-0 relative group">
+          <div class="flex flex-col md:flex-row gap-4 md:gap-5">
+            <div class="w-full md:w-36 h-36 rounded-xl overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a] flex-shrink-0 relative group">
               <img :src="optimizeImageUrl(item.image_url) || (item.type === 'lost' ? '/lost-default.svg' : '/found-default.svg')" 
                 :class="['w-full h-full object-cover', !item.image_url && 'p-8 opacity-20']" loading="lazy" />
               <div v-if="!item.image_url" class="absolute inset-0 flex items-center justify-center">
@@ -295,28 +296,28 @@ const saveEdit = async () => {
               </div>
             </div>
 
-            <div class="flex-1 flex flex-col justify-between py-2">
+            <div class="flex-1 flex flex-col justify-between py-1">
               <div>
-                <div class="flex items-center gap-3 mb-3">
+                <div class="flex items-center gap-2 mb-2.5">
                   <span :class="['text-[10px] px-3 py-1 rounded-full font-bold tracking-wider', item.type === 'lost' ? 'bg-[#fef2f2] text-[#ba1a1a]' : 'bg-[#f0fdf4] text-[#387b41]']">
                     {{ item.type === 'lost' ? t('card.lost') : t('card.found') }}
                   </span>
                   <span :class="['text-[10px] px-3 py-1 rounded-full font-bold', item.status === 'Available' ? 'bg-[#abf4ac] text-[#07521d]' : item.status === 'On Progress' ? 'bg-[#ffecb3] text-[#f57f17]' : 'bg-[#dee5d6] text-[#42493e]']">
                     {{ t('card.status.' + item.status) }}
                   </span>
-                  <button v-if="item.status !== 'Returned'" @click="openEdit(item)"
+                  <button v-if="item.status !== 'Returned'" @click.stop="openEdit(item)"
                     class="ml-auto w-7 h-7 rounded-full bg-[#f3f5f2] dark:bg-[#2a2a2a] flex items-center justify-center hover:bg-[#e0e4df] dark:hover:bg-[#374151] hover:text-[#387b41] transition-all text-[#40493d] dark:text-[#9ca3af]"
                     title="Edit item">
                     <span class="material-symbols-outlined text-sm">edit</span>
                   </button>
                 </div>
-                <h4 class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-2">{{ item.name }}</h4>
-                <div class="flex flex-wrap gap-x-6 gap-y-2">
+                <h4 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1.5">{{ item.name }}</h4>
+                <div class="flex flex-wrap gap-x-4 gap-y-1.5">
                   <p class="text-sm text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1"><span class="material-symbols-outlined text-lg">location_on</span> {{ item.type === 'lost' ? t('detail.last_seen') + ' ' + item.location : t('detail.found_at') + ' ' + item.location }}</p>
                   <p class="text-sm text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1"><span class="material-symbols-outlined text-lg">calendar_today</span> {{ formatDate(item.reported_at) }}</p>
                   <p class="text-sm text-[#40493d] dark:text-[#9ca3af] flex items-center gap-1"><span class="material-symbols-outlined text-lg">category</span> {{ t('card.category.' + item.category) }}</p>
                 </div>
-                <div v-if="item.coordinates_lat != null && item.coordinates_lng != null" class="mt-2 flex items-center gap-2">
+                <div v-if="item.coordinates_lat != null && item.coordinates_lng != null" class="mt-1.5 flex items-center gap-2">
                   <span class="text-[10px] text-[#387b41] font-bold flex items-center gap-1">
                     <span class="material-symbols-outlined text-xs">gps_fixed</span>
                     {{ item.coordinates_lat.toFixed(4) }}, {{ item.coordinates_lng.toFixed(4) }}
@@ -327,11 +328,11 @@ const saveEdit = async () => {
                     <span class="material-symbols-outlined text-xs">content_copy</span>
                   </button>
                 </div>
-                <p class="mt-4 text-sm text-[#40493d] dark:text-[#9ca3af] italic leading-relaxed" v-if="item.description">"{{ item.description }}"</p>
+                <p class="mt-3 text-sm text-[#40493d] dark:text-[#9ca3af] italic leading-relaxed" v-if="item.description">"{{ item.description }}"</p>
               </div>
 
               <!-- Proof of Return -->
-              <div v-if="item.status === 'Returned' && item.claim_photo" class="mt-6 pt-6 border-t border-[#e0e4df] dark:border-[#374151]">
+              <div v-if="item.status === 'Returned' && item.claim_photo" class="mt-4 pt-4 border-t border-[#e0e4df] dark:border-[#374151]">
                 <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] mb-3 uppercase tracking-wider">{{ t('myreports.proof_of_return') }}</p>
                 <div class="flex gap-4 items-center">
                   <img :src="item.claim_photo" class="w-16 h-16 rounded-lg object-cover border border-[#e0e4df] dark:border-[#374151]" />
@@ -343,10 +344,10 @@ const saveEdit = async () => {
               </div>
             </div>
 
-            <div v-if="item.status !== 'Returned'" class="flex flex-col items-center justify-center p-4 md:p-6 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl border border-[#e0e4df] dark:border-[#374151] min-w-[200px]">
-              <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] mb-4 uppercase tracking-[0.2em]">{{ t('myreports.claim_qr_code') }}</p>
-              <div class="p-3 bg-white rounded-xl shadow-inner mb-4">
-                <qrcode-vue :value="getClaimUrl(item.claim_code)" :size="100" level="H" foreground="#1c1b1b" class=""/>
+            <div v-if="item.status !== 'Returned'" class="flex flex-col items-center justify-center p-3 md:p-4 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-xl border border-[#e0e4df] dark:border-[#374151] min-w-[160px]">
+              <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] mb-2 uppercase tracking-[0.2em]">{{ t('myreports.claim_qr_code') }}</p>
+              <div class="p-2 bg-white rounded-xl shadow-inner mb-3">
+                <qrcode-vue :value="getClaimUrl(item.claim_code)" :size="80" level="H" foreground="#1c1b1b" class=""/>
               </div>
               <div class="mb-2 flex items-center gap-1 bg-[#e0e4df] dark:bg-[#374151] px-3 py-1.5 rounded-lg">
                 <span class="text-[9px] font-mono text-[#40493d] dark:text-[#9ca3af] truncate max-w-[120px]">{{ item.claim_code }}</span>
@@ -359,19 +360,19 @@ const saveEdit = async () => {
               <p v-if="item.status === 'On Progress'" class="text-[9px] text-[#f57f17] text-center font-bold max-w-[140px] mb-2">{{ t('myreports.claim_in_progress') }}</p>
               <p class="text-[9px] text-[#40493d] dark:text-[#9ca3af] text-center font-medium max-w-[140px]">{{ t('myreports.claim_qr_desc') }}</p>
             </div>
-            <div v-else class="flex flex-col items-center justify-center p-4 md:p-6 bg-[#f0fdf4] rounded-2xl border border-[#abf4ac] min-w-[200px]">
+            <div v-else class="flex flex-col items-center justify-center p-3 md:p-4 bg-[#f0fdf4] rounded-xl border border-[#abf4ac] min-w-[160px]">
               <span class="material-symbols-outlined text-4xl text-[#387b41] mb-2">check_circle</span>
               <p class="text-xs font-bold text-[#387b41]">{{ t('myreports.returned_successfully') }}</p>
             </div>
           </div>
 
           <!-- This Might Be Your Item (per lost item matches) -->
-          <div v-if="item.type === 'lost' && itemMatches[item.id]?.length" class="mt-6 pt-5 border-t border-[#e0e4df] dark:border-[#374151]">
+          <div v-if="item.type === 'lost' && itemMatches[item.id]?.length" class="mt-4 pt-4 border-t border-[#e0e4df] dark:border-[#374151]">
             <div class="flex items-center gap-2 mb-4">
               <span class="material-symbols-outlined text-[#f57f17] text-base">lightbulb</span>
               <h4 class="text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('myreports.suggestions_title') }}</h4>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-3">
               <div v-for="match in itemMatches[item.id]" :key="match.id" @click="router.push(`/item/${match.id}`)"
                 class="bg-[#f8faf7] dark:bg-[#121212] rounded-xl border border-[#e0e4df] dark:border-[#374151] overflow-hidden hover:shadow-md hover:border-[#387b41]/30 transition-all cursor-pointer group flex gap-4 p-3">
                 <div class="w-20 h-20 rounded-lg bg-[#f3f5f2] dark:bg-[#2a2a2a] overflow-hidden flex-shrink-0">

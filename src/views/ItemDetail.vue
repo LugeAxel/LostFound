@@ -377,7 +377,7 @@ const copyGps = async (lat: number, lng: number) => {
       </div>
     </header>
 
-      <div class="flex-1 max-w-[1200px] w-full mx-auto p-4 md:p-6 md:p-10 space-y-10 overflow-y-auto">
+      <div class="flex-1 w-full p-4 md:p-6 md:p-10 space-y-10 overflow-y-auto">
       <div v-if="isLoading" class="flex justify-center py-20">
         <div class="w-10 h-10 border-4 border-[#387b41]/20 border-t-[#387b41] rounded-full animate-spin"></div>
       </div>
