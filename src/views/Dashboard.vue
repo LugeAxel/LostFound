@@ -234,11 +234,11 @@ onMounted(async () => {
             <span class="material-symbols-outlined text-base">arrow_forward</span>
           </RouterLink>
         </div>
-        <div v-if="items.length === 0" class="text-center py-20 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
+        <div v-if="items.length === 0" class="text-center py-20 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151] mb-16">
           <span class="material-symbols-outlined text-6xl text-[#40493d] dark:text-[#9ca3af]/10 mb-4">inventory_2</span>
           <p class="text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('dash.no_items') }}</p>
         </div>
-        <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+        <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-16">
           <ItemCard v-for="item in items" :key="item.id" :item="item" />
         </div>
       </section>
