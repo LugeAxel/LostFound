@@ -6,6 +6,7 @@ import { RouterLink, useRouter } from 'vue-router';
 import SideNav from '../components/SideNav.vue';
 import TopNav from '../components/TopNav.vue';
 import ItemCard from '../components/ItemCard.vue';
+import ItemSkeleton from '../components/ItemSkeleton.vue';
 import Footer from '../components/Footer.vue';
 import OnboardingOverlay from '../components/OnboardingOverlay.vue';
 import { API_URL } from '@/config/api';
@@ -19,6 +20,8 @@ const { t } = useI18n();
 useHead({ title: () => `${t('nav.dashboard')} — QReturn` });
 const user = ref<any>(JSON.parse(localStorage.getItem('user') || '{}'));
 const loadingUser = ref(true);
+const loadingItems = ref(true);
+const loadingRecs = ref(true);
 const items = ref<any[]>([]);
 const stats = ref({ currentlyLost: 0, foundToday: 0, returnedAllTime: 0 });
 const recommendations = ref<any[]>([]);
@@ -50,6 +53,8 @@ const fetchItems = async () => {
   } catch (error: any) {
     if (error.response?.status === 401) { await supabase.auth.signOut(); localStorage.removeItem('token'); localStorage.removeItem('user'); router.push('/'); }
     console.error('Error fetching items:', error);
+  } finally {
+    loadingItems.value = false;
   }
 };
 
@@ -60,6 +65,8 @@ const fetchRecommendations = async () => {
     recsOffset.value = 0;
   } catch (error: any) {
     console.error('Error fetching recommendations:', error);
+  } finally {
+    loadingRecs.value = false;
   }
 };
 
@@ -197,7 +204,10 @@ onMounted(async () => {
             <p class="text-sm text-[#40493d] dark:text-[#9ca3af]">{{ t('dash.recommendations_sub') }}</p>
           </div>
         </div>
-        <div v-if="recommendations.length === 0" class="text-center py-16 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
+        <div v-if="loadingRecs" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 px-8 md:px-12">
+          <ItemSkeleton v-for="i in 3" :key="i" />
+        </div>
+        <div v-else-if="recommendations.length === 0" class="text-center py-16 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151]">
           <span class="material-symbols-outlined text-5xl text-[#40493d] dark:text-[#9ca3af]/10 mb-3">lightbulb</span>
           <p class="text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('dash.no_recommendations') }}</p>
         </div>
@@ -234,7 +244,10 @@ onMounted(async () => {
             <span class="material-symbols-outlined text-base">arrow_forward</span>
           </RouterLink>
         </div>
-        <div v-if="items.length === 0" class="text-center py-20 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151] mb-16">
+        <div v-if="loadingItems" class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-16">
+          <ItemSkeleton v-for="i in 3" :key="i" />
+        </div>
+        <div v-else-if="items.length === 0" class="text-center py-20 bg-white dark:bg-[#1e1e1e] rounded-[2rem] border border-dashed border-[#e0e4df] dark:border-[#374151] mb-16">
           <span class="material-symbols-outlined text-6xl text-[#40493d] dark:text-[#9ca3af]/10 mb-4">inventory_2</span>
           <p class="text-[#40493d] dark:text-[#9ca3af] font-medium">{{ t('dash.no_items') }}</p>
         </div>

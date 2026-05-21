@@ -78,7 +78,11 @@ onBeforeUnmount(() => {
   <div v-if="!isOnline" class="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-xs font-bold py-2 px-4">
     ⚠️ You are offline. Some features may not work.
   </div>
-  <RouterView />
+  <RouterView v-slot="{ Component }">
+    <transition name="page-fade" mode="out-in">
+      <component :is="Component" />
+    </transition>
+  </RouterView>
   <Toast />
 </template>
 
@@ -91,8 +95,8 @@ body {
   font-family: 'Inter', sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #fcf9f8;
-  color: #1c1b1b;
+  background-color: var(--background, #fcf9f8);
+  color: var(--on-surface, #1c1b1b);
 }
 
 .material-symbols-outlined {

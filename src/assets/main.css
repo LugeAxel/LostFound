@@ -4,28 +4,28 @@
 @theme {
   --font-sans: 'Inter', sans-serif;
 
-  /* Fluid Typography */
+  /* Fluid Typography - scaled down slightly for desktop */
   --text-xs: clamp(0.65rem, 0.8vw + 0.5rem, 0.75rem);
-  --text-sm: clamp(0.75rem, 1vw + 0.55rem, 0.875rem);
-  --text-base: clamp(0.875rem, 1.2vw + 0.6rem, 1rem);
-  --text-lg: clamp(1rem, 1.5vw + 0.75rem, 1.125rem);
-  --text-xl: clamp(1.125rem, 2vw + 0.8rem, 1.25rem);
-  --text-2xl: clamp(1.25rem, 2.5vw + 1rem, 1.5rem);
-  --text-3xl: clamp(1.5rem, 3vw + 1.2rem, 1.875rem);
-  --text-4xl: clamp(1.75rem, 4vw + 1.2rem, 2.25rem);
-  --text-5xl: clamp(2rem, 5vw + 1.5rem, 3rem);
-  --text-6xl: clamp(2.5rem, 6vw + 1.5rem, 3.75rem);
+  --text-sm: clamp(0.75rem, 1vw + 0.55rem, 0.85rem);
+  --text-base: clamp(0.85rem, 1vw + 0.55rem, 0.95rem);
+  --text-lg: clamp(0.95rem, 1.2vw + 0.65rem, 1.05rem);
+  --text-xl: clamp(1.05rem, 1.5vw + 0.75rem, 1.15rem);
+  --text-2xl: clamp(1.15rem, 2vw + 0.9rem, 1.35rem);
+  --text-3xl: clamp(1.35rem, 2.5vw + 1rem, 1.6rem);
+  --text-4xl: clamp(1.5rem, 3vw + 1.1rem, 2.0rem);
+  --text-5xl: clamp(1.75rem, 4vw + 1.2rem, 2.5rem);
+  --text-6xl: clamp(2.25rem, 5vw + 1.3rem, 3.2rem);
 
-  /* Fluid Spacing for major paddings/margins to maintain desktop feel on mobile */
-  --spacing-4: clamp(0.75rem, 2vw, 1rem);
-  --spacing-5: clamp(1rem, 2.5vw, 1.25rem);
-  --spacing-6: clamp(1.125rem, 3vw, 1.5rem);
-  --spacing-8: clamp(1.25rem, 4vw, 2rem);
-  --spacing-10: clamp(1.5rem, 5vw, 2.5rem);
-  --spacing-12: clamp(2rem, 6vw, 3rem);
-  --spacing-16: clamp(2.5rem, 8vw, 4rem);
-  --spacing-20: clamp(3rem, 10vw, 5rem);
-  --spacing-24: clamp(3.5rem, 12vw, 6rem);
+  /* Fluid Spacing for major paddings/margins - scaled down for compact desktop layout */
+  --spacing-4: clamp(0.75rem, 1.5vw, 0.9rem);
+  --spacing-5: clamp(0.9rem, 2vw, 1.1rem);
+  --spacing-6: clamp(1rem, 2.5vw, 1.3rem);
+  --spacing-8: clamp(1.15rem, 3vw, 1.7rem);
+  --spacing-10: clamp(1.35rem, 4vw, 2.1rem);
+  --spacing-12: clamp(1.75rem, 5vw, 2.5rem);
+  --spacing-16: clamp(2.25rem, 6vw, 3.2rem);
+  --spacing-20: clamp(2.75rem, 8vw, 4.0rem);
+  --spacing-24: clamp(3.25rem, 10vw, 4.8rem);
 }
 
 :root {
@@ -111,4 +111,34 @@ img {
   -webkit-user-drag: none;
   user-drag: none;
 }
+
+/* Enable smooth scrolling globally */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Page Transitions */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Slightly smaller desktop layout maximum width */
+@media (min-width: 1024px) {
+  /* Reduce containers with 1200px max-width down to 1080px for a more compact desktop layout */
+  .max-w-\[1200px\] {
+    max-width: 1080px !important;
+  }
+}
+
 
