@@ -14,14 +14,63 @@ const isOnline = ref(navigator.onLine)
 const handleOnline = () => { isOnline.value = true }
 const handleOffline = () => { isOnline.value = false }
 
+// Prevent select, copy, drag, and context menu actions
+const preventContextMenu = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    return
+  }
+  e.preventDefault()
+}
+
+const preventDragStart = (e: DragEvent) => {
+  const target = e.target as HTMLElement
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    return
+  }
+  e.preventDefault()
+}
+
+const preventSelectStart = (e: Event) => {
+  const target = e.target as HTMLElement
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    return
+  }
+  e.preventDefault()
+}
+
+const preventKeyboardShortcuts = (e: KeyboardEvent) => {
+  const target = e.target as HTMLElement
+  const isEditable = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+  
+  if (isEditable) return
+  
+  const isCmdOrCtrl = e.ctrlKey || e.metaKey
+  const key = e.key.toLowerCase()
+  // Block copy/cut/all-select shortcuts
+  if (isCmdOrCtrl && ['c', 'x', 'a', 's', 'u'].includes(key)) {
+    e.preventDefault()
+  }
+}
+
 onMounted(() => {
   window.addEventListener('online', handleOnline)
   window.addEventListener('offline', handleOffline)
+  
+  document.addEventListener('contextmenu', preventContextMenu)
+  document.addEventListener('dragstart', preventDragStart)
+  document.addEventListener('selectstart', preventSelectStart)
+  document.addEventListener('keydown', preventKeyboardShortcuts)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('online', handleOnline)
   window.removeEventListener('offline', handleOffline)
+  
+  document.removeEventListener('contextmenu', preventContextMenu)
+  document.removeEventListener('dragstart', preventDragStart)
+  document.removeEventListener('selectstart', preventSelectStart)
+  document.removeEventListener('keydown', preventKeyboardShortcuts)
 })
 </script>
 

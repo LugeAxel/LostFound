@@ -194,7 +194,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.category.Books/Stationery': 'Books/Stationery',
     'card.category.Others': 'Others',
     'marquee.retention_policy': 'Retention Policy: Unclaimed items deleted after 10 days. Returned items deleted after 2 days.',
-    'footer.review_heading': 'What do they think about this project!',
+    'footer.review_heading': 'What do they think about this website!',
 
     // === Profile ===
     'profile.title': 'My Profile',
@@ -581,7 +581,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'card.category.Books/Stationery': 'Buku/Alat Tulis',
     'card.category.Others': 'Lainnya',
     'marquee.retention_policy': 'Kebijakan Retensi: Barang tidak diklaim dihapus setelah 10 hari. Barang kembali dihapus setelah 2 hari.',
-    'footer.review_heading': 'Apa kata mereka tentang proyek ini!',
+    'footer.review_heading': 'Apa kata mereka tentang website ini!',
 
     // === Profile (ID) ===
     'profile.title': 'Profil Saya',
