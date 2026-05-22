@@ -127,8 +127,8 @@ onBeforeUnmount(() => {
     <div class="flex justify-between items-center px-4 md:px-8 w-full h-full">
       <div class="flex items-center gap-4 w-full max-w-full">
         <div class="relative w-full focus-within:ring-2 focus-within:ring-[#387b41]/20 dark:focus-within:ring-[#88d982]/20 rounded-lg transition-all">
-          <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 text-xl ">search</span>
-          <input v-model="searchQuery" @keyup.enter="handleSearch" type="text" :placeholder="t('topnav.search_placeholder')" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-none rounded-lg pl-10 pr-4 py-2 text-xs md:text-sm pl-12 focus:ring-0 outline-none" />
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 text-lg">search</span>
+          <input v-model="searchQuery" @keyup.enter="handleSearch" type="text" :placeholder="t('topnav.search_placeholder')" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-none rounded-lg pl-14 pr-4 py-2 text-xs md:text-sm focus:ring-0 outline-none" />
         </div>
       </div>
 

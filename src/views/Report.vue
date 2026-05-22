@@ -308,9 +308,9 @@ const submitReport = async () => {
                 </button>
               </div>
               <div class="relative">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-lg">location_on</span>
                 <input v-model="form.location" type="text" :placeholder="t('report.location_placeholder')" 
-                  class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl px-5 py-4 pl-12 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
-                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af]">location_on</span>
+                  class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-14 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
               </div>
               <div v-if="form.coordinates" class="space-y-2">
                 <div class="flex justify-between items-center px-1">

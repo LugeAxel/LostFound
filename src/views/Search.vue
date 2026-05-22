@@ -118,6 +118,7 @@ watch(() => route.query, (newQuery) => {
 
 <template>
   <div class="min-h-screen  bg-[#f8faf7] dark:bg-[#121212] flex pb-10">
+
     <SideNav />
     <TopNav />
 
@@ -130,9 +131,9 @@ watch(() => route.query, (newQuery) => {
       <div class="bg-white dark:bg-[#1e1e1e] rounded-2xl p-4 md:p-6 border border-[#e0e4df] dark:border-[#374151] shadow-sm mb-8">
         <div class="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
           <div class="relative flex-1">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af]">search</span>
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-lg">search</span>
             <input v-model="searchInput" @keyup.enter="handleSearch" type="text" :placeholder="t('search.input_placeholder')"
-              class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-none rounded-xl pl-12 pr-4 py-3 text-sm focus:ring-2 focus:ring-[#387b41] outline-none" />
+              class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-none rounded-xl pl-14 pr-4 py-3 text-sm focus:ring-2 focus:ring-[#387b41] outline-none" />
           </div>
           <button @click="handleSearch"
             class="px-8 py-3 bg-[#387b41] text-white rounded-xl font-bold hover:bg-[#2d6334] transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2">

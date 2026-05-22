@@ -1,7 +1,7 @@
 <template>
   <footer class="w-full mt-auto">
     <div v-if="ratings.length > 0" class="border-t border-[#e0e4df] dark:border-[#374151] py-8 overflow-hidden">
-      <h3 class="text-center text-sm font-bold text-[#387b41] dark:text-[#88d982] mb-6 tracking-wide">
+      <h3 style="font-family: 'Space Grotesk', sans-serif;" class="text-center text-sm font-regular text-[#387b41] dark:text-[#88d982] mb-6 tracking-wide">
         {{ t('footer.review_heading') }}
       </h3>
       <div class="review-marquee">

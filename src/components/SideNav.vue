@@ -18,7 +18,7 @@ const { t } = useI18n();
           </div>
         <div class="flex items-center gap-2 text-center">
           <div>
-            <h1 class="text-lg font-bold text-[#387b41] leading-tight">{{ t('nav.brand') }}</h1>
+            <h1 style="font-family: 'Space Grotesk', sans-serif;" class="text-lg font-bold text-[#387b41] leading-tight">{{ t('nav.brand') }}</h1>
             <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af] font-medium uppercase tracking-wider">{{ t('nav.brand_sub') }}</p>
           </div>
         </div>
@@ -26,52 +26,66 @@ const { t } = useI18n();
       
       <nav class="flex-1 px-3 space-y-1">
         <RouterLink to="/dashboard" 
-          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
+          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200 group relative overflow-hidden',
             route.path === '/dashboard' 
-              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
-              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">dashboard</span>
-          <span class="text-sm">{{ t('nav.dashboard') }}</span>
+              ? 'text-[#387b41] font-bold bg-[#eef5ee] dark:bg-[#1a3a1a]/50 border-r-4 border-[#387b41] dark:border-[#88d982]'
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#2a2a2a] hover:bg-[#f3f7f3]']">
+          <!-- Bauhaus active indicator dot (left side) -->
+          <span v-if="route.path === '/dashboard'" class="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#387b41] dark:bg-[#88d982] rounded-full animate-bauhaus-pulse"></span>
+          <!-- Hover accent bar from left -->
+          <span class="absolute left-0 top-0 w-0 h-full bg-[#387b41] dark:bg-[#88d982] opacity-10 group-hover:w-full transition-all duration-300 ease-out -z-10"></span>
+          <span class="material-symbols-outlined relative z-10">dashboard</span>
+          <span class="text-sm relative z-10">{{ t('nav.dashboard') }}</span>
         </RouterLink>
         <RouterLink to="/search" 
-          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
+          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200 group relative overflow-hidden',
             route.path === '/search'
-              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
-              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">search</span>
-          <span class="text-sm">{{ t('nav.search') }}</span>
+              ? 'text-[#387b41] font-bold bg-[#eef5ee] dark:bg-[#1a3a1a]/50 border-r-4 border-[#387b41] dark:border-[#88d982]'
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#2a2a2a] hover:bg-[#f3f7f3]']">
+          <span v-if="route.path === '/search'" class="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#387b41] dark:bg-[#88d982] rounded-full animate-bauhaus-pulse"></span>
+          <span class="absolute left-0 top-0 w-0 h-full bg-[#387b41] dark:bg-[#88d982] opacity-10 group-hover:w-full transition-all duration-300 ease-out -z-10"></span>
+          <span class="material-symbols-outlined relative z-10">search</span>
+          <span class="text-sm relative z-10">{{ t('nav.search') }}</span>
         </RouterLink>
         <RouterLink to="/report" 
-          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
+          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200 group relative overflow-hidden',
             route.path === '/report'
-              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
-              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">report</span>
-          <span class="text-sm">{{ t('nav.report') }}</span>
+              ? 'text-[#387b41] font-bold bg-[#eef5ee] dark:bg-[#1a3a1a]/50 border-r-4 border-[#387b41] dark:border-[#88d982]'
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#2a2a2a] hover:bg-[#f3f7f3]']">
+          <span v-if="route.path === '/report'" class="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#387b41] dark:bg-[#88d982] rounded-full animate-bauhaus-pulse"></span>
+          <span class="absolute left-0 top-0 w-0 h-full bg-[#387b41] dark:bg-[#88d982] opacity-10 group-hover:w-full transition-all duration-300 ease-out -z-10"></span>
+          <span class="material-symbols-outlined relative z-10">report</span>
+          <span class="text-sm relative z-10">{{ t('nav.report') }}</span>
         </RouterLink>
         <RouterLink to="/my-reports" 
-          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
+          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200 group relative overflow-hidden',
             route.path === '/my-reports'
-              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
-              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">inventory</span>
-          <span class="text-sm">{{ t('nav.my_reports') }}</span>
+              ? 'text-[#387b41] font-bold bg-[#eef5ee] dark:bg-[#1a3a1a]/50 border-r-4 border-[#387b41] dark:border-[#88d982]'
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#2a2a2a] hover:bg-[#f3f7f3]']">
+          <span v-if="route.path === '/my-reports'" class="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#387b41] dark:bg-[#88d982] rounded-full animate-bauhaus-pulse"></span>
+          <span class="absolute left-0 top-0 w-0 h-full bg-[#387b41] dark:bg-[#88d982] opacity-10 group-hover:w-full transition-all duration-300 ease-out -z-10"></span>
+          <span class="material-symbols-outlined relative z-10">inventory</span>
+          <span class="text-sm relative z-10">{{ t('nav.my_reports') }}</span>
         </RouterLink>
         <RouterLink to="/scan" 
-          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
+          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200 group relative overflow-hidden',
             route.path === '/scan'
-              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
-              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">qr_code</span>
-          <span class="text-sm">Scan</span>
+              ? 'text-[#387b41] font-bold bg-[#eef5ee] dark:bg-[#1a3a1a]/50 border-r-4 border-[#387b41] dark:border-[#88d982]'
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#2a2a2a] hover:bg-[#f3f7f3]']">
+          <span v-if="route.path === '/scan'" class="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#387b41] dark:bg-[#88d982] rounded-full animate-bauhaus-pulse"></span>
+          <span class="absolute left-0 top-0 w-0 h-full bg-[#387b41] dark:bg-[#88d982] opacity-10 group-hover:w-full transition-all duration-300 ease-out -z-10"></span>
+          <span class="material-symbols-outlined relative z-10">qr_code</span>
+          <span class="text-sm relative z-10">Scan</span>
         </RouterLink>
         <RouterLink to="/statistics" 
-          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200',
+          :class="['flex items-center gap-3 px-4 py-3 transition-all duration-200 group relative overflow-hidden',
             route.path === '/statistics'
-              ? 'text-[#387b41] font-bold bg-[#eef5ee] border-r-4 border-[#387b41]'
-              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#00000089] hover:bg-[#f3f7f3]']">
-          <span class="material-symbols-outlined">leaderboard</span>
-          <span class="text-sm">{{ t('nav.statistics') }}</span>
+              ? 'text-[#387b41] font-bold bg-[#eef5ee] dark:bg-[#1a3a1a]/50 border-r-4 border-[#387b41] dark:border-[#88d982]'
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:bg-[#2a2a2a] hover:bg-[#f3f7f3]']">
+          <span v-if="route.path === '/statistics'" class="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#387b41] dark:bg-[#88d982] rounded-full animate-bauhaus-pulse"></span>
+          <span class="absolute left-0 top-0 w-0 h-full bg-[#387b41] dark:bg-[#88d982] opacity-10 group-hover:w-full transition-all duration-300 ease-out -z-10"></span>
+          <span class="material-symbols-outlined relative z-10">leaderboard</span>
+          <span class="text-sm relative z-10">{{ t('nav.statistics') }}</span>
         </RouterLink>
         
       </nav>
@@ -85,31 +99,36 @@ const { t } = useI18n();
     </div>
   </aside>
 
-  <!-- Mobile Bottom Nav -->
-  <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 bg-white dark:bg-[#1e1e1e] backdrop-blur-xl border-t border-[#e0e4df] dark:border-[#374151] z-50 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.4)] flex justify-around items-center h-[72px] pb-2 px-2">
-    <RouterLink to="/dashboard" :class="['flex flex-col items-center p-2 active:scale-90 transition-all duration-150', route.path === '/dashboard' ? 'text-[#387b41] dark:text-[#88d982] font-bold' : 'text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 opacity-80']">
-      <span class="material-symbols-outlined" :style="route.path === '/dashboard' ? 'font-variation-settings: \'FILL\' 1;' : ''">dashboard</span>
-      <span class="text-[10px] mt-1 w-20 truncate text-center">{{ t('nav.dashboard') }}</span>
-    </RouterLink>
-    <RouterLink to="/search" :class="['flex flex-col items-center p-2 active:scale-90 transition-all duration-150', route.path === '/search' ? 'text-[#387b41] dark:text-[#88d982] font-bold' : 'text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 opacity-80']">
-      <span class="material-symbols-outlined" :style="route.path === '/search' ? 'font-variation-settings: \'FILL\' 1;' : ''">search</span>
-      <span class="text-[10px] mt-1 w-20 truncate text-center">Search</span>
-    </RouterLink>
-    
-    <RouterLink to="/report" class="flex flex-col items-center p-2 text-white active:scale-95 transition-all duration-150 relative -top-5">
-      <div class="w-14 h-14 bg-[#0d631b] dark:bg-[#88d982] rounded-full flex items-center justify-center shadow-lg shadow-[#0d631b]/30 dark:shadow-[#88d982]/20 border-4 border-[#fcf9f8] dark:border-[#131313]">
-        <span class="material-symbols-outlined text-base md:text-lg md:text-xl md:text-2xl md:text-3xl dark:text-[#002204]">add</span>
-      </div>
-    </RouterLink>
+   <!-- Mobile Bottom Nav -->
+   <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white/90 bg-white dark:bg-[#1e1e1e] backdrop-blur-xl border-t border-[#e0e4df] dark:border-[#374151] z-50 rounded-t-2xl shadow-[0_-4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.4)] flex justify-around items-center h-[72px] pb-2 px-2">
+     <RouterLink to="/dashboard" :class="['flex flex-col items-center p-2 active:scale-90 transition-all duration-150 relative', route.path === '/dashboard' ? 'text-[#387b41] dark:text-[#88d982] font-bold' : 'text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 opacity-80']">
+       <!-- Bauhaus active indicator dot above icon -->
+       <span v-if="route.path === '/dashboard'" class="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#387b41] dark:bg-[#88d982] rounded-full"></span>
+       <span class="material-symbols-outlined" :style="route.path === '/dashboard' ? 'font-variation-settings: \'FILL\' 1;' : ''">dashboard</span>
+       <span class="text-[10px] mt-1 w-20 truncate text-center">{{ t('nav.dashboard') }}</span>
+     </RouterLink>
+     <RouterLink to="/search" :class="['flex flex-col items-center p-2 active:scale-90 transition-all duration-150 relative', route.path === '/search' ? 'text-[#387b41] dark:text-[#88d982] font-bold' : 'text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 opacity-80']">
+       <span v-if="route.path === '/search'" class="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#387b41] dark:bg-[#88d982] rounded-full"></span>
+       <span class="material-symbols-outlined" :style="route.path === '/search' ? 'font-variation-settings: \'FILL\' 1;' : ''">search</span>
+       <span class="text-[10px] mt-1 w-20 truncate text-center">Search</span>
+     </RouterLink>
+     
+     <RouterLink to="/report" class="flex flex-col items-center p-2 text-white active:scale-95 transition-all duration-150 relative -top-5">
+       <div class="w-14 h-14 bg-[#0d631b] dark:bg-[#88d982] rounded-full flex items-center justify-center shadow-lg shadow-[#0d631b]/30 dark:shadow-[#88d982]/20 border-4 border-[#fcf9f8] dark:border-[#131313] transition-transform group-hover:scale-105">
+         <span class="material-symbols-outlined text-base md:text-lg md:text-xl md:text-2xl md:text-3xl dark:text-[#002204]">add</span>
+       </div>
+     </RouterLink>
 
-    <RouterLink to="/my-reports" :class="['flex flex-col items-center p-2 active:scale-90 transition-all duration-150', route.path === '/my-reports' ? 'text-[#387b41] dark:text-[#88d982] font-bold' : 'text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 opacity-80']">
-      <span class="material-symbols-outlined" :style="route.path === '/my-reports' ? 'font-variation-settings: \'FILL\' 1;' : ''">inventory</span>
-      <span class="text-[10px] mt-1 w-20 truncate text-center">{{ t('nav.my_reports') }}</span>
-    </RouterLink>
-       
-    <RouterLink to="/scan" :class="['flex flex-col items-center p-2 active:scale-90 transition-all duration-150', route.path === '/scan' ? 'text-[#387b41] dark:text-[#88d982] font-bold' : 'text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 opacity-80']">
-      <span class="material-symbols-outlined" :style="route.path === '/scan' ? 'font-variation-settings: \'FILL\' 1;' : ''">qr_code_scanner</span>
-      <span class="text-[10px] mt-1 w-20 truncate text-center">Scan</span>
-    </RouterLink>
-  </nav>
+     <RouterLink to="/my-reports" :class="['flex flex-col items-center p-2 active:scale-90 transition-all duration-150 relative', route.path === '/my-reports' ? 'text-[#387b41] dark:text-[#88d982] font-bold' : 'text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 opacity-80']">
+       <span v-if="route.path === '/my-reports'" class="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#387b41] dark:bg-[#88d982] rounded-full"></span>
+       <span class="material-symbols-outlined" :style="route.path === '/my-reports' ? 'font-variation-settings: \'FILL\' 1;' : ''">inventory</span>
+       <span class="text-[10px] mt-1 w-20 truncate text-center">{{ t('nav.my_reports') }}</span>
+     </RouterLink>
+        
+     <RouterLink to="/scan" :class="['flex flex-col items-center p-2 active:scale-90 transition-all duration-150 relative', route.path === '/scan' ? 'text-[#387b41] dark:text-[#88d982] font-bold' : 'text-[#40493d] dark:text-[#9ca3af] dark:text-gray-400 opacity-80']">
+       <span v-if="route.path === '/scan'" class="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-[#387b41] dark:bg-[#88d982] rounded-full"></span>
+       <span class="material-symbols-outlined" :style="route.path === '/scan' ? 'font-variation-settings: \'FILL\' 1;' : ''">qr_code_scanner</span>
+       <span class="text-[10px] mt-1 w-20 truncate text-center">Scan</span>
+     </RouterLink>
+   </nav>
 </template>

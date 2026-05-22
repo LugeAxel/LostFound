@@ -57,16 +57,26 @@ const translateStatus = (status: string) => {
 </script>
 
 <template>
-  <RouterLink :to="`/item/${item.id}`" :class="['bg-white dark:bg-[#1e1e1e] rounded-2xl overflow-hidden border transition-all group relative block', 
-    item.status === 'Returned' ? 'border-[#abf4ac] opacity-80' : 'border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md']">
+  <RouterLink :to="`/item/${item.id}`" 
+    :class="['bg-white dark:bg-[#1e1e1e] rounded-2xl overflow-hidden border transition-all duration-300 group relative block', 
+      item.status === 'Returned' 
+        ? 'border-[#abf4ac] opacity-80' 
+        : 'border-[#e0e4df] dark:border-[#374151] shadow-sm hover:shadow-md hover:border-[#387b41]/40 dark:hover:border-[#88d982]/40']">
     
+    <!-- Bauhaus hover accent - left border slide -->
+    <div class="absolute left-0 top-0 w-0 h-full bg-[#387b41] dark:bg-[#88d982] opacity-15 group-hover:w-1 transition-all duration-300 ease-out z-0"></div>
+    
+    <!-- Returned corner ribbon -->
     <div v-if="item.status === 'Returned'" class="absolute top-0 right-0 z-10 overflow-hidden w-24 h-24">
       <span class="absolute top-3 right-[-30px] w-28 py-1 bg-[#387b41] text-white text-[8px] font-bold uppercase tracking-widest text-center rotate-45 shadow-sm">{{ t('card.returned') }}</span>
     </div>
 
     <div class="relative aspect-[4/3] sm:aspect-[4/3] w-full overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a]">
+      <!-- Subtle dark overlay on hover (Bauhaus prefers contrast over organic blur) -->
+      <div class="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 z-10 pointer-events-none"></div>
+      
       <img v-if="item.image_url" :src="optimizeImageUrl(item.image_url)" 
-        :class="['w-full h-full object-cover group-hover:scale-105 transition-transform duration-500',
+        :class="['w-full h-full object-cover group-hover:scale-102 transition-transform duration-500',
           item.status === 'Returned' ? 'grayscale' : '']" 
         alt="Item image"
         loading="lazy" />
@@ -117,7 +127,34 @@ const translateStatus = (status: string) => {
           {{ t('card.claimed_by') }} {{ item.claimer.nama }}
         </span>
         <span v-else class="text-[10px] text-[#40493d] dark:text-[#9ca3af] font-medium">{{ formatDate(item.reported_at) }}</span>
-      </div>
-    </div>
-  </RouterLink>
+       </div>
+     </div>
+   </RouterLink>
 </template>
+
+<style scoped>
+/* Slightly subtler scale than scale-105 - more Bauhaus "mechanical" feel */
+.group:hover img {
+  transform: scale(1.03);
+}
+
+/* Subtle text color shift on card hover - only if preferred */
+.group:hover h4 {
+  color: #387b41;
+}
+
+:is(.dark) .group:hover h4 {
+  color: #88d982;
+}
+
+/* Reduced motion support for this component */
+@media (prefers-reduced-motion: reduce) {
+  .group *,
+  * {
+    transition-duration: 0.01ms !important;
+  }
+  .group:hover img {
+    transform: scale(1);
+  }
+}
+</style>

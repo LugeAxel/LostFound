@@ -10,6 +10,7 @@ import { supabase } from '../lib/supabase';
 import { DotLottieVue } from '@lottiefiles/dotlottie-vue'
 
 const router = useRouter();
+
 const status = ref('Ready to scan');
 const statusType = ref('info');
 const resultData = ref<any>(null);
@@ -163,8 +164,8 @@ onUnmounted(() => stopCamera());
 </script>
 
 <template>
-  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center p-4 font-sans">
-    <div class="m-4 text-center items-center">
+  <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
+    <div class="m-4 text-center items-center relative z-10">
       <div class="flex items-center justify-center gap-2 mb-2">
         <div class="mb-2 p-2 w-12 h-12 bg-[#387b41]/10 rounded-lg flex items-center justify-center">
             <img src="/logo.png" alt="" class="w-full h-full object-cover">
@@ -172,8 +173,10 @@ onUnmounted(() => stopCamera());
         <p class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">QReturn</p>
       </div>
     </div>
-    <div class="w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-2xl p-10 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden">
-      <div class="absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-5 rounded-full"></div>
+    <div class="w-full max-w-md bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] shadow-2xl p-10 border border-[#e0e4df] dark:border-[#374151] relative overflow-hidden z-10">
+      <!-- In-card decorative shapes -->
+      <div class="bauhaus-decor absolute -top-20 -right-20 w-40 h-40 bg-[#387b41] opacity-20 rounded-full animate-bauhaus-pulse"></div>
+      <div class="bauhaus-decor absolute -bottom-8 -left-8 w-20 h-20 border-2 border-[#387b41] opacity-20 rounded animate-bauhaus-spin-med"></div>
       <div class="flex flex-col items-center mb-4 relative z-10">
         <div class="w-10 h-10 bg-[#f0fdf4] rounded-2xl flex items-center justify-center mb-6 shadow-sm">
           <span class="material-symbols-outlined text-4xl text-[#387b41]">{{ loginMode === 'qr' ? 'qr_code_scanner' : 'mail' }}</span>
@@ -184,12 +187,20 @@ onUnmounted(() => stopCamera());
         </p>
       </div>
 
-      <!-- Mode Switcher -->
-      <div class="grid grid-cols-2 gap-2 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl mb-2">
-        <button @click="switchMode('qr')" :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', loginMode === 'qr' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af]']">
+      <!-- Mode Switcher (Bauhaus tab style) -->
+      <div class="grid grid-cols-2 gap-2 p-1 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-2xl mb-2 relative">
+        <button @click="switchMode('qr')" 
+          :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative z-10',
+            loginMode === 'qr' 
+              ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' 
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:text-[#88d982] active:scale-[0.97]']">
           <span class="material-symbols-outlined text-xl">qr_code_scanner</span> QR Code
         </button>
-        <button @click="switchMode('email')" :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2', loginMode === 'email' ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' : 'text-[#40493d] dark:text-[#9ca3af]']">
+        <button @click="switchMode('email')" 
+          :class="['py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 relative z-10',
+            loginMode === 'email' 
+              ? 'bg-white dark:bg-[#1e1e1e] text-[#387b41] shadow-sm' 
+              : 'text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] dark:hover:text-[#88d982] active:scale-[0.97]']">
           <span class="material-symbols-outlined text-xl">mail</span> Email
         </button>
       </div>
@@ -207,22 +218,22 @@ onUnmounted(() => stopCamera());
         <div v-if="isEmailMode === 'register'" class="space-y-2">
           <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Full Name</label>
           <div class="relative">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">person</span>
-            <input v-model="emailForm.nama" type="text" placeholder="Your full name" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-lg">person</span>
+            <input v-model="emailForm.nama" type="text" placeholder="Your full name" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-14 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Email</label>
           <div class="relative">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">mail</span>
-            <input v-model="emailForm.email" type="email" placeholder="student@school.edu" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-lg">mail</span>
+            <input v-model="emailForm.email" type="email" placeholder="student@school.edu" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-14 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <div class="space-y-2">
           <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] px-1 uppercase tracking-wider">Password</label>
           <div class="relative">
-            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-xl">lock</span>
-            <input v-model="emailForm.password" type="password" placeholder="Min. 6 characters" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-12 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
+            <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#40493d] dark:text-[#9ca3af] text-lg">lock</span>
+            <input v-model="emailForm.password" type="password" placeholder="Min. 6 characters" class="w-full bg-[#f3f5f2] dark:bg-[#2a2a2a] dark:text-white dark:placeholder-gray-500 border-2 border-transparent rounded-xl pl-14 pr-5 py-4 focus:border-[#387b41] focus:bg-white dark:focus:bg-[#1e1e1e] outline-none transition-all text-sm font-medium" required />
           </div>
         </div>
         <button type="submit" :disabled="isSubmitting" class="w-full py-4 bg-[#387b41] text-white rounded-xl font-bold text-sm hover:bg-[#2d6334] transition-all shadow-md active:scale-95 disabled:opacity-50">

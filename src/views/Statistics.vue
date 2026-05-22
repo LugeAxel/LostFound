@@ -58,6 +58,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex font-sans">
+
     <SideNav />
     <TopNav />
 

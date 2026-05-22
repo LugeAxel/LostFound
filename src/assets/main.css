@@ -88,6 +88,9 @@ body {
 .hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
 }
 
 /* Prevent text selection and image dragging globally */
@@ -138,6 +141,191 @@ html {
   /* Reduce containers with 1200px max-width down to 1080px for a more compact desktop layout */
   .max-w-\[1200px\] {
     max-width: 1080px !important;
+  }
+}
+
+/* ───────────────────────────────────────────────────────── */
+/* BAUHAUS-STYLE ANIMATION UTILITIES (Forest Green Palette) */
+/* ───────────────────────────────────────────────────────── */
+
+/* Float variations - slow, mechanistic movement */
+.animate-bauhaus-float-slow { animation: bauhausFloatSlow 14s ease-in-out infinite; }
+.animate-bauhaus-float-med { animation: bauhausFloatMed 10s ease-in-out infinite; }
+.animate-bauhaus-float-fast { animation: bauhausFloatFast 7s ease-in-out infinite; }
+
+@keyframes bauhausFloatSlow {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(10px, -12px) rotate(5deg); }
+  50% { transform: translate(-5px, 8px) rotate(-3deg); }
+  75% { transform: translate(-12px, -5px) rotate(2deg); }
+}
+@keyframes bauhausFloatMed {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(18px, -10px) rotate(8deg); }
+  66% { transform: translate(-15px, 12px) rotate(-6deg); }
+}
+@keyframes bauhausFloatFast {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-8px, 6px); }
+}
+
+/* Orbital movement - Bauhaus "machinery" feel */
+.animate-bauhaus-orbit-1 { animation: bauhausOrbit1 18s linear infinite; }
+.animate-bauhaus-orbit-2 { animation: bauhausOrbit2 22s linear infinite reverse; }
+.animate-bauhaus-orbit-3 { animation: bauhausOrbit3 15s linear infinite; }
+
+@keyframes bauhausOrbit1 {
+  0% { transform: rotate(0deg) translateX(30px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(30px) rotate(-360deg); }
+}
+@keyframes bauhausOrbit2 {
+  0% { transform: rotate(0deg) translateX(50px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+}
+@keyframes bauhausOrbit3 {
+  0% { transform: rotate(0deg) translateY(-40px) rotate(0deg); }
+  100% { transform: rotate(-360deg) translateY(-40px) rotate(360deg); }
+}
+
+/* Pulse - subtle, geometric (staccato like Bauhaus design) */
+.animate-bauhaus-pulse { animation: bauhausPulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+@keyframes bauhausPulse {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.05); }
+}
+
+/* Line/dash animation - like drawing with a ruler */
+.animate-bauhaus-line { animation: bauhausLineGrow 2.5s ease-in-out infinite; }
+
+@keyframes bauhausLineGrow {
+  0%, 100% { width: 0%; opacity: 0; }
+  50% { width: 100%; opacity: 1; }
+}
+
+/* Rotate - continuous slow rotation for decorative squares/dots */
+.animate-bauhaus-spin-slow { animation: bauhausSpinSlow 20s linear infinite; }
+.animate-bauhaus-spin-med { animation: bauhausSpinMed 12s linear infinite; }
+.animate-bauhaus-spin-reverse { animation: bauhausSpinMed 10s linear infinite reverse; }
+
+@keyframes bauhausSpinSlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes bauhausSpinMed {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Enhanced page transitions - Bauhaus "stepped" feel */
+.bauhaus-enter-active { animation: bauhausEnter 350ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+.bauhaus-leave-active { animation: bauhausLeave 200ms ease-in forwards; }
+
+@keyframes bauhausEnter {
+  0% { opacity: 0; transform: translateY(8px) scale(0.99); }
+  60% { opacity: 1; transform: translateY(0) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes bauhausLeave {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-6px) scale(0.99); }
+}
+
+/* Hover expansion - square corners (Bauhaus) instead of rounded */
+.bauhaus-hover-square {
+  position: relative;
+  overflow: hidden;
+}
+.bauhaus-hover-square::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+  background: rgba(56, 123, 65, 0.06);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+.bauhaus-hover-square:hover::before { width: 100%; }
+
+/* Geometric shape utilities */
+.bauhaus-dot { border-radius: 9999px; }
+.bauhaus-square { border-radius: 0; }
+.bauhaus-triangle {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 14px solid currentColor;
+}
+
+/* Stagger entrance utility classes (for card lists) */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
+
+/* ───────────────────────────────────────────────────────── */
+/* REDUCED MOTION - disable ALL animations for accessibility */
+/* ───────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .animate-bauhaus-float-slow,
+  .animate-bauhaus-float-med,
+  .animate-bauhaus-float-fast,
+  .animate-bauhaus-orbit-1,
+  .animate-bauhaus-orbit-2,
+  .animate-bauhaus-orbit-3,
+  .animate-bauhaus-pulse,
+  .animate-bauhaus-line,
+  .animate-bauhaus-spin-slow,
+  .animate-bauhaus-spin-med,
+  .animate-bauhaus-spin-reverse,
+  .bauhaus-enter-active,
+  .bauhaus-leave-active {
+    animation: none !important;
+  }
+
+  .bauhaus-hover-square::before,
+  * {
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Hide decorative elements entirely when reduced motion is on */
+  .bauhaus-decor {
+    display: none !important;
+  }
+}
+
+/* Also reduce decorations on mobile by default (optional visibility) */
+@media (max-width: 640px) {
+  .bauhaus-decor-mobile-hidden {
+    display: none;
+  }
+}
+
+/* Bauhaus scroll indicator - fade gradient at right edge for horizontal scroll containers */
+.scroll-indicator-right {
+  position: relative;
+}
+.scroll-indicator-right::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 60px;
+  background: linear-gradient(to right, transparent, var(--background, #f8faf7));
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-indicator-right::after {
+    display: none;
   }
 }
 

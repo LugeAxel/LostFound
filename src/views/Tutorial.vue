@@ -37,6 +37,7 @@ const tips = ['tip1', 'tip2', 'tip3', 'tip4', 'tip5'];
 
 <template>
   <div class="min-h-screen bg-[#f8faf7] dark:bg-[#121212] flex">
+
     <SideNav />
     <TopNav />
 

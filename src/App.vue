@@ -4,6 +4,7 @@ import { RouterView } from 'vue-router'
 import { createI18n, provideI18n } from './i18n'
 import { provideToast } from './composables/useToast'
 import Toast from './components/Toast.vue'
+import BauhausBackground from './components/BauhausBackground.vue'
 
 const i18n = createI18n()
 provideI18n(i18n)
@@ -78,11 +79,14 @@ onBeforeUnmount(() => {
   <div v-if="!isOnline" class="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white text-center text-xs font-bold py-2 px-4">
     ⚠️ You are offline. Some features may not work.
   </div>
-  <RouterView v-slot="{ Component }">
-    <transition name="page-fade" mode="out-in">
-      <component :is="Component" />
-    </transition>
-  </RouterView>
+  <BauhausBackground />
+  <div class="relative z-10">
+    <RouterView v-slot="{ Component }">
+      <transition name="page-fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </RouterView>
+  </div>
   <Toast />
 </template>
 
