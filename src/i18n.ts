@@ -67,10 +67,10 @@ const translations: Record<Locale, Record<string, string>> = {
     'onboarding.p2_title': 'Three steps, All it takes.',
     'onboarding.p2_desc': '1. Snap a photo right from the app. 2. Add a quick description and location. 3. Our system scans for matches and notifies you instantly. Lost or found it takes less than a minute.',
     'onboarding.p2_cta': 'I\'m Ready!',
-    'onboarding.p3_title': 'We don\'t just list. We connect.',
-    'onboarding.p3_desc': 'Our intelligent system connects your items and other user items to find best matches automatically. The right item finds the right person no endless scrolling required.',
-    'onboarding.p3_tagline': 'Sometimes, all it takes is one good person to return something meaningful.',
-    'onboarding.p3_cta': 'Lets Get Started!',
+    'onboarding.p3_title': 'Stay Updated Instantly',
+    'onboarding.p3_desc': 'Enable push notifications to get instant updates when someone claims your item, sends a message, or finds a match — even when the app is closed.',
+    'onboarding.p3_cta': 'Enable Notifications',
+    'onboarding.p3_skip': 'Skip for now →',
 
     // === Search ===
     'search.title': 'Search Items',
@@ -175,6 +175,36 @@ const translations: Record<Locale, Record<string, string>> = {
     'tutorial.tip3': 'Found items require a direct camera photo — screenshots won\'t work.',
     'tutorial.tip4': 'The QR code for each found item is in "My Reports" — share it at the service desk.',
     'tutorial.tip5': 'Use detailed names and descriptions for better matching results.',
+
+    'tutorial.push_title': 'Get Instant Updates',
+    'tutorial.push_subtitle': 'Enable push notifications to get real-time alerts.',
+    'tutorial.push_step1_title': 'Allow Notifications',
+    'tutorial.push_step1_desc': 'When prompted, click "Allow" to enable push notifications. This lets the app send you alerts even when it\'s closed.',
+    'tutorial.push_step2_title': 'Stay Updated',
+    'tutorial.push_step2_desc': 'You\'ll receive notifications for new claims, messages, matches, and more — instantly.',
+    'tutorial.push_step3_title': 'Manage Anytime',
+    'tutorial.push_step3_desc': 'Change your notification preferences anytime from your browser settings or the app profile page.',
+
+    // === Notifications ===
+    'notif.suggestion': 'This might be your item: {itemName}',
+    'notif.suggestion_found': 'We found a possible match: {itemName}',
+    'notif.claim': 'Someone wants to claim your item: {itemName}',
+    'notif.message': 'New message from {sender} for item: {itemName}',
+    'notif.complaint': 'Someone has filed a complaint for item: {itemName}',
+    'notif.resolved': 'Item {itemName} has been claimed and returned.',
+    'notif.resolved_assigned': 'You have been assigned as the claimer for: {itemName}',
+    'notif.system_deleted': 'Report "{itemName}" has been auto-deleted.',
+    'notif.sender_founder': 'Founder',
+    'notif.sender_claimer': 'Claimer',
+
+    // === Tips ===
+    'tip.1': 'Always check "My Reports" for claim notifications.',
+    'tip.2': 'Use live GPS location when reporting for more accuracy.',
+    'tip.3': 'Found items require a direct camera photo.',
+    'tip.4': 'The QR code for each found item is in "My Reports".',
+    'tip.5': 'Use detailed names and descriptions for better matching.',
+    'tip.6': 'Enable push notifications to get instant updates.',
+    'tip.7': 'Lost something? Report it immediately for best results.',
 
     // === ItemCard ===
     'card.lost': 'LOST',
@@ -457,10 +487,10 @@ const translations: Record<Locale, Record<string, string>> = {
     'onboarding.p2_title': 'Hanya Tiga langkah.',
     'onboarding.p2_desc': '1. Foto barang langsung dari aplikasi. 2. Tambah deskripsi dan lokasi singkat. 3. Sistem kami mencari kecocokan dan memberi tahu kamu saat itu juga. Hilang atau ditemukan butuh kurang dari semenit.',
     'onboarding.p2_cta': 'Aku siap!',
-    'onboarding.p3_title': 'Bukan hanya list. Kami menghubungkan.',
-    'onboarding.p3_desc': 'Sistem cerdas kami menghubungkan barangmu dan barang lainnya untuk menemukan kecocokan terbaik secara otomatis. Barang yang tepat menemukan orang yang tepat, tanpa perlu scroll tanpa henti.',
-    'onboarding.p3_tagline': 'Kadang, yang dibutuhkan hanya satu orang baik untuk mengembalikan sesuatu yang berarti.',
-    'onboarding.p3_cta': 'Mulai Sekarang Juga!',
+    'onboarding.p3_title': 'Tetap Terupdate Instan',
+    'onboarding.p3_desc': 'Aktifkan notifikasi push untuk mendapat info instan saat seseorang mengklaim barangmu, mengirim pesan, atau menemukan kecocokan — meski aplikasi sedang ditutup.',
+    'onboarding.p3_cta': 'Aktifkan Notifikasi',
+    'onboarding.p3_skip': 'Lewati dulu →',
 
     // === Search (ID) ===
     'search.title': 'Cari Barang',
@@ -565,6 +595,36 @@ const translations: Record<Locale, Record<string, string>> = {
     'tutorial.tip3': 'Barang temuan memerlukan foto langsung dari kamera — screenshot tidak berlaku.',
     'tutorial.tip4': 'QR code untuk setiap barang temuan ada di "Laporan Saya" — tunjukkan di meja piket.',
     'tutorial.tip5': 'Gunakan nama dan deskripsi yang detail untuk hasil pencocokan yang lebih baik.',
+
+    'tutorial.push_title': 'Dapatkan Info Instan',
+    'tutorial.push_subtitle': 'Aktifkan notifikasi push untuk mendapat info waktu nyata.',
+    'tutorial.push_step1_title': 'Izinkan Notifikasi',
+    'tutorial.push_step1_desc': 'Saat diminta, klik "Izinkan" untuk mengaktifkan notifikasi push. Aplikasi bisa mengirim info meski sedang tidak dibuka.',
+    'tutorial.push_step2_title': 'Tetap Terupdate',
+    'tutorial.push_step2_desc': 'Kamu akan mendapat notifikasi untuk klaim baru, pesan, kecocokan, dan lainnya — secara instan.',
+    'tutorial.push_step3_title': 'Sesuaikan Kapan Saja',
+    'tutorial.push_step3_desc': 'Ubah preferensi notifikasi kapan saja dari pengaturan browser atau halaman profil aplikasi.',
+
+    // === Notifications ===
+    'notif.suggestion': 'Mungkin ini barangmu: {itemName}',
+    'notif.suggestion_found': 'Kami menemukan kecocokan: {itemName}',
+    'notif.claim': 'Seseorang ingin mengklaim barangmu: {itemName}',
+    'notif.message': 'Pesan baru dari {sender} untuk barang: {itemName}',
+    'notif.complaint': 'Seseorang mengajukan komplain untuk barang: {itemName}',
+    'notif.resolved': 'Barang {itemName} telah diklaim dan dikembalikan.',
+    'notif.resolved_assigned': 'Kamu ditetapkan sebagai pengklaim untuk: {itemName}',
+    'notif.system_deleted': 'Laporan "{itemName}" telah dihapus otomatis.',
+    'notif.sender_founder': 'Pelapor',
+    'notif.sender_claimer': 'Pengklaim',
+
+    // === Tips ===
+    'tip.1': 'Cek "Laporanku" untuk notifikasi klaim.',
+    'tip.2': 'Gunakan lokasi GPS untuk akurasi lebih baik.',
+    'tip.3': 'Barang temuan perlu foto langsung dari kamera.',
+    'tip.4': 'QR code setiap barang temuan ada di "Laporanku".',
+    'tip.5': 'Gunakan nama dan deskripsi detail untuk kecocokan lebih baik.',
+    'tip.6': 'Aktifkan notifikasi push untuk info instan.',
+    'tip.7': 'Kehilangan sesuatu? Laporkan segera untuk hasil terbaik.',
 
     // === ItemCard ===
     'card.lost': 'HILANG',

@@ -7,6 +7,7 @@ import LocationPicker from '../components/LocationPicker.vue';
 import TopNav from '../components/TopNav.vue';
 import SideNav from '../components/SideNav.vue';
 import Footer from '../components/Footer.vue';
+import SmartLamp from '../components/SmartLamp.vue';
 import { API_URL } from '@/config/api';
 import { useToast } from '../composables/useToast';
 import { getAuthHeaders } from '../composables/useAuth';
@@ -362,6 +363,7 @@ const submitReport = async () => {
       </div>
       <Footer />
     </main>
+    <SmartLamp />
     </div>
 </template>
 

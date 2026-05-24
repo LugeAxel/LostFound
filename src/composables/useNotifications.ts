@@ -4,6 +4,21 @@ import { supabase } from '../lib/supabase'
 import { API_URL } from '@/config/api'
 import { getAuthHeaders } from './useAuth'
 
+export function translateNotification(notif: any, t: (key: string) => string): string {
+  const key = `notif.${notif.type}`
+  const template = t(key)
+  if (template === key) return notif.text || key
+
+  const params = notif.params || {}
+  let result = template
+  if (params.itemName) result = result.replace(/\{itemName\}/g, params.itemName)
+  if (params.sender) {
+    const senderLabel = t(`notif.sender_${params.sender}`)
+    result = result.replace(/\{sender\}/g, senderLabel || params.sender)
+  }
+  return result
+}
+
 export function useNotifications() {
   const notifications = ref<any[]>([])
   const unreadCount = ref(0)

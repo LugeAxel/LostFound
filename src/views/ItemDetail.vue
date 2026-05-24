@@ -477,7 +477,7 @@ const copyGps = async (lat: number, lng: number) => {
               <span class="material-symbols-outlined text-[#387b41]">forum</span>
               <h3 class="font-bold text-sm text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-1.5">
                 {{ t('detail.chat_with') }} {{ isFounder() ? t('detail.claimer_label') : 'Founder' }}
-                <span :class="['inline-flex items-center gap-1 text-[10px] font-medium', isChatPartnerOnline ? 'text-[#29cc4e]' : 'text-[#9ca3af]']">
+                <span :class="['ml-5 inline-flex items-center gap-1 text-[10px] font-medium', isChatPartnerOnline ? 'text-[#29cc4e]' : 'text-[#9ca3af]']">
                   <span :class="['inline-block w-2 h-2 rounded-full', isChatPartnerOnline ? 'bg-[#29cc4e]' : 'bg-[#9ca3af]']"></span>
                   {{ isChatPartnerOnline ? 'Online' : 'Offline' }}
                 </span>
@@ -659,7 +659,7 @@ const copyGps = async (lat: number, lng: number) => {
       </div>
 
       <!-- Activity Timeline -->
-      <div v-if="item && activities.length" class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm overflow-hidden">
+      <div v-if="item && activities.length" class="bg-white dark:bg-[#1e1e1e] rounded-[2.5rem] border border-[#e0e4df] dark:border-[#374151] shadow-sm overflow-hidden mb-20">
         <button @click="showActivities = !showActivities" class="w-full p-6 flex items-center justify-between hover:bg-[#f8faf7] dark:hover:bg-[#2a2a2a] transition-colors">
           <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-[#387b41]">timeline</span>

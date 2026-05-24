@@ -9,6 +9,7 @@ import ItemCard from '../components/ItemCard.vue';
 import ItemSkeleton from '../components/ItemSkeleton.vue';
 import Footer from '../components/Footer.vue';
 import OnboardingOverlay from '../components/OnboardingOverlay.vue';
+import SmartLamp from '../components/SmartLamp.vue';
 import { API_URL } from '@/config/api';
 import { useI18n } from '../i18n';
 import { getAuthHeaders } from '../composables/useAuth';
@@ -382,5 +383,6 @@ onMounted(async () => {
       
       <Footer />
     </main>
+    <SmartLamp />
   </div>
 </template>

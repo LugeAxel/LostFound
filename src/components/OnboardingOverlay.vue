@@ -71,6 +71,15 @@ const advance = () => {
   }
 }
 
+const requestPushPermission = async () => {
+  if (!('Notification' in window)) {
+    advance()
+    return
+  }
+  const result = await Notification.requestPermission()
+  advance()
+}
+
 const skip = () => {
   localStorage.setItem('onboarding_seen', 'true')
   emit('close')
@@ -196,18 +205,21 @@ const particles = Array.from({ length: 14 }, () => {
               </div>
             </div>
 
-            <!-- Page 3 -->
+            <!-- Page 3: Push Notification Permission -->
             <div v-else class="w-full">
-              <div class="w-full flex justify-center mb-6 animate-float">
-                <DotLottieVue src="/animations/onboarding-smart.json" :autoplay="true" :loop="true" :speed="1" style="width:160px;height:160px" class="mx-auto" />
+              <div class="w-20 h-20 rounded-full bg-[#e0f2fe] dark:bg-[#0c4a6e] flex items-center justify-center mb-4 animate-float mx-auto">
+                <span class="material-symbols-outlined text-5xl text-[#0ea5e9]">notifications_active</span>
               </div>
               <h2 class="text-xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-3">{{ t('onboarding.p3_title') }}</h2>
-              <p class="text-sm text-[#40493d] dark:text-[#9ca3af] leading-relaxed mb-4">{{ t('onboarding.p3_desc') }}</p>
-              <p class="text-sm font-bold text-[#387b41] italic mb-6">"{{ t('onboarding.p3_tagline') }}"</p>
-              <div class="w-full">
-                <button @click="advance"
+              <p class="text-sm text-[#40493d] dark:text-[#9ca3af] leading-relaxed mb-6">{{ t('onboarding.p3_desc') }}</p>
+              <div class="w-full space-y-3">
+                <button @click="requestPushPermission"
                   class="onboarding-cta w-full px-6 py-3.5 rounded-xl font-bold text-white shadow-lg hover:shadow-[0_8px_28px_rgba(56,123,65,0.35)] hover:scale-[1.03] active:scale-[0.97] transition-all duration-300 ease-out">
                   {{ t('onboarding.p3_cta') }}
+                </button>
+                <button @click="skip"
+                  class="w-full text-sm font-bold text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] transition-colors py-2">
+                  {{ t('onboarding.p3_skip') }}
                 </button>
               </div>
             </div>

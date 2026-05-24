@@ -918,6 +918,7 @@ app.put('/api/profile/me',
         body('ig').optional({ values: 'falsy' }).trim().isLength({ max: 50 }).withMessage('Instagram handle too long'),
         body('fb').optional({ values: 'falsy' }).trim().isLength({ max: 50 }).withMessage('Facebook handle too long'),
         body('tg').optional({ values: 'falsy' }).trim().isLength({ max: 50 }).withMessage('Telegram handle too long'),
+        body('show_tips').optional().isBoolean().withMessage('show_tips must be a boolean'),
     ],
     handleValidationErrors,
     async (req, res) => {
@@ -930,6 +931,10 @@ app.put('/api/profile/me',
                 if (req.body[field] !== undefined) {
                     updateData[field] = req.body[field] || null;
                 }
+            }
+
+            if (req.body.show_tips !== undefined) {
+                updateData.show_tips = req.body.show_tips;
             }
 
             // Enforce max 3 contacts
@@ -1425,7 +1430,8 @@ app.post('/api/items',
                                 user_id: newItem.reporter,
                                 type: 'suggestion',
                                 item_id: bestMatch.id,
-                                text: `This might be your item: ${sanitizeHtml(bestMatch.name)}`
+                                text: `This might be your item: ${sanitizeHtml(bestMatch.name)}`,
+                                params: { itemName: sanitizeHtml(bestMatch.name) }
                             });
                         sendPushNotification(newItem.reporter, {
                             type: 'suggestion',
@@ -1446,7 +1452,8 @@ app.post('/api/items',
                                         user_id: fi.reporter,
                                         type: 'suggestion',
                                         item_id: newItem.id,
-                                        text: `We found a possible match: ${sanitizeHtml(newItem.name)}`
+                                        text: `We found a possible match: ${sanitizeHtml(newItem.name)}`,
+                                        params: { itemName: sanitizeHtml(newItem.name) }
                                     });
                                 sendPushNotification(fi.reporter, {
                                     type: 'suggestion',
@@ -1717,7 +1724,8 @@ app.post('/api/items/:id/start-claim',
                     user_id: item.reporter,
                     type: 'claim',
                     item_id: item.id,
-                    text: `Someone wants to claim your item: ${sanitizeHtml(item.name)}`
+                    text: `Someone wants to claim your item: ${sanitizeHtml(item.name)}`,
+                    params: { itemName: sanitizeHtml(item.name) }
                 });
 
             if (notifError) logger.error('Notification error', { requestId: req.requestId, itemId: req.params.id, error: notifError.message });
@@ -1793,13 +1801,15 @@ app.post('/api/items/:id/chat',
 
             const recipientId = isReporter ? item.claimer : item.reporter;
             if (recipientId) {
+                const senderRole = isReporter ? 'founder' : 'claimer';
                 await supabase
                     .from('notifications')
                     .insert({
                         user_id: recipientId,
                         type: 'message',
                         item_id: item.id,
-                        text: `New message from ${isReporter ? 'Founder' : 'Claimer'} for item: ${sanitizeHtml(item.name)}`
+                        text: `New message from ${isReporter ? 'Founder' : 'Claimer'} for item: ${sanitizeHtml(item.name)}`,
+                        params: { itemName: sanitizeHtml(item.name), sender: senderRole }
                     });
                 sendPushNotification(recipientId, {
                     type: 'message',
@@ -1878,7 +1888,8 @@ app.post('/api/items/:id/complaint',
                         user_id: item.reporter,
                         type: 'complaint',
                         item_id: item.id,
-                        text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${sanitizeHtml(item.name)}".`
+                        text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${sanitizeHtml(item.name)}".`,
+                        params: { itemName: sanitizeHtml(item.name) }
                     });
                 sendPushNotification(item.reporter, {
                     type: 'complaint',
@@ -1989,7 +2000,8 @@ app.post('/api/items/:id/claim',
                     user_id: item.reporter,
                     type: 'resolved',
                     item_id: itemId,
-                    text: `Barang "${sanitizeHtml(item.name)}" telah diklaim dan dikembalikan.`
+                    text: `Barang "${sanitizeHtml(item.name)}" telah diklaim dan dikembalikan.`,
+                    params: { itemName: sanitizeHtml(item.name) }
                 });
             sendPushNotification(item.reporter, {
                 type: 'resolved',
@@ -2320,7 +2332,8 @@ app.post('/api/items/:id/resolve',
                     user_id: req.body.userId,
                     type: 'resolved',
                     item_id: req.params.id,
-                    text: `You have been assigned as the claimer for: ${sanitizeHtml(item.name)}`
+                    text: `You have been assigned as the claimer for: ${sanitizeHtml(item.name)}`,
+                    params: { itemName: sanitizeHtml(item.name) }
                 });
             sendPushNotification(req.body.userId, {
                 type: 'resolved',
@@ -2651,7 +2664,8 @@ const runCleanupJob = async () => {
                     user_id: item.reporter,
                     type: 'system',
                     item_id: null,
-                    text: `Laporan "${sanitizeHtml(item.name)}" telah dihapus otomatis.`
+                    text: `Laporan "${sanitizeHtml(item.name)}" telah dihapus otomatis.`,
+                    params: { itemName: sanitizeHtml(item.name) }
                 });
             sendPushNotification(item.reporter, {
                 type: 'system',

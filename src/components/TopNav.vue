@@ -6,7 +6,7 @@ import { io } from 'socket.io-client';
 import { API_URL, SOCKET_URL } from '@/config/api';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '../i18n';
-import { useNotifications } from '../composables/useNotifications';
+import { useNotifications, translateNotification } from '../composables/useNotifications';
 import { useWebPush } from '../composables/useWebPush';
 import Marquee from './Marquee.vue';
 import schoolLogo from '../assets/school-logo.png';
@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
                   }}</span>
                 </div>
                 <div>
-                  <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1">{{ notif.text }}</p>
+                  <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] mb-1">{{ translateNotification(notif, t) }}</p>
                   <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af]">{{ new Date(notif.created_at).toLocaleTimeString() }}</p>
                 </div>
               </div>
