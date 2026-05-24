@@ -1,5 +1,5 @@
 <template>
-  <footer class="w-full mt-10 mb-10">
+  <footer class="w-full mt-15 mb-10">
     <div v-if="ratings.length > 0" class="border-t border-[#e0e4df] dark:border-[#374151] py-8 overflow-hidden">
       <h3 style="font-family: 'Space Grotesk', sans-serif;" class="text-center text-sm font-regular text-[#387b41] dark:text-[#88d982] mb-6 tracking-wide">
         {{ t('footer.review_heading') }}
