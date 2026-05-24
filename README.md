@@ -34,6 +34,7 @@
 | **Verification Workflow** | Semi-manual verification — founder reviews and finalizes ownership |
 | **Search & Filter** | Browse items by text, type (lost/found), and category |
 | **Statistics Dashboard** | Visual charts for items per day, categories, and fun facts |
+| **Bauhaus Design System** | Animated geometric shapes (dots, squares, lines) with CSS-driven float, orbit, pulse, and spin animations — centralized in `App.vue` as a full-page backdrop across all routes |
 | **Dark Mode** | Full dark mode support with system-aware toggling |
 | **i18n** | Indonesian and English language support |
 | **Retention Policy** | Unclaimed items auto-deleted after 10 days; returned items after 2 |
@@ -41,13 +42,30 @@
 
 ### 🤖 Smart Item Matching
 
-When you report a lost item, QReturn automatically searches all found items using a **3-pass query engine**:
+When a lost **or** found item is reported, QReturn automatically searches for matches using a **3-pass query engine**:
 
-1. **Same category + same area** — highest confidence matches
-2. **Same category only** — broader scope within your category
-3. **Text keyword match** — finds items across all categories whose name/description contains your item's keywords (e.g. "dompet", "eiger", "hitam")
+1. **Same category + same area** — highest confidence matches (limit 30)
+2. **Same category only** — broader scope within your category (limit 20)
+3. **Text keyword match** — finds items across all categories whose name/description contains your item's keywords (limit 10)
 
-Each candidate is scored by category match (+30), area match (+20), text relevance (phrase + keyword matching, up to 100+), and GPS proximity bonus (+25/<100m). The best match (score ≥ 30) triggers a **"This might be your item"** notification and appears as a suggestion card in **My Reports**.
+Each candidate is scored by the following factors:
+
+| Factor | Points | Condition |
+|--------|--------|-----------|
+| Exact name match | **+80** | Lost item name === found item name (case-insensitive, trimmed) |
+| All name words match | **+50** | Every meaningful word in lost name appears in found name |
+| Full phrase match | **+30** | Lost item name appears in found name + description |
+| Keyword in found name | **+15** / keyword | Non-basic keyword from lost item in found name |
+| Keyword in found desc | **+5** / keyword | Non-basic keyword in found description |
+| Basic keyword in name | **+3** / keyword | Generic criteria (colors, materials, sizes, common items) in found name |
+| Basic keyword in desc | **+1** / keyword | Generic criteria in found description |
+| Category match | **+14** | Same category (only if textScore > 0) |
+| Area match | **+14** | Same area category (only if textScore > 0) |
+| GPS < 100m | **+10** | Haversine distance < 100m |
+| GPS 100–500m | **+5** | Haversine distance 100–500m |
+| GPS 500–1000m | **+1** | Haversine distance 500–1000m |
+
+A match with **total score ≥ 40** triggers a **"This might be your item"** notification and appears as a suggestion card in **My Reports**. Matches run bidirectionally — both lost and found item creation scans for counterparts.
 
 > 📖 Full documentation: [`docs/matching-system.md`](docs/matching-system.md)
 
@@ -66,7 +84,7 @@ Each candidate is scored by category match (+30), area match (+20), text relevan
 | **QR** | `html5-qrcode` (scanner), `qrcode.vue` (generator) |
 | **Maps** | Leaflet + OpenStreetMap tiles |
 | **Uploads** | Cloudinary via multer-storage-cloudinary (5MB limit) |
-| **Animations** | LottieFiles (`@lottiefiles/dotlottie-vue`) |
+| **Animations** | LottieFiles (`@lottiefiles/dotlottie-vue`), custom CSS keyframe animations (Bauhaus float, orbit, pulse, spin) |
 
 ---
 
@@ -77,6 +95,7 @@ QReturn/
 ├── src/                    # Frontend (Vue 3)
 │   ├── views/              # Page components (13 routes)
 │   ├── components/         # Reusable components
+│   │   ├── BauhausBackground.vue  # Full-page animated Bauhaus decor (centralized in App.vue)
 │   ├── lib/supabase.ts     # Supabase client (frontend)
 │   ├── router/index.ts     # Route definitions + auth guard
 │   ├── config/http.ts      # Axios instance (Supabase session)
