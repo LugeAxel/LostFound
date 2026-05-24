@@ -119,11 +119,10 @@ const router = createRouter({
     }
   ],
   scrollBehavior(to, from, savedPosition) {
-    if (savedPosition) {
+    if (savedPosition && (to.name === 'dashboard' || to.name === 'search')) {
       return savedPosition
-    } else {
-      return { top: 0 }
     }
+    return { top: 0 }
   }
 })
 
