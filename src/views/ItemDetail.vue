@@ -355,9 +355,9 @@ const copyGps = async (lat: number, lng: number) => {
     <SideNav />
     <TopNav />
 
-    <main class="md:ml-64 pt-13 flex-1 flex flex-col overflow-hidden">
+    <main class="md:ml-64 pt-12 flex-1 flex flex-col overflow-hidden">
       <!-- Item specific header below TopNav -->
-      <header class="bg-white dark:bg-[#1e1e1e]/60 backdrop-blur-md border-b border-[#e0e4df] dark:border-[#374151] px-8 py-4 sticky top-3 z-30">
+      <header class="bg-white dark:bg-[#1e1e1e]/60 backdrop-blur-md border-b border-[#e0e4df] dark:border-[#374151] px-8 py-4 sticky top-2 z-30 mt-2">
         <div class="flex items-center justify-between">
         <button @click="router.back()" class="flex items-center gap-2 text-[#40493d] dark:text-[#9ca3af] hover:text-[#387b41] font-bold text-sm transition-all group">
           <span class="material-symbols-outlined group-hover:-translate-x-1 transition-transform">arrow_back</span>
