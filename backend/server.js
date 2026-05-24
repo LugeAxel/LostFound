@@ -8,6 +8,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const cron = require('node-cron');
 const cloudinary = require('./config/cloudinary');
 const { cache, invalidateCache } = require('./middleware/cache');
+const { webpush, sendPush, vapidPublicKey } = require('./config/webpush');
 
 const http = require('http');
 const { Server } = require('socket.io');
@@ -288,6 +289,32 @@ const heavyEndpointLimiter = rateLimit({
     message: { success: false, message: 'Too many requests to this endpoint.' }
 });
 
+// Per-user in-memory rate limiter (for actions that trigger notifications)
+const userRateLimits = new Map();
+const checkUserRateLimit = (userId, action, maxPerMinute = 10) => {
+    const now = Date.now();
+    const key = `${userId}:${action}`;
+    const entry = userRateLimits.get(key);
+    if (!entry || now - entry.windowStart > 60000) {
+        userRateLimits.set(key, { windowStart: now, count: 1 });
+        return true;
+    }
+    if (entry.count >= maxPerMinute) {
+        return false;
+    }
+    entry.count++;
+    return true;
+};
+// Cleanup stale entries every 5 minutes
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of userRateLimits.entries()) {
+        if (now - entry.windowStart > 120000) {
+            userRateLimits.delete(key);
+        }
+    }
+}, 300000);
+
 // ─────────────────────────────────────────────
 // 3. AUTH MIDDLEWARE (Supabase Auth)
 // ─────────────────────────────────────────────
@@ -350,6 +377,36 @@ const handleValidationErrors = (req, res, next) => {
 function sanitizeHtml(str) {
     if (typeof str !== 'string') return str;
     return str.replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Send Web Push notification to all devices for a user
+async function sendPushNotification(userId, payload) {
+    try {
+        const { data: subs, error } = await supabase
+            .from('push_subscriptions')
+            .select('*')
+            .eq('user_id', userId);
+
+        if (error) throw error;
+        if (!subs || subs.length === 0) return;
+
+        for (const sub of subs) {
+            const result = await sendPush({
+                endpoint: sub.endpoint,
+                keys: { p256dh: sub.p256dh, auth: sub.auth },
+            }, payload);
+
+            if (result && result.expired) {
+                await supabase
+                    .from('push_subscriptions')
+                    .delete()
+                    .eq('id', sub.id);
+                logger.info('Removed expired push subscription', { userId, subId: sub.id });
+            }
+        }
+    } catch (e) {
+        logger.error('sendPushNotification error', { userId, error: e.message });
+    }
 }
 
 // Haversine distance in meters
@@ -1370,6 +1427,12 @@ app.post('/api/items',
                                 item_id: bestMatch.id,
                                 text: `This might be your item: ${sanitizeHtml(bestMatch.name)}`
                             });
+                        sendPushNotification(newItem.reporter, {
+                            type: 'suggestion',
+                            itemId: bestMatch.id,
+                            title: 'Possible Match Found',
+                            body: `This might be your item: ${sanitizeHtml(bestMatch.name)}`
+                        });
                     }
 
                     // If found item created, also notify matching lost item reporters
@@ -1385,6 +1448,12 @@ app.post('/api/items',
                                         item_id: newItem.id,
                                         text: `We found a possible match: ${sanitizeHtml(newItem.name)}`
                                     });
+                                sendPushNotification(fi.reporter, {
+                                    type: 'suggestion',
+                                    itemId: newItem.id,
+                                    title: 'Possible Match Found',
+                                    body: `We found a possible match: ${sanitizeHtml(newItem.name)}`
+                                });
                             }
                         }
                     }
@@ -1579,6 +1648,9 @@ app.post('/api/items/:id/start-claim',
     handleValidationErrors,
     async (req, res) => {
         try {
+            if (!checkUserRateLimit(req.user.id, 'start-claim', 5)) {
+                return sendError(res, 429, 'Too many claim attempts. Please slow down.', ERROR_CODES.BAD_REQUEST);
+            }
             logger.request(req, 'Start claim', { itemId: req.params.id });
 
             const { data: updated, error } = await supabase
@@ -1650,6 +1722,13 @@ app.post('/api/items/:id/start-claim',
 
             if (notifError) logger.error('Notification error', { requestId: req.requestId, itemId: req.params.id, error: notifError.message });
 
+            sendPushNotification(item.reporter, {
+                type: 'claim',
+                itemId: item.id,
+                title: 'New Claim Request',
+                body: `Someone wants to claim your item: ${sanitizeHtml(item.name)}`
+            });
+
             logActivity({
                 itemId: item.id,
                 userId: req.user.id,
@@ -1674,6 +1753,9 @@ app.post('/api/items/:id/chat',
     handleValidationErrors,
     async (req, res) => {
         try {
+            if (!checkUserRateLimit(req.user.id, 'chat', 20)) {
+                return sendError(res, 429, 'Too many messages. Please slow down.', ERROR_CODES.BAD_REQUEST);
+            }
             const text = req.body.text?.trim();
             if (!text || text.length > 1000) {
                 return res.status(400).json({
@@ -1719,6 +1801,12 @@ app.post('/api/items/:id/chat',
                         item_id: item.id,
                         text: `New message from ${isReporter ? 'Founder' : 'Claimer'} for item: ${sanitizeHtml(item.name)}`
                     });
+                sendPushNotification(recipientId, {
+                    type: 'message',
+                    itemId: item.id,
+                    title: 'New Message',
+                    body: `New message from ${isReporter ? 'Founder' : 'Claimer'} for item: ${sanitizeHtml(item.name)}`
+                });
             }
 
             io.to(`item-${item.id}`).emit('new-message', {
@@ -1754,6 +1842,9 @@ app.post('/api/items/:id/complaint',
     handleValidationErrors,
     async (req, res) => {
         try {
+            if (!checkUserRateLimit(req.user.id, 'complaint', 3)) {
+                return sendError(res, 429, 'Too many complaints. Please slow down.', ERROR_CODES.BAD_REQUEST);
+            }
             const { reason } = req.body;
 
             const { data: inserted, error: complaintError } = await supabase
@@ -1789,6 +1880,12 @@ app.post('/api/items/:id/complaint',
                         item_id: item.id,
                         text: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${sanitizeHtml(item.name)}".`
                     });
+                sendPushNotification(item.reporter, {
+                    type: 'complaint',
+                    itemId: item.id,
+                    title: 'Complaint Filed',
+                    body: `Seseorang telah mengajukan komplain kepemilikan untuk barang "${sanitizeHtml(item.name)}".`
+                });
             }
 
             logActivity({
@@ -1894,6 +1991,12 @@ app.post('/api/items/:id/claim',
                     item_id: itemId,
                     text: `Barang "${sanitizeHtml(item.name)}" telah diklaim dan dikembalikan.`
                 });
+            sendPushNotification(item.reporter, {
+                type: 'resolved',
+                itemId: itemId,
+                title: 'Item Returned',
+                body: `Barang "${sanitizeHtml(item.name)}" telah diklaim dan dikembalikan.`
+            });
 
             invalidateCache('/api/items');
             invalidateCache('/api/stats');
@@ -2219,6 +2322,12 @@ app.post('/api/items/:id/resolve',
                     item_id: req.params.id,
                     text: `You have been assigned as the claimer for: ${sanitizeHtml(item.name)}`
                 });
+            sendPushNotification(req.body.userId, {
+                type: 'resolved',
+                itemId: req.params.id,
+                title: 'Claimer Assigned',
+                body: `You have been assigned as the claimer for: ${sanitizeHtml(item.name)}`
+            });
 
             invalidateCache('/api/items');
 
@@ -2238,7 +2347,134 @@ app.post('/api/items/:id/resolve',
     }
 );
 
-// Notifications routes
+// ── PUSH SUBSCRIPTION ROUTES ──────────────────
+
+// Get VAPID public key (so frontend can subscribe)
+app.get('/api/push/vapid-key', (req, res) => {
+    res.json({ publicKey: vapidPublicKey });
+});
+
+// Subscribe to push notifications
+app.post('/api/push/subscribe',
+    authMiddleware,
+    [
+        body('endpoint').trim().notEmpty().withMessage('Endpoint is required'),
+        body('p256dh').trim().notEmpty().withMessage('p256dh is required'),
+        body('auth').trim().notEmpty().withMessage('Auth is required'),
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const { endpoint, p256dh, auth } = req.body;
+
+            // Limit subscriptions per user (max 5)
+            const { count, error: countError } = await supabase
+                .from('push_subscriptions')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', req.user.id);
+
+            if (countError) throw countError;
+
+            if (count >= 5) {
+                return sendError(res, 400, 'Maximum 5 push subscriptions per account.', ERROR_CODES.BAD_REQUEST);
+            }
+
+            // Upsert: same endpoint = update, otherwise insert
+            const { data: existing } = await supabase
+                .from('push_subscriptions')
+                .select('id')
+                .eq('user_id', req.user.id)
+                .eq('endpoint', endpoint)
+                .maybeSingle();
+
+            if (existing) {
+                const { error: updateError } = await supabase
+                    .from('push_subscriptions')
+                    .update({ p256dh, auth, user_agent: req.headers['user-agent'] || null, updated_at: new Date().toISOString() })
+                    .eq('id', existing.id);
+
+                if (updateError) throw updateError;
+            } else {
+                const { error: insertError } = await supabase
+                    .from('push_subscriptions')
+                    .insert({
+                        user_id: req.user.id,
+                        endpoint,
+                        p256dh,
+                        auth,
+                        user_agent: req.headers['user-agent'] || null,
+                    });
+
+                if (insertError) throw insertError;
+            }
+
+            res.json({ success: true });
+        } catch (error) {
+            logger.error('Push subscribe error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+            sendError(res, 500, 'Failed to subscribe.', ERROR_CODES.INTERNAL);
+        }
+    }
+);
+
+// Unsubscribe (remove a specific subscription)
+app.post('/api/push/unsubscribe',
+    authMiddleware,
+    [
+        body('endpoint').trim().notEmpty().withMessage('Endpoint is required'),
+    ],
+    handleValidationErrors,
+    async (req, res) => {
+        try {
+            const { error } = await supabase
+                .from('push_subscriptions')
+                .delete()
+                .eq('user_id', req.user.id)
+                .eq('endpoint', req.body.endpoint);
+
+            if (error) throw error;
+
+            res.json({ success: true });
+        } catch (error) {
+            logger.error('Push unsubscribe error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+            sendError(res, 500, 'Failed to unsubscribe.', ERROR_CODES.INTERNAL);
+        }
+    }
+);
+
+// Test push notification (with 10-second delay for development)
+app.post('/api/push/test', authMiddleware, async (req, res) => {
+    res.json({ success: true, message: 'Push notification queued. Will arrive in 10 seconds.' });
+
+    setTimeout(async () => {
+        await sendPushNotification(req.user.id, {
+            type: 'test',
+            itemId: null,
+            title: 'QReturn Test Notification',
+            body: 'This is a test push notification sent 10 seconds after you requested it. Push is working!',
+        });
+        logger.info('Test push notification sent', { userId: req.user.id });
+    }, 10000);
+});
+
+// ── NOTIFICATION ROUTES ─────────────────────
+
+app.get('/api/notifications/unread-count', authMiddleware, async (req, res) => {
+    try {
+        const { count, error } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', req.user.id)
+            .eq('is_read', false);
+
+        if (error) throw error;
+
+        res.json({ count: count || 0 });
+    } catch (error) {
+        logger.error('Fetch unread count error', { requestId: req.requestId, userId: req.user?.id, error: error.message });
+        sendError(res, 500, 'Failed to fetch unread count.', ERROR_CODES.INTERNAL);
+    }
+});
+
 app.get('/api/notifications', authMiddleware, async (req, res) => {
     try {
         const { data: notifs, error } = await supabase
@@ -2417,6 +2653,12 @@ const runCleanupJob = async () => {
                     item_id: null,
                     text: `Laporan "${sanitizeHtml(item.name)}" telah dihapus otomatis.`
                 });
+            sendPushNotification(item.reporter, {
+                type: 'system',
+                itemId: null,
+                title: 'Item Auto-Deleted',
+                body: `Laporan "${sanitizeHtml(item.name)}" telah dihapus otomatis.`
+            });
 
             await supabase
                 .from('notifications')

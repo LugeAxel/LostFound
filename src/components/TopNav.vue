@@ -7,6 +7,7 @@ import { API_URL, SOCKET_URL } from '@/config/api';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '../i18n';
 import { useNotifications } from '../composables/useNotifications';
+import { useWebPush } from '../composables/useWebPush';
 import Marquee from './Marquee.vue';
 import schoolLogo from '../assets/school-logo.png';
 
@@ -27,7 +28,8 @@ const handleLogout = async () => {
   router.push('/');
 };
 
-const { notifications, unreadCount, fetchNotifications: fetchNotifs, subscribeToNotifications, deleteNotification: deleteNotif, deleteAllNotifications: deleteAllNotifs, unsubscribe } = useNotifications();
+const { notifications, unreadCount, fetchNotifications: fetchNotifs, subscribeToNotifications, markAsRead, deleteNotification: deleteNotif, deleteAllNotifications: deleteAllNotifs, refreshUnreadCount, unsubscribe } = useNotifications();
+const { isSupported, subscribe: subscribePush } = useWebPush();
 
 const isDark = ref(localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches));
 
@@ -66,12 +68,8 @@ const fetchNotifications = async () => {
 };
 
 const onNotificationClick = async (id: string, itemId: string | null) => {
-  try {
-    await deleteNotif(id);
-    if (itemId) router.push(`/item/${itemId}`);
-  } catch (error) {
-    console.error('Error handling notification:', error);
-  }
+  await markAsRead(id);
+  if (itemId) router.push(`/item/${itemId}`);
 };
 
 onMounted(async () => {
@@ -85,6 +83,7 @@ onMounted(async () => {
   if (session) {
     fetchNotifications();
     subscribeToNotifications(session.user.id);
+    if (isSupported) subscribePush();
 
     try {
       const res = await axios.get(`${API_URL}/api/auth/me`, {
@@ -112,6 +111,10 @@ onMounted(async () => {
   socket.on('connect', () => {
     const userId = user.value?.id || session?.user?.id;
     if (userId) socket.emit('join-user', userId);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshUnreadCount();
   });
 });
 
