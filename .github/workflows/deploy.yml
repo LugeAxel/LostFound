@@ -15,6 +15,9 @@ jobs:
           cd /var/www/LostFound
           git pull origin main
           npm install
+          cd /var/www/LostFound/backend
+          npm install
+          cd ..
           NODE_OPTIONS="--max-old-space-size=4096" npm run build
           sudo systemctl restart nginx
           pm2 restart all

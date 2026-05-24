@@ -15,5 +15,6 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run dev
-      - run: npm run build
+      - run: cd /backend && npm ci && cd ..
+      - run: npm run type-check
+      - run: npm run build  
