@@ -225,7 +225,7 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // === Developer ===
     'developer.back': 'Back',
-    'developer.title': 'Our Developers',
+    'developer.title': 'The minds behind QReturn',
     'developer.subtitle': 'Meet the dedicated team that built the QReturn platform for SMKN 2 Depok. We are passionate about making the school environment better.',
     'developer.dev1_name': 'Caesar Bintang Pradana',
     'developer.dev1_role': 'Frontend Engineer',
