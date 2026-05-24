@@ -255,7 +255,7 @@ const submitReport = async () => {
             <!-- Gallery grid -->
             <div class="grid grid-cols-3 gap-3">
               <div v-for="(preview, i) in imagePreviews" :key="i" class="relative aspect-square rounded-2xl overflow-hidden border border-[#e0e4df] dark:border-[#374151] bg-[#f3f5f2] dark:bg-[#2a2a2a] group">
-                <img :src="preview" class="w-full h-full object-cover" />
+                <img :src="preview" class="w-full h-full object-cover" loading="lazy" />
                 <button @click.prevent="removePhoto(i)" type="button" class="absolute top-1 right-1 w-7 h-7 bg-black/60 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <span class="material-symbols-outlined text-sm">close</span>
                 </button>

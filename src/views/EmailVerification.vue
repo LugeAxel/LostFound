@@ -154,7 +154,7 @@ onBeforeUnmount(() => {
     <div class="m-4 text-center items-center">
       <div class="flex items-center justify-center gap-2 mb-2">
         <div class="mb-2 p-2 w-12 h-12 bg-[#387b41]/10 rounded-lg flex items-center justify-center">
-          <img src="/logo.png" alt="" class="w-full h-full object-cover">
+          <img src="/logo.png" alt="" class="w-full h-full object-cover" loading="lazy">
         </div>
         <p class="text-2xl font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">QReturn</p>
       </div>

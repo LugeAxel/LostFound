@@ -14,7 +14,7 @@ const { t } = useI18n();
     <div class="flex flex-col h-full py-8">
       <div class="mb-8 px-6 flex items-center justify-center flex-col">
         <div class="mb-2 p-2 w-15 h-15 bg-[#387b41]/10 rounded-lg flex items-center justify-center">
-            <img src="/logo.png" alt="" class="w-full h-full object-cover">
+            <img src="/logo.png" alt="" class="w-full h-full object-cover" loading="lazy">
           </div>
         <div class="flex items-center gap-2 text-center">
           <div>

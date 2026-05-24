@@ -1,21 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { API_URL } from '@/config/api'
 import { supabase } from '@/lib/supabase'
-import Login from '../views/Login.vue'
-import EmailVerification from '../views/EmailVerification.vue'
-import Dashboard from '../views/Dashboard.vue'
-import Report from '../views/Report.vue'
-import MyReports from '../views/MyReports.vue'
-import Claim from '../views/Claim.vue'
-import ItemDetail from '../views/ItemDetail.vue'
-import Scanner from '../views/Scanner.vue'
-import Search from '../views/Search.vue'
-import Tutorial from '../views/Tutorial.vue'
-import DeveloperView from '../views/DeveloperView.vue'
-import Rating from '../views/Rating.vue'
-import Statistics from '../views/Statistics.vue'
-import ProfileEdit from '../views/ProfileEdit.vue'
-import ProfilePublic from '../views/ProfilePublic.vue'
 
 const router = createRouter({
   history: createWebHistory((import.meta as any).env.BASE_URL),
@@ -23,95 +8,90 @@ const router = createRouter({
     {
       path: '/',
       name: 'login',
-      component: Login,
+      component: () => import('../views/Login.vue'),
       meta: { requiresGuest: true }
     },
     {
       path: '/verify-email',
       name: 'email-verification',
-      component: EmailVerification,
-      // No meta guards — accessible regardless of auth state.
-      // Supabase auto-processes URL hash tokens during client init,
-      // so by the time the router guard runs the hash is already cleared
-      // and a session exists. Removing requiresGuest lets the component
-      // mount and handle all scenarios (auto-verified, manual, pending).
+      component: () => import('../views/EmailVerification.vue'),
     },
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: Dashboard,
+      component: () => import('../views/Dashboard.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/report',
       name: 'report',
-      component: Report,
+      component: () => import('../views/Report.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/my-reports',
       name: 'my-reports',
-      component: MyReports,
+      component: () => import('../views/MyReports.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/claim/:claimCode',
       name: 'claim',
-      component: Claim,
+      component: () => import('../views/Claim.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/item/:id',
       name: 'item-detail',
-      component: ItemDetail,
+      component: () => import('../views/ItemDetail.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/scan',
       name: 'scanner',
-      component: Scanner,
+      component: () => import('../views/Scanner.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/search',
       name: 'search',
-      component: Search,
+      component: () => import('../views/Search.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/tutorial',
       name: 'tutorial',
-      component: Tutorial,
+      component: () => import('../views/Tutorial.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/developer',
       name: 'developer',
-      component: DeveloperView,
+      component: () => import('../views/DeveloperView.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/rating',
       name: 'rating',
-      component: Rating,
+      component: () => import('../views/Rating.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/statistics',
       name: 'statistics',
-      component: Statistics,
+      component: () => import('../views/Statistics.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/profile',
       name: 'profile',
-      component: ProfileEdit,
+      component: () => import('../views/ProfileEdit.vue'),
       meta: { requiresAuth: true }
     },
     {
       path: '/profile/:username',
       name: 'profile-public',
-      component: ProfilePublic
+      component: () => import('../views/ProfilePublic.vue')
     },
     {
       path: '/:pathMatch(.*)*',

@@ -223,7 +223,7 @@ onBeforeUnmount(() => {
 
             <!-- Preview -->
             <div v-if="imagePreview" class="relative w-full h-64 rounded-3xl overflow-hidden shadow-md border border-[#e0e4df] dark:border-[#374151]">
-              <img :src="imagePreview" class="w-full h-full object-cover" />
+              <img :src="imagePreview" class="w-full h-full object-cover" loading="lazy" />
               <button @click.prevent="retakePhoto" type="button"
                 class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg text-sm font-bold text-[#1c1b1b] dark:text-[#f3f4f6] flex items-center gap-2 hover:bg-white dark:bg-[#1e1e1e] transition-all z-10">
                 <span class="material-symbols-outlined text-lg">refresh</span> Retake Photo

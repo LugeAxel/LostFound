@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
+    ...(process.env.NODE_ENV !== 'production' ? [vueDevTools()] : []),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png'],
@@ -46,5 +47,16 @@ export default defineConfig({
   },
   server: {
     host: true
-  }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules/vue') || id.includes('node_modules/@vue') || id.includes('node_modules/@unhead')) return 'vendor-vue'
+          if (id.includes('node_modules/@supabase')) return 'vendor-supabase'
+          if (id.includes('node_modules/socket.io-client') || id.includes('node_modules/engine.io-client')) return 'vendor-socket'
+        },
+      },
+    },
+  },
 })

@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
           <button @click="showProfileDropdown = !showProfileDropdown" class="flex items-center gap-2 md:gap-3 outline-none hover:bg-[#f3f5f2] dark:hover:bg-[#2a2a2a] p-1 pr-2 md:pr-3 rounded-full transition-all">
             <!-- QR login user: show school logo -->
             <div v-if="user.nisn" class="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-[#387b41]/20 dark:border-[#88d982]/20 overflow-hidden bg-white dark:bg-[#1e1e1e] flex items-center justify-center">
-              <img :src="schoolLogo" alt="School Logo" class="w-full h-full object-cover" />
+              <img :src="schoolLogo" alt="School Logo" class="w-full h-full object-cover" loading="lazy" />
             </div>
             <!-- Email login user: show default letter avatar -->
             <div v-else class="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-[#387b41]/20 dark:border-[#88d982]/20 bg-[#f0fdf4] dark:bg-[#115431] flex items-center justify-center">

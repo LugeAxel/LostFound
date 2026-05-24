@@ -458,7 +458,7 @@ const copyGps = async (lat: number, lng: number) => {
             </h3>
             <div class="space-y-4">
               <div class="rounded-2xl overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a]">
-                <img :src="item.claim_photo" class="w-full object-cover" />
+                <img :src="item.claim_photo" class="w-full object-cover" loading="lazy" />
               </div>
               <div v-if="item.claim_notes" class="p-3 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-xl">
                 <p class="text-xs text-[#40493d] dark:text-[#9ca3af] italic">"{{ item.claim_notes }}"</p>

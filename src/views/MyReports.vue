@@ -335,7 +335,7 @@ const saveEdit = async () => {
               <div v-if="item.status === 'Returned' && item.claim_photo" class="mt-4 pt-4 border-t border-[#e0e4df] dark:border-[#374151]">
                 <p class="text-[10px] font-bold text-[#40493d] dark:text-[#9ca3af] mb-3 uppercase tracking-wider">{{ t('myreports.proof_of_return') }}</p>
                 <div class="flex gap-4 items-center">
-                  <img :src="item.claim_photo" class="w-16 h-16 rounded-lg object-cover border border-[#e0e4df] dark:border-[#374151]" />
+                  <img :src="item.claim_photo" class="w-16 h-16 rounded-lg object-cover border border-[#e0e4df] dark:border-[#374151]" loading="lazy" />
                   <div>
                     <p class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6]">{{ t('myreports.verified_return') }}</p>
                     <p class="text-[10px] text-[#40493d] dark:text-[#9ca3af]">{{ item.claim_notes || t('myreports.handed_over') }}</p>
@@ -470,7 +470,7 @@ const saveEdit = async () => {
               <label class="text-xs font-bold text-[#1c1b1b] dark:text-[#f3f4f6] uppercase tracking-wider">{{ t('myreports.image') }}</label>
               <div class="flex items-center gap-4">
                 <div v-if="editImagePreview" class="w-20 h-20 rounded-xl overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a] border border-[#e0e4df] dark:border-[#374151] flex-shrink-0">
-                  <img :src="editImagePreview" class="w-full h-full object-cover" />
+                  <img :src="editImagePreview" class="w-full h-full object-cover" loading="lazy" />
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <button @click="editFileInput?.click()" type="button" class="px-4 py-2 bg-[#f3f5f2] dark:bg-[#2a2a2a] rounded-xl text-xs font-bold text-[#40493d] dark:text-[#9ca3af] hover:bg-[#e0e4df] dark:hover:bg-[#374151] transition-all">
