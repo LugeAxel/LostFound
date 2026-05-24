@@ -17,26 +17,34 @@ Lost Item Report
    └──────────────────────┬──────────────────────┘
                           │
                           ▼
-   ┌─────────────────────────────────────────────┐
-   │        Combined Scoring Engine              │
-   │                                             │
-   │  Category Match    +30                      │
-   │  Area Match        +20                      │
-   │  Text Relevance    0-100+                   │
-   │  GPS Bonus         +25/+15/+5               │
-   └──────────────────────┬──────────────────────┘
-                          │
-                          ▼
-            ┌─────────────────────┐
-            │  Top 5 Matches      │
-            │  (score descending) │
-            └──────────┬──────────┘
-                       │
-            ┌──────────┴──────────┐
-            ▼                     ▼
-     Notification          MyReports Inline
-    ("This might be       (suggestion cards
-     your item: ...")      with score & distance)
+    ┌─────────────────────────────────────────────┐
+    │        Combined Scoring Engine              │
+    │                                             │
+    │  Exact Name Match     +80                   │
+    │  All Words Match      +50                   │
+    │  Phrase Match         +30                   │
+    │  Keyword (name)       +15 / non-basic       │
+    │  Keyword (desc)       +5  / non-basic       │
+    │  Basic Keyword (name) +3                    │
+    │  Basic Keyword (desc) +1                    │
+    │  Category Match       +14 (conditional)     │
+    │  Area Match           +14 (conditional)     │
+    │  GPS < 100m           +10                   │
+    │  GPS 100–500m         +5                    │
+    │  GPS 500–1000m        +1                    │
+    └──────────────────────┬──────────────────────┘
+                           │
+                           ▼
+             ┌─────────────────────┐
+             │  Top 5 Matches      │
+             │  (score ≥ 40)       │
+             └──────────┬──────────┘
+                        │
+             ┌──────────┴──────────┐
+             ▼                     ▼
+      Notification          MyReports Inline
+     ("This might be       (suggestion cards
+      your item: ...")      with score & distance)
 ```
 
 ## Scoring Formula
@@ -45,29 +53,39 @@ Setiap barang temuan diberi skor berdasarkan kriteria berikut:
 
 | Faktor | Bobot | Kondisi |
 |--------|-------|---------|
-| Category match | `+30` | `foundItem.category === lostItem.category` |
-| Area match | `+20` | `foundItem.area_category === lostItem.area_category` |
-| Full phrase match (name) | `+30` | Lost item name appears in found item name/description |
-| Full phrase match (desc) | `+15` | Lost item description appears in found item text |
-| Keyword in found name | `+15` / keyword | Each keyword from lost item found in found item name |
-| Keyword in found desc | `+5` / keyword | Each keyword from lost item found in found item description |
-| GPS < 100m | `+25` | Haversine distance < 100 meters |
-| GPS 100-500m | `+15` | Haversine distance 100-500 meters |
-| GPS 500-1000m | `+5` | Haversine distance 500-1000 meters |
+| Exact name match | `+80` | `lostItem.name.trim().toLowerCase() === foundItem.name.trim().toLowerCase()` |
+| All name words match | `+50` | Every meaningful word (≥ 2 chars, excluding stop words) in lost name appears in found name |
+| Full phrase match | `+30` | Lost item name appears in found item name/description |
+| Keyword in found name (non-basic) | `+15` / keyword | Each non-generic keyword from lost item found in found name |
+| Keyword in found desc (non-basic) | `+5` / keyword | Each non-generic keyword in found description |
+| Basic keyword in name | `+3` / keyword | Generic terms (colors, materials, sizes, common items) in found name |
+| Basic keyword in desc | `+1` / keyword | Generic terms in found description |
+| Category match | `+14` | `foundItem.category === lostItem.category` (only if textScore > 0) |
+| Area match | `+14` | `foundItem.area_category === lostItem.area_category` (only if textScore > 0) |
+| GPS < 100m | `+10` | Haversine distance < 100 meters |
+| GPS 100–500m | `+5` | Haversine distance 100–500 meters |
+| GPS 500–1000m | `+1` | Haversine distance 500–1000 meters |
 
-**Minimum score for notification:** `>= 30`
+### Basic Criteria (generic terms scored lower)
+
+Words like colors (`hitam`, `putih`, `merah`…), materials (`kain`, `plastik`, `kulit`…), sizes (`kecil`, `besar`…), and common items (`tas`, `buku`, `botol`…) get **+3/+1** instead of +15/+5 because they are too generic to indicate a strong match.
+
+**Minimum score for notification:** `>= 40`
 
 ## 3-Pass Query Strategy
+
+Semua pass memfilter `status IN ('Available', 'On Progress', 'Returned')`, mengecualikan item yang dilaporkan oleh pengguna yang sama (`.neq('reporter', sourceItem.reporter)`), dan hasilnya di-deduplikasi.
 
 ### Pass 1: High Confidence
 ```
 SELECT * FROM items
 WHERE type = 'found'
-  AND status = 'Available'
+  AND status IN ('Available', 'On Progress', 'Returned')
   AND category = '<lostItem.category>'
   AND area_category = '<lostItem.area_category>'
   AND id != '<lostItem.id>'
-LIMIT 50
+  AND reporter != '<sourceItem.reporter>'
+LIMIT 30
 ```
 Menangkap barang dengan kategori dan area yang sama persis.
 
@@ -75,10 +93,11 @@ Menangkap barang dengan kategori dan area yang sama persis.
 ```
 SELECT * FROM items
 WHERE type = 'found'
-  AND status = 'Available'
+  AND status IN ('Available', 'On Progress', 'Returned')
   AND category = '<lostItem.category>'
   AND id != '<lostItem.id>'
-LIMIT 30
+  AND reporter != '<sourceItem.reporter>'
+LIMIT 20
 ```
 Menangkap barang dengan kategori sama tapi area berbeda.
 
@@ -86,15 +105,16 @@ Menangkap barang dengan kategori sama tapi area berbeda.
 ```
 SELECT * FROM items
 WHERE type = 'found'
-  AND status = 'Available'
+  AND status IN ('Available', 'On Progress', 'Returned')
   AND category != '<lostItem.category>'
   AND id != '<lostItem.id>'
+  AND reporter != '<sourceItem.reporter>'
   AND (
     name ILIKE '%dompet%' OR description ILIKE '%dompet%' OR
     name ILIKE '%hitam%' OR description ILIKE '%hitam%' OR
     name ILIKE '%eiger%' OR description ILIKE '%eiger%'
   )
-LIMIT 20
+LIMIT 10
 ```
 Menangkap barang yang mungkin salah kategori tapi namanya cocok.
 
@@ -144,7 +164,7 @@ Mengembalikan 5 barang temuan teratas yang cocok dengan barang hilang.
 
 ### POST `/api/items` (auto-matching on create)
 
-Ketika barang hilang dilaporkan, sistem langsung menjalankan matching dan membuat notifikasi jika skor terbaik >= 30.
+Ketika barang hilang **atau ditemukan** dilaporkan, sistem langsung menjalankan matching secara bidirectional dan membuat notifikasi jika skor terbaik >= 40.
 
 ## Notification
 
@@ -168,8 +188,8 @@ Kolom yang digunakan pada tabel `items`:
 |-------|------|--------|
 | `name` | VARCHAR(200) | Nama barang — digunakan untuk keyword extraction & phrase match |
 | `description` | VARCHAR(500) | Deskripsi barang — digunakan untuk keyword extraction |
-| `category` | VARCHAR(50) | Kategori barang (Electronics, Daily Use, dll) — bobot +30 |
-| `area_category` | VARCHAR(50) | Kategori area (Ruang Teori, Lab, dll) — bobot +20 |
+| `category` | VARCHAR(50) | Kategori barang (Electronics, Daily Use, dll) — bobot +14 (conditional) |
+| `area_category` | VARCHAR(50) | Kategori area (Ruang Teori, Lab, dll) — bobot +14 (conditional) |
 | `coordinates_lat` | NUMERIC | Latitude GPS — untuk perhitungan jarak Haversine |
 | `coordinates_lng` | NUMERIC | Longitude GPS — untuk perhitungan jarak Haversine |
 
@@ -179,5 +199,5 @@ Kolom yang digunakan pada tabel `items`:
 2. **Sistem query Pass 1**: Cari barang temuan dengan Daily Use + Ruang Teori
 3. **Sistem query Pass 2**: Cari barang temuan dengan Daily Use (area lain)
 4. **Sistem query Pass 3**: Cari barang temuan dengan keyword "dompet", "hitam", "eiger" di kategori lain
-5. **Scoring**: Ditemukan "Dompet Eiger" di Lab (Daily Use, area Lab) → Category +30, keyword dompet +15, keyword eiger +15, GPS 120m → +15 = **Total 75**
-6. **Notifikasi**: User A mendapat notifikasi "This might be your item: Dompet Eiger" + lihat di My Reports
+5. **Scoring**: Ditemukan "Dompet Eiger" di Lab (Daily Use, area Lab) → category +14, keyword "dompet" (common item → basic) +3, keyword "eiger" (non-basic) +15, GPS 120m → +5 = **Total 37** — di bawah threshold 40, tidak jadi notifikasi
+6. **Notifikasi**: Hanya match dengan skor **>= 40** yang mendapat notifikasi "This might be your item" + lihat di My Reports
