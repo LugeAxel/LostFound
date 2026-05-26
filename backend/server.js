@@ -2041,7 +2041,7 @@ app.get('/api/stats', authMiddleware, cache(60), async (req, res) => {
             .from('items')
             .select('*', { count: 'exact', head: true })
             .eq('type', 'lost')
-            .eq('status', 'Available');
+            .neq('status', 'Returned');
 
         const { count: foundToday } = await supabase
             .from('items')

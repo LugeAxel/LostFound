@@ -289,8 +289,6 @@ const saveEdit = async () => {
           
           <div class="flex flex-col md:flex-row gap-4 md:gap-5">
             <div class="w-full md:w-36 h-36 rounded-xl overflow-hidden bg-[#f3f5f2] dark:bg-[#2a2a2a] flex-shrink-0 relative group">
-              <img :src="optimizeImageUrl(item.image_url) || (item.type === 'lost' ? '/lost-default.svg' : '/found-default.svg')" 
-                :class="['w-full h-full object-cover', !item.image_url && 'p-8 opacity-20']" loading="lazy" />
               <div v-if="!item.image_url" class="absolute inset-0 flex items-center justify-center">
                 <span class="material-symbols-outlined text-4xl text-[#40493d] dark:text-[#9ca3af]/40">{{ item.type === 'lost' ? 'search' : 'inventory_2' }}</span>
               </div>
