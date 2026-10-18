@@ -5,7 +5,7 @@
 <h1 align="center">QReturn</h1>
 
 <p align="center">
-  <strong>Lost & Found System for SMKN 2 Depok</strong><br>
+  <strong>Lost & Found System for SMKN 2 Depok Sleman</strong><br>
   Reconnecting students with their belongings, one QR scan at a time.
 </p>
 
