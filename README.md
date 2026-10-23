@@ -2,7 +2,7 @@
   <img src="public/logo.png" alt="QReturn Logo" width="96" />
 </p>
 
-<h1 align="center">QReturn SMK Negeri 2 Depok</h1>
+<h1 align="center">QReturn SMK N 2 Depok</h1>
 
 <p align="center">
   <strong>Lost & Found System for SMKN 2 Depok Sleman</strong><br>
